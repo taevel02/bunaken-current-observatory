@@ -49,7 +49,7 @@ main은 코드 검토·검증 규칙을 적용한다. data는 관리자 서버�
 | ADMIN_PASSWORD_HASH | salt·알고리즘·파라미터를 포함한 encoded Argon2id hash |
 | ADMIN_ENABLED | 명시적 boolean 설정. 미설정은 false |
 | ADMIN_AUTH_VERSION | 비어 있지 않은 버전 문자열. 비밀번호 변경 시 증가/교체 |
-| SESSION_SECRET | 검증된 세션 라이브러리가 요구하는 고엔트로피 키 |
+| SESSION_SECRET | 32바이트 난수의 unpadded base64url 문자열. 검증된 세션 라이브러리용 |
 | IDEMPOTENCY_SECRET | 요청 digest용 독립 HMAC key |
 | GITHUB_WRITE_TOKEN | 지정 공개 저장소의 Contents read/write, 만료일 있는 fine-grained PAT |
 | GITHUB_OWNER / GITHUB_REPO | 서버 고정 저장소 식별자 |
@@ -57,6 +57,8 @@ main은 코드 검토·검증 규칙을 적용한다. data는 관리자 서버�
 | CANONICAL_ORIGIN | production 관리자 접근을 허용하는 HTTPS origin |
 
 CANONICAL_ORIGIN은 PRD의 canonical origin 검사를 구현하기 위한 설정 이름이다. 개발용 localhost origin은 개발 환경에만 명시적으로 허용한다. 운영 비밀을 NEXT_PUBLIC 변수로 노출하지 않는다. 소스 자격증명은 원칙적으로 수집 workflow의 Secrets에만 둔다.
+
+`ADMIN_ENABLED`가 `true`일 때만 관리자 인증 구성을 활성화한다. 활성화 시 username, Argon2id encoded hash, auth version, 32바이트 session secret이 모두 유효해야 한다. 누락·형식 오류는 인증 구성을 비활성화한다. `SESSION_SECRET` 생성: `node -e 'console.log(require("node:crypto").randomBytes(32).toString("base64url"))'`.
 
 stable 관리자 subject는 로그인 이름이 아닌 내부 고정 식별자다. 초기 구현은 단일 관리자를 뜻하는 고정 subject를 사용한다. 사용자명 변경·세션 재발급이 같은 요청의 멱등성을 바꾸면 안 된다.
 
