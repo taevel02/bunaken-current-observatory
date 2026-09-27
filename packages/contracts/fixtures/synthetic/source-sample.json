@@ -1,0 +1,1 @@
+{"source":"synthetic","product":"fixture","dataset":"fixture-v1","variable":"eastward_current","version":"1","lat":1.85,"lon":124.76,"selected_grid":null,"depth_m":null,"valid_time":"2026-09-27T03:00:00Z","issued_at":null,"retrieved_at":"2026-09-27T02:00:00Z","value":null,"unit":"m/s","native_resolution":null,"interpolation_method":null,"quality_flags":["stale"]}

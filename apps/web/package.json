@@ -1,0 +1,12 @@
+{
+  "name": "@bunaken/web",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "lint": "eslint .",
+    "typecheck": "node node_modules/typescript7/bin/tsc --noEmit",
+    "build": "next build"
+  },
+  "dependencies": { "@bunaken/contracts": "workspace:*", "next": "16.3.6", "react": "19.3.0", "react-dom": "19.3.0" },
+  "devDependencies": { "@eslint/js": "10.0.1", "@types/node": "24.13.6", "@types/react": "19.3.0", "@types/react-dom": "19.3.0", "eslint": "10.11.0", "typescript": "npm:@typescript/typescript6@6.0.2", "typescript-eslint": "8.70.1", "typescript7": "npm:typescript@7.0.2" }
+}

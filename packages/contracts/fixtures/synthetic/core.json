@@ -1,0 +1,10 @@
+{
+  "description": "synthetic schema-validation cases only; never an operational observation",
+  "cases": [
+    {"name":"unknown-is-not-null-or-zero","values":{"unknown":"unknown","missing":null,"none":"none","zero":0}},
+    {"name":"pci-above-one-is-valid","overall_pci":1.24},
+    {"name":"stale-source","source_status":"stale","value":null,"quality_flags":["stale"]},
+    {"name":"revision-conflict","expected_revision":2,"current_revision":3,"error_code":"revision_conflict"},
+    {"name":"legacy-anchor-not-training-eligible","label_scope":"legacy_unspecified","train_eligible":false,"overall_pci":1.0,"vertical":{"direction":"down","intensity":null}}
+  ]
+}

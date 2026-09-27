@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+overrides:
+  sharp: 0.35.4
+minimumReleaseAge: 1440
+allowBuilds:
+  unrs-resolver: true
