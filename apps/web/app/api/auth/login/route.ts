@@ -12,6 +12,7 @@ import {
 } from "../../../../src/server/admin-csrf.mjs";
 import { createAdminSession, ADMIN_SESSION_SECONDS } from "../../../../src/server/admin-session.mjs";
 import { apiError, apiSuccess, createCookieSink } from "../../../../src/server/api-response.mjs";
+import { hasCanonicalOrigin } from "../../../../src/server/request-security.mjs";
 
 export const runtime = "nodejs";
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -24,6 +25,7 @@ function sameUsername(submitted: string, expected: string) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!hasCanonicalOrigin(request)) return apiError(403, "origin_invalid", "auth.originInvalid");
   const config = getAdminAuthConfig();
   if (!config.enabled) return apiError(503, "auth_unavailable", "auth.unavailable");
 

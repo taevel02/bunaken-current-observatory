@@ -76,6 +76,7 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
       ADMIN_USERNAME: "synthetic-admin",
       ADMIN_PASSWORD_HASH: hash,
       ADMIN_AUTH_VERSION: "integration-1",
+      CANONICAL_ORIGIN: baseUrl,
       SESSION_SECRET: randomBytes(32).toString("base64url"),
       NEXT_TELEMETRY_DISABLED: "1",
     },
@@ -110,11 +111,14 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const unauthenticated = await globalThis.fetch(`${baseUrl}/api/admin/session`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(unauthenticated.status, 401);
+  const adminRedirect = await globalThis.fetch(`${baseUrl}/admin`, { redirect: "manual" });
+  assert.equal(adminRedirect.status, 307);
+  assert.equal(adminRedirect.headers.get("location"), "/admin/login");
 
   const login = async (credentials, token = csrfToken) => {
     const response = await globalThis.fetch(`${baseUrl}/api/auth/login`, {
       method: "POST",
-      headers: { cookie: cookieHeader(jar), "content-type": "application/json", "x-csrf-token": token },
+      headers: { origin: baseUrl, cookie: cookieHeader(jar), "content-type": "application/json", "x-csrf-token": token },
       body: JSON.stringify(credentials),
     });
     updateCookies(jar, response);
@@ -123,6 +127,18 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const csrfFailure = await login({ username: "synthetic-admin", password: testPassword }, "tampered");
   assert.equal(csrfFailure.status, 403);
+  const badOrigin = await globalThis.fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { origin: "https://attacker.example", cookie: cookieHeader(jar), "content-type": "application/json", "x-csrf-token": csrfToken },
+    body: JSON.stringify({ username: "synthetic-admin", password: testPassword }),
+  });
+  assert.equal(badOrigin.status, 403);
+  const missingOrigin = await globalThis.fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { cookie: cookieHeader(jar), "content-type": "application/json", "x-csrf-token": csrfToken },
+    body: JSON.stringify({ username: "synthetic-admin", password: testPassword }),
+  });
+  assert.equal(missingOrigin.status, 403);
   const wrongUsername = await login({ username: "unknown-user", password: testPassword });
   const wrongPassword = await login({ username: "synthetic-admin", password: "wrong synthetic passphrase" });
   assert.equal(wrongUsername.status, 401);
@@ -150,6 +166,8 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const authenticated = await globalThis.fetch(`${baseUrl}/api/admin/session`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(authenticated.status, 200);
+  const adminPage = await globalThis.fetch(`${baseUrl}/admin`, { headers: { cookie: cookieHeader(jar) } });
+  assert.equal(adminPage.status, 200);
 
   const tamperedJar = new Map(jar);
   const sealedSession = tamperedJar.get("__Host-bunaken_session");
@@ -160,12 +178,12 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const logoutFailure = await globalThis.fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
-    headers: { cookie: cookieHeader(jar) },
+    headers: { origin: baseUrl, cookie: cookieHeader(jar) },
   });
   assert.equal(logoutFailure.status, 403);
   const logout = await globalThis.fetch(`${baseUrl}/api/auth/logout`, {
     method: "POST",
-    headers: { cookie: cookieHeader(jar), "x-csrf-token": csrfToken },
+    headers: { origin: baseUrl, cookie: cookieHeader(jar), "x-csrf-token": csrfToken },
   });
   assert.equal(logout.status, 204);
   updateCookies(jar, logout);

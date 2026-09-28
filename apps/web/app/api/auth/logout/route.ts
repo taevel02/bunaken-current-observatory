@@ -8,10 +8,12 @@ import {
 } from "../../../../src/server/admin-csrf.mjs";
 import { destroyAdminSession, getAdminSession, ADMIN_SESSION_COOKIE } from "../../../../src/server/admin-session.mjs";
 import { apiError, PRIVATE_NO_STORE } from "../../../../src/server/api-response.mjs";
+import { hasCanonicalOrigin } from "../../../../src/server/request-security.mjs";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  if (!hasCanonicalOrigin(request)) return apiError(403, "origin_invalid", "auth.originInvalid");
   if (!getAdminAuthConfig().enabled) return apiError(503, "auth_unavailable", "auth.unavailable");
   const session = await getAdminSession();
   if (!session) return apiError(401, "unauthorized", "auth.unauthorized");
