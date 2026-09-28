@@ -19,7 +19,7 @@ export class GitHubDataError extends Error {
 export function getGitHubDataConfig(env = process.env) {
   const { GITHUB_WRITE_TOKEN: token, GITHUB_OWNER: owner, GITHUB_REPO: repo } = env;
   const branch = env.GITHUB_DATA_BRANCH ?? "data";
-  if (!token || !owner || !repo || !/^[A-Za-z0-9._-]+$/.test(owner) || !/^[A-Za-z0-9._-]+$/.test(repo) || !/^[A-Za-z0-9._/-]+$/.test(branch) || branch.includes("..")) {
+  if (!token || !owner || !repo || !/^[A-Za-z0-9._-]+$/.test(owner) || !/^[A-Za-z0-9._-]+$/.test(repo) || branch !== "data") {
     throw new GitHubDataError("configuration_invalid", 503);
   }
   return { token, owner, repo, branch };

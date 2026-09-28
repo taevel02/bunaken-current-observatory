@@ -50,6 +50,8 @@ test("Git Data refuses arbitrary paths and malformed server configuration", asyn
   const store = new GitHubDataStore({ config, fetchImpl: () => assert.fail("must not call network") });
   await assert.rejects(store.commitFiles("a".repeat(40), [{ path: "../../.github/workflows/pwn.yml", content: "x" }], "bad"), (error) => error instanceof GitHubDataError && error.kind === "path_forbidden");
   assert.throws(() => getGitHubDataConfig({ GITHUB_WRITE_TOKEN: "token", GITHUB_OWNER: "owner", GITHUB_REPO: "repo", GITHUB_DATA_BRANCH: "../main" }), /configuration_invalid/);
+  assert.throws(() => getGitHubDataConfig({ GITHUB_WRITE_TOKEN: "token", GITHUB_OWNER: "owner", GITHUB_REPO: "repo", GITHUB_DATA_BRANCH: "main" }), /configuration_invalid/);
+  assert.equal(getGitHubDataConfig({ GITHUB_WRITE_TOKEN: "token", GITHUB_OWNER: "owner", GITHUB_REPO: "repo" }).branch, "data");
 });
 
 test("GitHub provider failures are categorized without retaining response bodies", async () => {
