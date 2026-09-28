@@ -44,7 +44,7 @@ async function readJson(store, path, head) {
     const text = await store.getFile(path, head);
     return JSON.parse(text);
   } catch (error) {
-    if (error instanceof GitHubDataError && error.kind === "provider_not_found") return null;
+    if (error instanceof GitHubDataError && error.kind === "file_not_found") return null;
     if (error instanceof SyntaxError) throw new ObservationStorageError("storage_corrupt", false, 503);
     throw error;
   }

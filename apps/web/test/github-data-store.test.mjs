@@ -76,3 +76,19 @@ test("GitHub provider failures are categorized without retaining response bodies
   assert.equal((await fail(422)).kind, "branch_conflict");
   assert.equal((await fail(503)).kind, "provider_unavailable");
 });
+
+test("missing content files are distinct from a missing blob behind an existing file", async () => {
+  const absent = new GitHubDataStore({ config, fetchImpl: async () => new globalThis.Response("{}", { status: 404 }) });
+  await assert.rejects(absent.getFile("observations/item/current.json"), (error) => error.kind === "file_not_found");
+
+  let requests = 0;
+  const brokenBlob = new GitHubDataStore({
+    config,
+    fetchImpl: async () => {
+      requests += 1;
+      if (requests === 1) return new globalThis.Response(JSON.stringify({ type: "file", sha: "bad-blob" }), { status: 200 });
+      return new globalThis.Response("{}", { status: 404 });
+    },
+  });
+  await assert.rejects(brokenBlob.getFile("observations/item/current.json"), (error) => error.kind === "provider_not_found");
+});

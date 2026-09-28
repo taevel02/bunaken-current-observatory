@@ -24,7 +24,7 @@ function createMemoryStore({ conflictCount = 0, loseResponseAfterCommit = false 
     async getHead() { return head; },
     async getFile(path, ref) {
       const content = snapshots.get(ref)?.get(path);
-      if (content === undefined) throw new GitHubDataError("provider_not_found", 404);
+      if (content === undefined) throw new GitHubDataError("file_not_found", 404);
       return content;
     },
     readLatest(path) { return snapshots.get(head).get(path); },

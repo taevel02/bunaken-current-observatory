@@ -83,7 +83,15 @@ export class GitHubDataStore {
 
   async getFile(path, ref) {
     const encoded = encodePath(path);
-    const file = await this.request(`/contents/${encoded}?ref=${encodeURIComponent(ref ?? this.config.branch)}`);
+    let file;
+    try {
+      file = await this.request(`/contents/${encoded}?ref=${encodeURIComponent(ref ?? this.config.branch)}`);
+    } catch (error) {
+      if (error instanceof GitHubDataError && error.kind === "provider_not_found") {
+        throw new GitHubDataError("file_not_found", 404);
+      }
+      throw error;
+    }
     if (file.type !== "file" || typeof file.sha !== "string") throw new GitHubDataError("provider_rejected", 502);
     const blob = await this.request(`/git/blobs/${encodeURIComponent(file.sha)}`);
     if (blob.encoding !== "base64" || typeof blob.content !== "string") throw new GitHubDataError("provider_rejected", 502);
