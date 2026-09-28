@@ -27,6 +27,11 @@ function createMemoryStore({ conflictCount = 0, loseResponseAfterCommit = false,
       if (content === undefined) throw new GitHubDataError("file_not_found", 404);
       return content;
     },
+    async getFileCommitSha(path) {
+      const commit = [...commits].reverse().find(({ files }) => files.some((file) => file.path === path));
+      if (!commit) throw new GitHubDataError("provider_rejected", 502);
+      return commit.sha;
+    },
     readLatest(path) { return snapshots.get(head).get(path); },
     async commitFiles(parent, files) {
       if (failureKind) throw new GitHubDataError(failureKind, failureKind === "branch_conflict" ? 409 : 503, true);
@@ -48,6 +53,9 @@ function createMemoryStore({ conflictCount = 0, loseResponseAfterCommit = false,
       commits.push({ sha, parent, files });
       if (loseResponseAfterCommit) {
         loseResponseAfterCommit = false;
+        const unrelatedSha = (++serial).toString(16).padStart(40, "0");
+        snapshots.set(unrelatedSha, new Map(snapshots.get(head)));
+        head = unrelatedSha;
         throw new GitHubDataError("provider_unavailable", 503, true);
       }
       return sha;
@@ -146,6 +154,8 @@ test("successful ref update with a lost response is recovered from the same ledg
   const store = createMemoryStore({ loseResponseAfterCommit: true });
   const result = await run(store);
   assert.equal(result.idempotent_replay, true);
+  assert.equal(result.commit_sha, store.commits[0].sha);
+  assert.notEqual(result.commit_sha, await store.getHead());
   assert.equal(store.commits.length, 1);
 });
 

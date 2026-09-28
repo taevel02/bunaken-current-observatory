@@ -99,3 +99,10 @@ test("missing content files are distinct from a missing blob behind an existing 
   });
   await assert.rejects(brokenBlob.getFile("observations/item/current.json"), (error) => error.kind === "provider_not_found");
 });
+
+test("finds the commit that originally added an idempotency ledger file", async () => {
+  const mock = mockFetch([{ body: [{ sha: "d".repeat(40) }] }]);
+  const store = new GitHubDataStore({ config, fetchImpl: mock.fetchImpl });
+  assert.equal(await store.getFileCommitSha("idempotency/key.json", "e".repeat(40)), "d".repeat(40));
+  assert.match(mock.calls[0].url, /commits\?path=idempotency%2Fkey\.json&sha=e{40}&per_page=1$/);
+});

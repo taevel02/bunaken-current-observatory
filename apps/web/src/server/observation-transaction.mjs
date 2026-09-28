@@ -80,7 +80,8 @@ export async function commitObservationTransaction({
     const ledger = await readJson(store, ledgerPath, head);
     if (ledger) {
       if (ledger.request_hash !== requestHash) throw new ObservationStorageError("idempotency_conflict");
-      return { ...ledger.result, commit_sha: head, idempotent_replay: true };
+      const commitSha = await store.getFileCommitSha(ledgerPath, head);
+      return { ...ledger.result, commit_sha: commitSha, idempotent_replay: true };
     }
 
     const current = await readJson(store, currentPath, head);

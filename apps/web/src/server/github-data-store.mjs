@@ -98,6 +98,13 @@ export class GitHubDataStore {
     return Buffer.from(blob.content.replace(/\n/g, ""), "base64").toString("utf8");
   }
 
+  async getFileCommitSha(path, ref) {
+    const commits = await this.request(`/commits?path=${encodeURIComponent(path)}&sha=${encodeURIComponent(ref ?? this.config.branch)}&per_page=1`);
+    const sha = Array.isArray(commits) ? commits[0]?.sha : undefined;
+    if (typeof sha !== "string" || !/^[0-9a-f]{40}$/i.test(sha)) throw new GitHubDataError("provider_rejected", 502);
+    return sha;
+  }
+
   async commitFiles(parentSha, files, message) {
     if (!/^[0-9a-f]{40}$/i.test(parentSha) || !Array.isArray(files) || files.length === 0) throw new GitHubDataError("request_invalid", 400);
     const tree = files.map((file) => ({
