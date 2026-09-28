@@ -16,10 +16,28 @@ import {
 } from "../../../../src/server/observation-transaction.mjs";
 import { hasCanonicalOrigin } from "../../../../src/server/request-security.mjs";
 import { mapStorageError } from "../../../../src/server/storage-error.mjs";
+import { authorizeAdminRequest } from "../../../../src/server/admin-api-guard.mjs";
+import { listObservations } from "../../../../src/server/observation-queries.mjs";
 
 export const runtime = "nodejs";
 const MAX_REQUEST_BYTES = 16 * 1024;
 const WITA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+export async function GET(request: NextRequest) {
+  const access = await authorizeAdminRequest(request);
+  if (access.response) return access.response;
+  try {
+    const rawLimit = request.nextUrl.searchParams.get("limit") ?? "20";
+    if (!/^\d{1,3}$/.test(rawLimit)) throw new ObservationStorageError("request_invalid", false, 400);
+    const result = await listObservations(new GitHubDataStore({ config: getGitHubDataConfig() }), {
+      limit: Number(rawLimit),
+      cursor: request.nextUrl.searchParams.get("cursor"),
+    });
+    return apiSuccess({ items: result.items, next_cursor: result.next_cursor });
+  } catch (error) {
+    return apiFailure(error);
+  }
+}
 
 function localTimeToUtc(value: string) {
   const date = new Date(value + ":00+08:00");

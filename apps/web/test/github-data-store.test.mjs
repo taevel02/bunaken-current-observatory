@@ -120,3 +120,19 @@ test("finds the commit that originally added an idempotency ledger file", async 
   assert.equal(await store.getFileCommitSha("idempotency/key.json", "e".repeat(40)), "d".repeat(40));
   assert.match(mock.calls[0].url, /commits\?path=idempotency%2Fkey\.json&sha=e{40}&per_page=1$/);
 });
+
+test("lists directories under the observations root without exposing files as records", async () => {
+  const mock = mockFetch([
+    { body: { tree: { sha: "a".repeat(40) } } },
+    { body: { tree: [{ path: "observations", type: "tree", sha: "b".repeat(40) }] } },
+    { body: { tree: [
+      { path: "one", type: "tree", sha: "c".repeat(40) },
+      { path: "current.json", type: "blob", sha: "d".repeat(40) },
+      { path: "two", type: "tree", sha: "e".repeat(40) },
+    ] } },
+  ]);
+  const store = new GitHubDataStore({ config, fetchImpl: mock.fetchImpl });
+  assert.deepEqual(await store.listDirectory("observations", "e".repeat(40)), ["one", "two"]);
+  assert.match(mock.calls[0].url, /\/git\/commits\/e{40}$/);
+  assert.match(mock.calls[2].url, /\/git\/trees\/b{40}$/);
+});

@@ -25,8 +25,8 @@ export function getGitHubDataConfig(env = process.env) {
   return { token, owner, repo, branch };
 }
 
-function encodePath(path) {
-  if (typeof path !== "string" || path.startsWith("/") || path.includes("\\") || path.split("/").some((part) => !part || part === "." || part === "..") || !ALLOWED_ROOTS.some((root) => path.startsWith(root))) {
+function encodePath(path, allowRoot = false) {
+  if (typeof path !== "string" || path.startsWith("/") || path.includes("\\") || path.split("/").some((part) => !part || part === "." || part === "..") || !ALLOWED_ROOTS.some((root) => path.startsWith(root) || (allowRoot && path === root.slice(0, -1)))) {
     throw new GitHubDataError("path_forbidden", 400);
   }
   return path.split("/").map(encodeURIComponent).join("/");
@@ -98,6 +98,24 @@ export class GitHubDataStore {
     const blob = await this.request(`/git/blobs/${encodeURIComponent(file.sha)}`);
     if (blob.encoding !== "base64" || typeof blob.content !== "string") throw new GitHubDataError("provider_rejected", 502);
     return Buffer.from(blob.content.replace(/\n/g, ""), "base64").toString("utf8");
+  }
+
+  async listDirectory(path, ref) {
+    const safePath = encodePath(path, true);
+    const commit = await this.request(`/git/commits/${encodeURIComponent(ref ?? this.config.branch)}`);
+    let treeSha = commit?.tree?.sha;
+    if (typeof treeSha !== "string" || !/^[0-9a-f]{40}$/i.test(treeSha)) throw new GitHubDataError("provider_rejected", 502);
+    for (const part of safePath.split("/")) {
+      const tree = await this.request(`/git/trees/${encodeURIComponent(treeSha)}`);
+      if (!Array.isArray(tree?.tree) || tree.truncated) throw new GitHubDataError("provider_rejected", 502);
+      const directory = tree.tree.find((entry) => entry.path === part && entry.type === "tree");
+      if (!directory) return [];
+      if (typeof directory.sha !== "string" || !/^[0-9a-f]{40}$/i.test(directory.sha)) throw new GitHubDataError("provider_rejected", 502);
+      treeSha = directory.sha;
+    }
+    const directory = await this.request(`/git/trees/${encodeURIComponent(treeSha)}`);
+    if (!Array.isArray(directory?.tree) || directory.truncated) throw new GitHubDataError("provider_rejected", 502);
+    return directory.tree.filter((entry) => entry.type === "tree").map((entry) => entry.path);
   }
 
   async getFileCommitSha(path, ref) {

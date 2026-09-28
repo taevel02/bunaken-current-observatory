@@ -19,10 +19,10 @@ export function apiError(status, code, messageKey, options = {}) {
   );
 }
 
-export function apiSuccess(data, status = 200, extraMeta = {}) {
+export function apiSuccess(data, status = 200, extraMeta = {}, headers = {}) {
   return NextResponse.json(
     { data, meta: { request_id: requestId(), ...extraMeta } },
-    { status, headers: PRIVATE_NO_STORE },
+    { status, headers: { ...PRIVATE_NO_STORE, ...headers } },
   );
 }
 

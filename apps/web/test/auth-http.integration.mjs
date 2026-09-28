@@ -116,6 +116,10 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const unauthenticated = await globalThis.fetch(`${baseUrl}/api/admin/session`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(unauthenticated.status, 401);
+  const protectedList = await globalThis.fetch(`${baseUrl}/api/admin/observations`, { headers: { cookie: cookieHeader(jar) } });
+  assert.equal(protectedList.status, 401);
+  const protectedDetail = await globalThis.fetch(`${baseUrl}/api/admin/observations/${randomBytes(16).toString("hex")}`, { headers: { cookie: cookieHeader(jar) } });
+  assert.equal(protectedDetail.status, 401);
   const koreanLoginPage = await globalThis.fetch(`${baseUrl}/ko/admin/login`);
   const englishLoginPage = await globalThis.fetch(`${baseUrl}/en/admin/login`);
   assert.equal(koreanLoginPage.status, 200);
@@ -124,7 +128,7 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   assert.match(await englishLoginPage.text(), /Administrator sign in/);
   const adminRedirect = await globalThis.fetch(`${baseUrl}/admin`, { redirect: "manual" });
   assert.equal(adminRedirect.status, 307);
-  assert.equal(adminRedirect.headers.get("location"), "/admin/login");
+  assert.equal(adminRedirect.headers.get("location"), "/ko/admin");
 
   const login = async (credentials, token = csrfToken) => {
     const response = await globalThis.fetch(`${baseUrl}/api/auth/login`, {
@@ -177,6 +181,16 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const authenticated = await globalThis.fetch(`${baseUrl}/api/admin/session`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(authenticated.status, 200);
+  assert.equal((await authenticated.json()).data.observer_alias, "synthetic-admin-alias");
+  const listUnavailable = await globalThis.fetch(`${baseUrl}/api/admin/observations`, { headers: { cookie: cookieHeader(jar) } });
+  assert.equal(listUnavailable.status, 503);
+  assert.match(listUnavailable.headers.get("cache-control"), /private, no-store/);
+  const statusUnavailable = await globalThis.fetch(`${baseUrl}/api/admin/requests/status`, {
+    method: "POST",
+    headers: { origin: baseUrl, cookie: cookieHeader(jar), "content-type": "application/json", "x-csrf-token": csrfToken },
+    body: JSON.stringify({ idempotency_key: "6f5cf4c1-f809-4f6c-b521-7b7ed5ac6b1c" }),
+  });
+  assert.equal(statusUnavailable.status, 503);
   const rejectedPublicFields = await globalThis.fetch(`${baseUrl}/api/admin/observations`, {
     method: "POST",
     headers: {
