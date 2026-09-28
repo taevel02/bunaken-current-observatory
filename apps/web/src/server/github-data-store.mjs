@@ -68,7 +68,7 @@ export class GitHubDataStore {
       }
       if (response.status === 403) throw new GitHubDataError("provider_permission_denied", 403);
       if (response.status === 404) throw new GitHubDataError("provider_not_found", 404);
-      if (response.status === 409 || response.status === 422) throw new GitHubDataError("branch_conflict", 409, true);
+      if (response.status === 409) throw new GitHubDataError("branch_conflict", 409, true);
       if (response.status === 429) throw new GitHubDataError("provider_rate_limited", 429, true, retryAfter);
       throw new GitHubDataError(response.status >= 500 ? "provider_unavailable" : "provider_rejected", response.status >= 500 ? 503 : response.status, response.status >= 500);
     }

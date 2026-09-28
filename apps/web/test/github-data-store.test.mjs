@@ -73,7 +73,12 @@ test("GitHub provider failures are categorized without retaining response bodies
   const limited = await fail(429, { "retry-after": "45" });
   assert.equal(limited.retryable, true);
   assert.equal(limited.retryAfter, 45);
-  assert.equal((await fail(422)).kind, "branch_conflict");
+  const validationFailure = await fail(422);
+  assert.equal(validationFailure.kind, "provider_rejected");
+  assert.equal(validationFailure.retryable, false);
+  const refConflict = await fail(409);
+  assert.equal(refConflict.kind, "branch_conflict");
+  assert.equal(refConflict.retryable, true);
   assert.equal((await fail(503)).kind, "provider_unavailable");
 });
 
