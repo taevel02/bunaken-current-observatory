@@ -34,7 +34,8 @@ async function draft(action: "put" | "all" | "delete" | "clear", value?: Row) {
   });
 }
 
-export function ObservationWorkspace({ locale, observerAlias }: { locale: Locale; observerAlias: string | null }) {
+export function ObservationWorkspace({ locale: initialLocale, observerAlias }: { locale: Locale; observerAlias: string | null }) {
+  const [locale, setLocale] = useState(initialLocale);
   const c = messages[locale];
   const t = c.observations as Record<string, string>;
   const [rows, setRows] = useState<Row[]>([]);
@@ -46,6 +47,7 @@ export function ObservationWorkspace({ locale, observerAlias }: { locale: Locale
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [consent, setConsent] = useState(false);
+  const [draftsLoaded, setDraftsLoaded] = useState(false);
   const [restore, setRestore] = useState<Row[]>([]);
   const [draftPayload, setDraftPayload] = useState<Row | null>(null);
   const [formEpoch, setFormEpoch] = useState(0);
@@ -73,13 +75,31 @@ export function ObservationWorkspace({ locale, observerAlias }: { locale: Locale
   useEffect(() => { void fetch("/api/admin/session", { cache: "no-store" }).then(async (response) => { if (response.ok) setAlias((await response.json()).data.observer_alias); }).catch(() => undefined); }, []);
   useEffect(() => {
     if (!consent) return;
+    let active = true;
+    setDraftsLoaded(false);
     void draft("all").then((all: Row[]) => {
+      if (!active) return;
       const now = Date.now();
       const valid = all.filter((item) => now - item.savedAt < 7 * 86400000);
       for (const item of all) if (!valid.includes(item)) void draft("delete", item);
       setRestore(valid);
-    }).catch(() => setMessage(t.draftUnavailable));
+      setDraftsLoaded(true);
+    }).catch(() => { if (active) setMessage(t.draftUnavailable); });
+    return () => { active = false; };
   }, [consent]);
+  useEffect(() => {
+    const syncLocale = () => {
+      const pathLocale = window.location.pathname.split("/")[1];
+      if (pathLocale === "ko" || pathLocale === "en") setLocale(pathLocale);
+    };
+    window.addEventListener("popstate", syncLocale);
+    return () => window.removeEventListener("popstate", syncLocale);
+  }, []);
+
+  function switchLocale(next: Locale) {
+    window.history.pushState(null, "", `/${next}/admin`);
+    setLocale(next);
+  }
 
   function buildPayload(form: FormData): Row {
     const num = (name: string) => Number(form.get(name));
@@ -93,7 +113,7 @@ export function ObservationWorkspace({ locale, observerAlias }: { locale: Locale
   }
 
   function preserveDraft(form: HTMLFormElement, explicitConsent = false) {
-    if (!consent && !explicitConsent) return;
+    if ((!consent && !explicitConsent) || !draftsLoaded || (restore.some((item) => item.id === "active") && !draftPayload)) return;
     void draft("put", { id: "active", payload: buildPayload(new FormData(form)), key, savedAt: Date.now() }).catch(() => setMessage(t.draftUnavailable));
   }
 
@@ -111,6 +131,7 @@ export function ObservationWorkspace({ locale, observerAlias }: { locale: Locale
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy) return;
+    if (consent && (!draftsLoaded || (restore.some((item) => item.id === "active") && !draftPayload))) { setMessage(t.restoreManual); return; }
     setBusy(true); setMessage(t.saving);
     const form = new FormData(event.currentTarget);
     const payload = pendingCreate?.id === id && pendingCreate.key === key ? pendingCreate.payload : buildPayload(form);
@@ -220,7 +241,7 @@ export function ObservationWorkspace({ locale, observerAlias }: { locale: Locale
 
   return <main className={styles.shell} lang={locale}>
     <header className={styles.header}><div><p className={styles.eyebrow}>BUNAKEN · {alias ?? "ADMIN"}</p><h1>{t.title}</h1><p>{t.publicWarning}</p></div><button className={styles.logout} onClick={async () => { await draft("clear").catch(() => undefined); try { const response = await fetch("/api/auth/csrf", { cache: "no-store" }); if (!response.ok) { window.location.assign(`/${locale}/admin/login`); return; } const csrf = (await response.json()).data.csrf_token; const result = await fetch("/api/auth/logout", { method: "POST", headers: { "x-csrf-token": csrf } }); if (result.ok) window.location.assign(`/${locale}/admin/login`); else setMessage(t.logoutError); } catch { setMessage(t.logoutError); } }}>{t.logout}</button></header>
-    <nav className={styles.lang}><a href="/ko/admin" aria-current={locale === "ko" ? "page" : undefined}>한국어</a><a href="/en/admin" aria-current={locale === "en" ? "page" : undefined}>English</a></nav>
+    <nav className={styles.lang}><a href="/ko/admin" aria-current={locale === "ko" ? "page" : undefined} onClick={(event) => { event.preventDefault(); switchLocale("ko"); }}>한국어</a><a href="/en/admin" aria-current={locale === "en" ? "page" : undefined} onClick={(event) => { event.preventDefault(); switchLocale("en"); }}>English</a></nav>
     <section className={styles.layout}>
       <form className={styles.form} key={formEpoch} onSubmit={save} onChange={(event) => { if ((event.nativeEvent.target as HTMLInputElement).name !== "draft_consent") preserveDraft(event.currentTarget); }}>
         <h2>{t.newRecord}</h2>
@@ -237,7 +258,7 @@ export function ObservationWorkspace({ locale, observerAlias }: { locale: Locale
         <label>{t.confidence}<select name="confidence" defaultValue={draftPayload?.confidence as string ?? "normal"}><option value="high">{t.high}</option><option value="normal">{t.normal}</option><option value="low">{t.low}</option></select></label>
         <details><summary>{t.optional}</summary><label>{t.temperature}<input name="temperature" type="number" inputMode="decimal" min="-3" max="45" step="0.1" defaultValue={(draftPayload?.observed_temperature as Row | null | undefined)?.celsius as number | undefined} /></label><label>{t.notes}<textarea name="notes_public" maxLength={5000} rows={4} defaultValue={draftPayload?.notes_public as string | undefined} /></label><label className={styles.check}><input type="checkbox" checked={peakEnabled} onChange={(event) => setPeakEnabled(event.target.checked)} />{t.peak}</label>{peakEnabled && <><label>{t.peakPCI}<input name="peak_pci" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.pci ?? undefined) as number | undefined} /></label><label>{t.peakDepth}<input name="peak_depth" type="number" inputMode="decimal" min="0" max="200" step="0.1" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.depth_m ?? undefined) as number | undefined} /></label><label>{t.peakZone}<input name="peak_zone" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.zone_id ?? "") as string} /></label><label>{t.peakDirection}<select name="peak_direction" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.vertical_direction as string) ?? "unknown"}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></select></label><label>{t.peakIntensity}<input name="peak_intensity" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.vertical_intensity ?? undefined) as number | undefined} /></label></>}</details>
         <label className={styles.check}><input name="use_for_model" type="checkbox" defaultChecked={draftPayload?.use_for_model !== false} />{t.modelUse}</label>
-        <label className={styles.check}><input name="draft_consent" type="checkbox" checked={consent} onChange={(event) => { const enabled = event.target.checked; setConsent(enabled); if (enabled) preserveDraft(event.currentTarget.form!, true); else { setRestore([]); void draft("clear").catch(() => setMessage(t.draftUnavailable)); } }} />{t.draftConsent}</label>
+        <label className={styles.check}><input name="draft_consent" type="checkbox" checked={consent} onChange={(event) => { const enabled = event.target.checked; setConsent(enabled); if (enabled) { setDraftsLoaded(false); setRestore([]); } else { setRestore([]); setDraftPayload(null); setDraftsLoaded(false); void draft("clear").catch(() => setMessage(t.draftUnavailable)); } }} />{t.draftConsent}</label>
         {restore.some((x) => x.id === "active") && <button type="button" className={styles.secondary} onClick={() => { const item = restore.find((x) => x.id === "active"); if (!item) return; setDraftPayload(item.payload); setId(item.payload.id); setKey(item.key); if (item.pendingCreate) setPendingCreate({ id: item.payload.id, key: item.key, payload: item.payload }); const peak = (item.payload.peak_events as Row[] | undefined)?.[0]; setPeakEnabled(Boolean(peak)); setPeakId((peak?.id as string) ?? uuid()); setFormEpoch((value) => value + 1); setMessage(t.restoreManual); }}>{t.restoreDraft}</button>}
         {restore.some((x) => x.id === "pending-mutation") && <button type="button" className={styles.secondary} onClick={() => { const item = restore.find((x) => x.id === "pending-mutation"); if (!item?.pendingMutation) return; const pending = item.pendingMutation; setPendingMutation(pending); void fetch(`/api/admin/observations/${pending.id}`, { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error(); const data = { ...(await response.json()).data, etag: pending.etag }; setSelected(data); setCorrectionDraft(pending.record); setCorrectionPCI(pending.pci); setCorrectionNotes(pending.notes); }).catch(() => setMessage(t.listError)); }}>{t.retryMutation}</button>}
         </fieldset>
