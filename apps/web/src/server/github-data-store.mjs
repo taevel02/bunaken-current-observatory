@@ -6,12 +6,13 @@ const API_ROOT = "https://api.github.com";
 const ALLOWED_ROOTS = ["audit/", "idempotency/", "observations/"];
 
 export class GitHubDataError extends Error {
-  constructor(kind, status, retryable = false) {
+  constructor(kind, status, retryable = false, retryAfter) {
     super(kind);
     this.name = "GitHubDataError";
     this.kind = kind;
     this.status = status;
     this.retryable = retryable;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -56,10 +57,20 @@ export class GitHubDataStore {
       throw new GitHubDataError("provider_unavailable", 503, true);
     }
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) throw new GitHubDataError("provider_permission", response.status);
+      const retryAfterHeader = response.headers.get("retry-after");
+      const resetAt = Number(response.headers.get("x-ratelimit-reset"));
+      const retryAfter = retryAfterHeader && /^\d+$/.test(retryAfterHeader)
+        ? Number(retryAfterHeader)
+        : Number.isFinite(resetAt) && resetAt > 0 ? Math.max(0, resetAt - Math.floor(Date.now() / 1000)) : undefined;
+      if (response.status === 401) throw new GitHubDataError("provider_auth_failed", 401);
+      if (response.status === 403 && (response.headers.get("x-ratelimit-remaining") === "0" || retryAfter !== undefined)) {
+        throw new GitHubDataError("provider_rate_limited", 429, true, retryAfter);
+      }
+      if (response.status === 403) throw new GitHubDataError("provider_permission_denied", 403);
       if (response.status === 404) throw new GitHubDataError("provider_not_found", 404);
       if (response.status === 409 || response.status === 422) throw new GitHubDataError("branch_conflict", 409, true);
-      throw new GitHubDataError(response.status >= 500 ? "provider_unavailable" : "provider_rejected", response.status >= 500 ? 503 : response.status, response.status === 429 || response.status >= 500);
+      if (response.status === 429) throw new GitHubDataError("provider_rate_limited", 429, true, retryAfter);
+      throw new GitHubDataError(response.status >= 500 ? "provider_unavailable" : "provider_rejected", response.status >= 500 ? 503 : response.status, response.status >= 500);
     }
     if (response.status === 204) return null;
     return response.json();

@@ -51,3 +51,28 @@ test("Git Data refuses arbitrary paths and malformed server configuration", asyn
   await assert.rejects(store.commitFiles("a".repeat(40), [{ path: "../../.github/workflows/pwn.yml", content: "x" }], "bad"), (error) => error instanceof GitHubDataError && error.kind === "path_forbidden");
   assert.throws(() => getGitHubDataConfig({ GITHUB_WRITE_TOKEN: "token", GITHUB_OWNER: "owner", GITHUB_REPO: "repo", GITHUB_DATA_BRANCH: "../main" }), /configuration_invalid/);
 });
+
+test("GitHub provider failures are categorized without retaining response bodies", async () => {
+  async function fail(status, headers = {}) {
+    const store = new GitHubDataStore({
+      config,
+      fetchImpl: async () => new globalThis.Response("private provider detail", { status, headers }),
+    });
+    try {
+      await store.getHead();
+      assert.fail("expected provider failure");
+    } catch (error) {
+      assert.equal(error.message.includes("private provider detail"), false);
+      return error;
+    }
+  }
+
+  assert.equal((await fail(401)).kind, "provider_auth_failed");
+  assert.equal((await fail(403)).kind, "provider_permission_denied");
+  assert.equal((await fail(403, { "x-ratelimit-remaining": "0", "retry-after": "120" })).kind, "provider_rate_limited");
+  const limited = await fail(429, { "retry-after": "45" });
+  assert.equal(limited.retryable, true);
+  assert.equal(limited.retryAfter, 45);
+  assert.equal((await fail(422)).kind, "branch_conflict");
+  assert.equal((await fail(503)).kind, "provider_unavailable");
+});

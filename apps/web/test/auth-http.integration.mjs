@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, rm, symlink } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import process from "node:process";
 import { createServer } from "node:net";
 import { spawn } from "node:child_process";
@@ -77,6 +77,11 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
       ADMIN_PASSWORD_HASH: hash,
       ADMIN_AUTH_VERSION: "integration-1",
       CANONICAL_ORIGIN: baseUrl,
+      PUBLIC_OBSERVER_ID: "synthetic-admin-alias",
+      IDEMPOTENCY_SECRET: randomBytes(32).toString("base64url"),
+      GITHUB_WRITE_TOKEN: "",
+      GITHUB_OWNER: "",
+      GITHUB_REPO: "",
       SESSION_SECRET: randomBytes(32).toString("base64url"),
       NEXT_TELEMETRY_DISABLED: "1",
     },
@@ -179,6 +184,27 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   const rejectedBody = await rejectedPublicFields.text();
   assert.equal(rejectedPublicFields.status, 422, `${rejectedBody} ${serverError}`);
   assert.equal(JSON.parse(rejectedBody).error.code, "request_invalid");
+  const publicObservation = await readFile(resolve(appDirectory, "../../packages/contracts/fixtures/synthetic/observation-create.json"), "utf8");
+  const saveWithMissingProvider = async () => globalThis.fetch(`${baseUrl}/api/admin/observations`, {
+    method: "POST",
+    headers: {
+      origin: baseUrl,
+      cookie: cookieHeader(jar),
+      "content-type": "application/json",
+      "x-csrf-token": csrfToken,
+      "idempotency-key": "6f5cf4c1-f809-4f6c-b521-7b7ed5ac6b1c",
+    },
+    body: publicObservation,
+  });
+  const providerFailure = await saveWithMissingProvider();
+  const providerFailureBody = await providerFailure.json();
+  const retryFailure = await saveWithMissingProvider();
+  assert.equal(providerFailure.status, 503);
+  assert.equal(providerFailureBody.error.code, "storage_unavailable");
+  assert.equal(providerFailureBody.error.retryable, false);
+  assert.equal(retryFailure.status, 503);
+  assert.equal((await retryFailure.json()).error.code, "storage_unavailable");
+  assert.equal(providerFailure.headers.get("cache-control"), "private, no-store");
   const adminPage = await globalThis.fetch(`${baseUrl}/admin`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(adminPage.status, 200);
 

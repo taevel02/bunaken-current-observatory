@@ -128,7 +128,7 @@ export async function commitObservationTransaction({
       ], `data: ${requestType} observation ${observationId} revision ${revision}`);
       return { ...result, commit_sha: commitSha, idempotent_replay: false };
     } catch (error) {
-      if (!(error instanceof GitHubDataError) || !error.retryable) throw error;
+      if (!(error instanceof GitHubDataError) || !error.retryable || error.kind === "provider_rate_limited") throw error;
       if (attempt === MAX_ATTEMPTS - 1) throw new ObservationStorageError("branch_conflict", true);
       await pause(Math.floor(20 + random() * 80) * (attempt + 1));
     }

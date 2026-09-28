@@ -6,7 +6,7 @@ import { validateCreateObservation, validateObservationRevision } from "@bunaken
 import { getAdminAuthConfig } from "../../../../src/server/admin-config.mjs";
 import { hasAuthCsrfContext, validateCsrfToken } from "../../../../src/server/admin-csrf.mjs";
 import { apiError, apiSuccess } from "../../../../src/server/api-response.mjs";
-import { getGitHubDataConfig, GitHubDataError, GitHubDataStore } from "../../../../src/server/github-data-store.mjs";
+import { getGitHubDataConfig, GitHubDataStore } from "../../../../src/server/github-data-store.mjs";
 import { getAdminSession } from "../../../../src/server/admin-session.mjs";
 import {
   commitObservationTransaction,
@@ -15,6 +15,7 @@ import {
   ObservationStorageError,
 } from "../../../../src/server/observation-transaction.mjs";
 import { hasCanonicalOrigin } from "../../../../src/server/request-security.mjs";
+import { mapStorageError } from "../../../../src/server/storage-error.mjs";
 
 export const runtime = "nodejs";
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -62,21 +63,11 @@ async function readJsonBody(request: Request) {
 }
 
 function apiFailure(error: unknown) {
-  if (error instanceof ObservationStorageError) {
-    const messages: Record<string, string> = {
-      request_invalid: "errors.observationInvalid",
-      request_too_large: "auth.invalidRequest",
-      idempotency_key_invalid: "errors.observationInvalid",
-      idempotency_conflict: "errors.idempotencyConflict",
-      revision_conflict: "errors.revisionConflict",
-      branch_conflict: "errors.storageUnavailable",
-      storage_unavailable: "errors.storageUnavailable",
-      storage_corrupt: "errors.storageUnavailable",
-    };
-    return apiError(error.status, error.code, messages[error.code] ?? "errors.notFound");
-  }
-  if (error instanceof GitHubDataError) return apiError(503, "storage_unavailable", "errors.storageUnavailable");
-  return apiError(503, "storage_unavailable", "errors.storageUnavailable");
+  const mapped = mapStorageError(error);
+  return apiError(mapped.status, mapped.code, mapped.messageKey, {
+    retryable: mapped.retryable,
+    retryAfter: mapped.retryAfter,
+  });
 }
 
 export async function POST(request: NextRequest) {

@@ -2,17 +2,20 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { errorEnvelope } from "../api/error";
+import { errorResponseHeaders } from "../api/error-response.mjs";
 
-export const PRIVATE_NO_STORE = { "Cache-Control": "private, no-store" };
+export const PRIVATE_NO_STORE = errorResponseHeaders();
 
 export function requestId() {
   return randomUUID();
 }
 
-export function apiError(status, code, messageKey, id = requestId()) {
+/** @param {{id?: string, retryable?: boolean, retryAfter?: number}} options */
+export function apiError(status, code, messageKey, options = {}) {
+  const { id = requestId(), retryable = false, retryAfter } = options;
   return NextResponse.json(
-    { error: errorEnvelope(code, messageKey, id), meta: { request_id: id } },
-    { status, headers: PRIVATE_NO_STORE },
+    { error: errorEnvelope(code, messageKey, id, retryable), meta: { request_id: id } },
+    { status, headers: errorResponseHeaders(retryAfter) },
   );
 }
 
