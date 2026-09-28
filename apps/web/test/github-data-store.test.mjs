@@ -79,9 +79,23 @@ test("GitHub provider failures are categorized without retaining response bodies
   assert.equal(validationFailure.kind, "provider_rejected");
   assert.equal(validationFailure.retryable, false);
   const refConflict = await fail(409);
-  assert.equal(refConflict.kind, "branch_conflict");
-  assert.equal(refConflict.retryable, true);
+  assert.equal(refConflict.kind, "provider_rejected");
+  assert.equal(refConflict.retryable, false);
   assert.equal((await fail(503)).kind, "provider_unavailable");
+});
+
+test("only a ref update validation response is treated as a possible branch race", async () => {
+  const mock = mockFetch([
+    { body: { tree: { sha: "a".repeat(40) } } },
+    { body: { sha: "b".repeat(40) } },
+    { body: { sha: "c".repeat(40) } },
+    { status: 422 },
+  ]);
+  const store = new GitHubDataStore({ config, fetchImpl: mock.fetchImpl });
+  await assert.rejects(
+    store.commitFiles("a".repeat(40), [{ path: "audit/event.json", content: "{}" }], "save"),
+    (error) => error.kind === "branch_conflict" && error.retryable,
+  );
 });
 
 test("missing content files are distinct from a missing blob behind an existing file", async () => {

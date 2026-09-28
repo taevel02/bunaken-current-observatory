@@ -34,7 +34,7 @@ function createMemoryStore({ conflictCount = 0, loseResponseAfterCommit = false,
     },
     readLatest(path) { return snapshots.get(head).get(path); },
     async commitFiles(parent, files) {
-      if (failureKind) throw new GitHubDataError(failureKind, failureKind === "branch_conflict" ? 409 : 503, true);
+      if (failureKind && failureKind !== "branch_conflict") throw new GitHubDataError(failureKind, 503, true);
       if (conflictCount > 0) {
         conflictCount -= 1;
         const competingSha = (++serial).toString(16).padStart(40, "0");
@@ -162,6 +162,6 @@ test("successful ref update with a lost response is recovered from the same ledg
 test("persistent provider outages remain retryable 503 failures, while exhausted branch races remain 409", async () => {
   const outage = createMemoryStore({ failureKind: "provider_unavailable" });
   await assert.rejects(run(outage), (error) => error instanceof GitHubDataError && error.kind === "provider_unavailable" && error.retryable);
-  const contention = createMemoryStore({ failureKind: "branch_conflict" });
+  const contention = createMemoryStore({ conflictCount: 3 });
   await assert.rejects(run(contention), (error) => error.code === "branch_conflict" && error.status === 409 && error.retryable);
 });

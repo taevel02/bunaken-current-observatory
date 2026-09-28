@@ -130,6 +130,9 @@ export async function commitObservationTransaction({
       return { ...result, commit_sha: commitSha, idempotent_replay: false };
     } catch (error) {
       if (!(error instanceof GitHubDataError) || !error.retryable || error.kind === "provider_rate_limited") throw error;
+      if (error.kind === "branch_conflict" && await store.getHead() === head) {
+        throw new GitHubDataError("provider_rejected", 503);
+      }
       if (attempt === MAX_ATTEMPTS - 1) {
         if (error.kind === "branch_conflict") throw new ObservationStorageError("branch_conflict", true);
         throw error;
