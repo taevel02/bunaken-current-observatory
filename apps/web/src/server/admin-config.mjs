@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import process from "node:process";
 
-const passwordHashPattern = /^\$argon2id\$v=19\$m=(\d+),t=(\d+),p=(\d+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
+const passwordHashPattern = /^\$argon2id\$v=19\$([^$]+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$/;
 
 function isCanonicalBase64(value) {
   return Buffer.from(value, "base64").toString("base64").replace(/=+$/, "") === value;
@@ -11,8 +11,12 @@ function hasValidPasswordHash(value) {
   const match = passwordHashPattern.exec(value);
   if (!match) return false;
 
-  const [, memory, iterations, parallelism, salt, digest] = match;
-  if ([memory, iterations, parallelism].some((part) => !Number.isSafeInteger(Number(part)) || Number(part) < 1)) {
+  const [, encodedParameters, salt, digest] = match;
+  const parts = encodedParameters.split(",");
+  if (parts.length !== 3 || parts.some((part) => !/^[mtp]=\d+$/.test(part))) return false;
+  const parameters = Object.fromEntries(parts.map((part) => part.split("=")));
+  if (Object.keys(parameters).length !== 3 || !["m", "t", "p"].every((key) => key in parameters)) return false;
+  if (Object.values(parameters).some((part) => !/^\d+$/.test(part) || !Number.isSafeInteger(Number(part)) || Number(part) < 1)) {
     return false;
   }
 

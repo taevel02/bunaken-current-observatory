@@ -4,6 +4,7 @@
   "packageManager": "pnpm@12.6.0",
   "scripts": {
     "dev": "pnpm --filter @bunaken/web dev",
+    "admin:hash": "pnpm --filter @bunaken/web admin:hash",
     "lint": "pnpm --filter @bunaken/web lint",
     "typecheck": "pnpm --filter @bunaken/web typecheck",
     "test": "node --test packages/contracts/test/*.test.mjs apps/web/test/*.test.mjs && uv run --project engine --python 3.14.7 python -m unittest discover -s engine/tests",

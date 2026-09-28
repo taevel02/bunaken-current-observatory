@@ -5,4 +5,5 @@ overrides:
   sharp: 0.35.4
 minimumReleaseAge: 1440
 allowBuilds:
+  argon2: true
   unrs-resolver: true
