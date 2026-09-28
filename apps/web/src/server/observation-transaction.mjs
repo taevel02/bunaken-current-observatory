@@ -129,7 +129,10 @@ export async function commitObservationTransaction({
       return { ...result, commit_sha: commitSha, idempotent_replay: false };
     } catch (error) {
       if (!(error instanceof GitHubDataError) || !error.retryable || error.kind === "provider_rate_limited") throw error;
-      if (attempt === MAX_ATTEMPTS - 1) throw new ObservationStorageError("branch_conflict", true);
+      if (attempt === MAX_ATTEMPTS - 1) {
+        if (error.kind === "branch_conflict") throw new ObservationStorageError("branch_conflict", true);
+        throw error;
+      }
       await pause(Math.floor(20 + random() * 80) * (attempt + 1));
     }
   }
