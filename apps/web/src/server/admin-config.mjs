@@ -1,3 +1,4 @@
+import "server-only";
 import { Buffer } from "node:buffer";
 import process from "node:process";
 
@@ -19,6 +20,10 @@ function hasValidPasswordHash(value) {
   if (Object.values(parameters).some((part) => !/^\d+$/.test(part) || !Number.isSafeInteger(Number(part)) || Number(part) < 1)) {
     return false;
   }
+  const memoryKiB = Number(parameters.m);
+  const iterations = Number(parameters.t);
+  const parallelism = Number(parameters.p);
+  if (memoryKiB < 19_456 || memoryKiB > 65_536 || iterations < 2 || iterations > 6 || parallelism > 4) return false;
 
   return isCanonicalBase64(salt) && Buffer.from(salt, "base64").byteLength >= 8
     && isCanonicalBase64(digest) && Buffer.from(digest, "base64").byteLength >= 16;

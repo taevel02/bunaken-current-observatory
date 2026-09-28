@@ -18,7 +18,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: node --test packages/contracts/test/*.test.mjs apps/web/test/*.test.mjs
+      - run: node --conditions=react-server --test packages/contracts/test/*.test.mjs apps/web/test/*.test.mjs apps/web/test/auth-http.integration.mjs
       - run: pnpm build
   engine-contracts:
     runs-on: ubuntu-latest

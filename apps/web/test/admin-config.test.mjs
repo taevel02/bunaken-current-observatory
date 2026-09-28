@@ -54,3 +54,15 @@ test("malformed hash and non-32-byte session secret fail closed without echoing 
   });
   assert.equal(JSON.stringify(result).includes("short"), false);
 });
+
+test("Argon2id hashes below the configured work minimum fail closed", () => {
+  const result = getAdminAuthConfig({
+    ...validEnvironment,
+    ADMIN_PASSWORD_HASH: "$argon2id$v=19$m=1024,t=1,p=1$c2FsdDEyMzQ$ZGlnaWVzdC0xMjM0NTY3OA",
+  });
+  assert.deepEqual(result, {
+    enabled: false,
+    reason: "invalid_settings",
+    invalidKeys: ["ADMIN_PASSWORD_HASH"],
+  });
+});
