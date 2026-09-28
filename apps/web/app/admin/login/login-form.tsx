@@ -5,7 +5,7 @@ import { messages } from "../../../i18n/messages";
 
 type Locale = keyof typeof messages;
 
-export function AdminLoginForm({ locale }: { locale: Locale }) {
+export function AdminLoginForm({ locale, returnTo = `/${locale}/admin` }: { locale: Locale; returnTo?: string }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const copy = messages[locale];
@@ -30,7 +30,7 @@ export function AdminLoginForm({ locale }: { locale: Locale }) {
         const body = await response.json();
         throw new Error(body.error.message_key === "auth.invalidCredentials" ? auth.invalidCredentials : auth.unavailable);
       }
-      window.location.assign("/admin");
+      window.location.assign(returnTo);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : auth.unavailable);
     } finally {
