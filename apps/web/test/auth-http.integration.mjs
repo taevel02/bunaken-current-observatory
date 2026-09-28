@@ -116,6 +116,12 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const unauthenticated = await globalThis.fetch(`${baseUrl}/api/admin/session`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(unauthenticated.status, 401);
+  const koreanLoginPage = await globalThis.fetch(`${baseUrl}/ko/admin/login`);
+  const englishLoginPage = await globalThis.fetch(`${baseUrl}/en/admin/login`);
+  assert.equal(koreanLoginPage.status, 200);
+  assert.equal(englishLoginPage.status, 200);
+  assert.match(await koreanLoginPage.text(), /관리자 로그인/);
+  assert.match(await englishLoginPage.text(), /Administrator sign in/);
   const adminRedirect = await globalThis.fetch(`${baseUrl}/admin`, { redirect: "manual" });
   assert.equal(adminRedirect.status, 307);
   assert.equal(adminRedirect.headers.get("location"), "/admin/login");
