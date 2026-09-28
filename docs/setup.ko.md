@@ -28,7 +28,7 @@
 
 - Vercel 프로젝트는 이 저장소의 `main`을 production branch로 연결한다.
 - `data` push는 Vercel preview/production build를 만들지 않도록 Git integration의 branch/build 설정에서 제외한다. 배포 플랫폼의 현재 설정 화면에서 실제 동작을 확인한다.
-- 서버 환경변수는 Vercel의 서버 전용 변수로 설정한다. `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `ADMIN_ENABLED`, `ADMIN_AUTH_VERSION`, `SESSION_SECRET`, `IDEMPOTENCY_SECRET`, `GITHUB_WRITE_TOKEN`을 client-visible 또는 `NEXT_PUBLIC_` 변수로 만들지 않는다.
+- 서버 환경변수는 Vercel의 서버 전용 변수로 설정한다. `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `ADMIN_ENABLED`, `ADMIN_AUTH_VERSION`, `SESSION_SECRET`, `IDEMPOTENCY_SECRET`, `GITHUB_WRITE_TOKEN`, `PUBLIC_OBSERVER_ID`를 client-visible 또는 `NEXT_PUBLIC_` 변수로 만들지 않는다. `PUBLIC_OBSERVER_ID`는 공개 관측자 별칭으로 로그인 아이디와 분리한다.
 - 관리자 로그인 공개 전에 인증·CSRF·Origin 경계와 Vercel WAF의 `/api/auth/login` IP별 5분 10회 제한을 실제 배포에서 확인한다. 로컬 동작은 WAF 설정 검증을 대신하지 않는다.
 - 새 코드 배포는 `main` 보호 규칙을 통과시킨다. secret 변경에 따른 전체 세션 철회는 환경변수 변경과 production 재배포 절차로 수행한다. 과거 deployment URL도 별도로 차단하고, 유출된 이전 배포는 중지한다.
 

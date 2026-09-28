@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { witaDate, witaLocalToUtc } from "../time.mjs";
+import { validateCreateObservation, validateObservationRevision } from "../validate.mjs";
 
 const base = new URL("../", import.meta.url);
 const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "prediction", "release", "error-envelope"];
@@ -18,6 +19,29 @@ test("synthetic observation validates in shared create-request contract", async 
   const validate = ajv.getSchema("https://bunaken-current-observatory.example/schemas/create-request.schema.json");
   assert.ok(validate);
   assert.equal(validate(await fixture("observation-create")), true, JSON.stringify(validate.errors));
+});
+
+test("public observation exporter rejects unknown request fields and validates server revision shape", async () => {
+  const request = await fixture("observation-create");
+  assert.equal(validateCreateObservation(request).valid, true);
+  assert.equal(validateCreateObservation({ ...request, train_eligible: true, notes_private: "secret" }).valid, false);
+  const revision = {
+    ...request,
+    schema_version: "1.0",
+    observer_id: "synthetic-alias",
+    rubric_version: "pci-overall-v1",
+    revision: 1,
+    start_at: "2026-09-27T03:00:00.000Z",
+    end_at: null,
+    label_scope: "dive_overall",
+    record_status: "active",
+    created_at: "2026-09-27T03:01:00.000Z",
+    updated_at: "2026-09-27T03:01:00.000Z",
+    train_eligible: false,
+    observed_temperature: null,
+  };
+  assert.equal(validateObservationRevision(revision).valid, true);
+  assert.equal(validateObservationRevision({ ...revision, password: "never-public" }).valid, false);
 });
 
 test("synthetic source sample validates and stale/null remain explicit", async () => {

@@ -166,6 +166,19 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
 
   const authenticated = await globalThis.fetch(`${baseUrl}/api/admin/session`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(authenticated.status, 200);
+  const rejectedPublicFields = await globalThis.fetch(`${baseUrl}/api/admin/observations`, {
+    method: "POST",
+    headers: {
+      origin: baseUrl,
+      cookie: cookieHeader(jar),
+      "content-type": "application/json",
+      "x-csrf-token": csrfToken,
+    },
+    body: JSON.stringify({ id: "4f6f6c58-84a8-4dd5-b882-8ce58ee14b38", train_eligible: true, notes_private: "never public" }),
+  });
+  const rejectedBody = await rejectedPublicFields.text();
+  assert.equal(rejectedPublicFields.status, 422, `${rejectedBody} ${serverError}`);
+  assert.equal(JSON.parse(rejectedBody).error.code, "request_invalid");
   const adminPage = await globalThis.fetch(`${baseUrl}/admin`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(adminPage.status, 200);
 

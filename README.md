@@ -18,7 +18,7 @@ uv sync --project engine
 `pnpm install` creates `pnpm-lock.yaml`; commit it with dependency changes. `uv.lock` pins Python dependencies and runtime selection.
 The web workspace typechecks with TypeScript 7.0.2. A TypeScript 6.0 compatibility alias remains available for Next.js and ESLint tooling that still imports the TypeScript compiler API.
 
-For local administrator setup, copy `.env.example` to `.env.local`; `.env.local` is ignored by Git. Keep `ADMIN_ENABLED=false` until all required values are configured. Generate a password hash locally with `pnpm admin:hash`, copy its single-line output directly into `ADMIN_PASSWORD_HASH`, and never place the password or hash in shell arguments, source files, or logs. Use a unique random password from a password manager. Generate `SESSION_SECRET` with the command documented in `.env.example`.
+For local administrator setup, copy `.env.example` to `.env.local`; `.env.local` is ignored by Git. Keep `ADMIN_ENABLED=false` until all required values are configured. Generate a password hash locally with `pnpm admin:hash`, copy its single-line output directly into `ADMIN_PASSWORD_HASH`, and never place the password or hash in shell arguments, source files, or logs. Use a unique random password from a password manager. Generate `SESSION_SECRET` with the command documented in `.env.example`. Set `PUBLIC_OBSERVER_ID` to a stable public alias, separate from the login username.
 
 ## Commands
 
