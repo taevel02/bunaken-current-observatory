@@ -27,9 +27,15 @@ function createMemoryStore({ conflictCount = 0, loseResponseAfterCommit = false 
       if (content === undefined) throw new GitHubDataError("provider_not_found", 404);
       return content;
     },
+    readLatest(path) { return snapshots.get(head).get(path); },
     async commitFiles(parent, files) {
       if (conflictCount > 0) {
         conflictCount -= 1;
+        const competingSha = (++serial).toString(16).padStart(40, "0");
+        const competingSnapshot = new Map(snapshots.get(head));
+        competingSnapshot.set("research/unrelated.json", "{\"preserved\":true}\n");
+        snapshots.set(competingSha, competingSnapshot);
+        head = competingSha;
         throw new GitHubDataError("branch_conflict", 409, true);
       }
       if (parent !== head) throw new GitHubDataError("branch_conflict", 409, true);
@@ -102,4 +108,42 @@ test("canonical request hashing is key-order independent and raw idempotency key
   assert.match(keyDigest, /^[a-f0-9]{64}$/);
   assert.equal(keyDigest.includes(key), false);
   assert.throws(() => createIdempotencyDigest(key, "short"), ObservationStorageError);
+});
+
+test("retries after unrelated branch commits preserve their files", async () => {
+  const store = createMemoryStore({ conflictCount: 2 });
+  const result = await run(store);
+  assert.equal(result.revision, 1);
+  assert.equal(store.commits.length, 1);
+  assert.equal(store.readLatest("research/unrelated.json"), "{\"preserved\":true}\n");
+});
+
+test("concurrent duplicate writes create one commit; concurrent different payloads conflict", async () => {
+  const duplicateStore = createMemoryStore();
+  const duplicateResults = await Promise.all([run(duplicateStore), run(duplicateStore)]);
+  assert.equal(duplicateStore.commits.length, 1);
+  assert.equal(duplicateResults.filter((result) => result.idempotent_replay).length, 1);
+
+  const conflictingStore = createMemoryStore();
+  const conflictingResults = await Promise.allSettled([
+    run(conflictingStore, { requestHash: "a".repeat(64) }),
+    run(conflictingStore, { requestHash: "b".repeat(64) }),
+  ]);
+  assert.equal(conflictingStore.commits.length, 1);
+  assert.equal(conflictingResults.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(conflictingResults.find((result) => result.status === "rejected").reason.code, "idempotency_conflict");
+});
+
+test("same observation written with different keys yields a non-retryable revision conflict", async () => {
+  const store = createMemoryStore();
+  await run(store);
+  await assert.rejects(run(store, { requestKeyDigest: "4".repeat(64) }), (error) => error.code === "revision_conflict" && error.retryable === false);
+  assert.equal(store.commits.length, 1);
+});
+
+test("successful ref update with a lost response is recovered from the same ledger key", async () => {
+  const store = createMemoryStore({ loseResponseAfterCommit: true });
+  const result = await run(store);
+  assert.equal(result.idempotent_replay, true);
+  assert.equal(store.commits.length, 1);
 });
