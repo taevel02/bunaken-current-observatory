@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AdminLoginForm } from "../../../admin/login/login-form";
+import { AdminLoginForm } from "@/app/admin/login/login-form";
 
 export default async function LocalizedAdminLogin({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ returnTo?: string }> }) {
   const { locale } = await params;

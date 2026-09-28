@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
-import { getAdminAuthConfig } from "../../../../src/server/admin-config.mjs";
+import { getAdminAuthConfig } from "@/src/server/admin-config.mjs";
 import {
   createPreAuthContext,
   getPreAuthContext,
   issueCsrfToken,
   LOGIN_CSRF_SECONDS,
   setAuthCsrfContext,
-} from "../../../../src/server/admin-csrf.mjs";
-import { getAdminSession, ADMIN_SESSION_SECONDS } from "../../../../src/server/admin-session.mjs";
-import { apiError, apiSuccess, createCookieSink } from "../../../../src/server/api-response.mjs";
+} from "@/src/server/admin-csrf.mjs";
+import { getAdminSession, ADMIN_SESSION_SECONDS } from "@/src/server/admin-session.mjs";
+import { apiError, apiSuccess, createCookieSink } from "@/src/server/api-response.mjs";
 
 export const runtime = "nodejs";
 

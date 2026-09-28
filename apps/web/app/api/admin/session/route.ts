@@ -1,6 +1,6 @@
-import { getAdminAuthConfig } from "../../../../src/server/admin-config.mjs";
-import { getAdminSession } from "../../../../src/server/admin-session.mjs";
-import { apiError, apiSuccess } from "../../../../src/server/api-response.mjs";
+import { getAdminAuthConfig } from "@/src/server/admin-config.mjs";
+import { getAdminSession } from "@/src/server/admin-session.mjs";
+import { apiError, apiSuccess } from "@/src/server/api-response.mjs";
 import process from "node:process";
 
 export const runtime = "nodejs";

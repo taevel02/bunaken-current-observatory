@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { messages } from "../../../i18n/messages";
+import { messages } from "@/i18n/messages";
 
 type Locale = keyof typeof messages;
 

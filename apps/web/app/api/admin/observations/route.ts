@@ -3,21 +3,21 @@ import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { NextRequest } from "next/server";
 import { validateCreateObservation, validateObservationRevision } from "@bunaken/contracts/validate";
-import { getAdminAuthConfig } from "../../../../src/server/admin-config.mjs";
-import { hasAuthCsrfContext, validateCsrfToken } from "../../../../src/server/admin-csrf.mjs";
-import { apiError, apiSuccess } from "../../../../src/server/api-response.mjs";
-import { getGitHubDataConfig, GitHubDataStore } from "../../../../src/server/github-data-store.mjs";
-import { getAdminSession } from "../../../../src/server/admin-session.mjs";
+import { getAdminAuthConfig } from "@/src/server/admin-config.mjs";
+import { hasAuthCsrfContext, validateCsrfToken } from "@/src/server/admin-csrf.mjs";
+import { apiError, apiSuccess } from "@/src/server/api-response.mjs";
+import { getGitHubDataConfig, GitHubDataStore } from "@/src/server/github-data-store.mjs";
+import { getAdminSession } from "@/src/server/admin-session.mjs";
 import {
   commitObservationTransaction,
   createIdempotencyDigest,
   hashCanonicalPayload,
   ObservationStorageError,
-} from "../../../../src/server/observation-transaction.mjs";
-import { hasCanonicalOrigin } from "../../../../src/server/request-security.mjs";
-import { mapStorageError } from "../../../../src/server/storage-error.mjs";
-import { authorizeAdminRequest } from "../../../../src/server/admin-api-guard.mjs";
-import { listObservations } from "../../../../src/server/observation-queries.mjs";
+} from "@/src/server/observation-transaction.mjs";
+import { hasCanonicalOrigin } from "@/src/server/request-security.mjs";
+import { mapStorageError } from "@/src/server/storage-error.mjs";
+import { authorizeAdminRequest } from "@/src/server/admin-api-guard.mjs";
+import { listObservations } from "@/src/server/observation-queries.mjs";
 
 export const runtime = "nodejs";
 const MAX_REQUEST_BYTES = 16 * 1024;

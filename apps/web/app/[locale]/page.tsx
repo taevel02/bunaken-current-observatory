@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { messages } from "../../i18n/messages";
+import { messages } from "@/i18n/messages";
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

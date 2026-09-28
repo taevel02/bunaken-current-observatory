@@ -1,13 +1,13 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { NextRequest } from "next/server";
-import { authorizeAdminRequest } from "../../../../../../src/server/admin-api-guard.mjs";
-import { apiError, apiSuccess } from "../../../../../../src/server/api-response.mjs";
+import { authorizeAdminRequest } from "@/src/server/admin-api-guard.mjs";
+import { apiError, apiSuccess } from "@/src/server/api-response.mjs";
 import { validateObservationRevision } from "@bunaken/contracts/validate";
-import { getGitHubDataConfig, GitHubDataStore } from "../../../../../../src/server/github-data-store.mjs";
-import { hashCanonicalPayload, commitObservationTransaction, createIdempotencyDigest, ObservationStorageError } from "../../../../../../src/server/observation-transaction.mjs";
-import { readObservation, readRequestStatus } from "../../../../../../src/server/observation-queries.mjs";
-import { mapStorageError } from "../../../../../../src/server/storage-error.mjs";
+import { getGitHubDataConfig, GitHubDataStore } from "@/src/server/github-data-store.mjs";
+import { hashCanonicalPayload, commitObservationTransaction, createIdempotencyDigest, ObservationStorageError } from "@/src/server/observation-transaction.mjs";
+import { readObservation, readRequestStatus } from "@/src/server/observation-queries.mjs";
+import { mapStorageError } from "@/src/server/storage-error.mjs";
 
 export const runtime = "nodejs";
 const MAX_BODY_BYTES = 2048;

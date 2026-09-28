@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { messages } from "../../../i18n/messages";
+import { messages } from "@/i18n/messages";
 import styles from "./workspace.module.css";
 
 type Locale = "ko" | "en";

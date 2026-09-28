@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { getAdminAuthConfig } from "../../../src/server/admin-config.mjs";
-import { getAdminSession } from "../../../src/server/admin-session.mjs";
-import { ObservationWorkspace } from "../../admin/observations/observation-workspace";
+import { getAdminAuthConfig } from "@/src/server/admin-config.mjs";
+import { getAdminSession } from "@/src/server/admin-session.mjs";
+import { ObservationWorkspace } from "@/app/admin/observations/observation-workspace";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

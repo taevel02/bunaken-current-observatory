@@ -3,16 +3,16 @@ import argon2 from "argon2";
 import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest } from "next/server";
-import { getAdminAuthConfig } from "../../../../src/server/admin-config.mjs";
+import { getAdminAuthConfig } from "@/src/server/admin-config.mjs";
 import {
   getPreAuthContext,
   issueCsrfToken,
   setAuthCsrfContext,
   validateCsrfToken,
-} from "../../../../src/server/admin-csrf.mjs";
-import { createAdminSession, ADMIN_SESSION_SECONDS } from "../../../../src/server/admin-session.mjs";
-import { apiError, apiSuccess, createCookieSink } from "../../../../src/server/api-response.mjs";
-import { hasCanonicalOrigin } from "../../../../src/server/request-security.mjs";
+} from "@/src/server/admin-csrf.mjs";
+import { createAdminSession, ADMIN_SESSION_SECONDS } from "@/src/server/admin-session.mjs";
+import { apiError, apiSuccess, createCookieSink } from "@/src/server/api-response.mjs";
+import { hasCanonicalOrigin } from "@/src/server/request-security.mjs";
 
 export const runtime = "nodejs";
 const MAX_REQUEST_BYTES = 16 * 1024;

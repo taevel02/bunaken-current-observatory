@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminAuthConfig } from "../../../../src/server/admin-config.mjs";
+import { getAdminAuthConfig } from "@/src/server/admin-config.mjs";
 import {
   CSRF_CONTEXT_COOKIE,
   CSRF_COOKIE,
   hasAuthCsrfContext,
   validateCsrfToken,
-} from "../../../../src/server/admin-csrf.mjs";
-import { destroyAdminSession, getAdminSession, ADMIN_SESSION_COOKIE } from "../../../../src/server/admin-session.mjs";
-import { apiError, PRIVATE_NO_STORE } from "../../../../src/server/api-response.mjs";
-import { hasCanonicalOrigin } from "../../../../src/server/request-security.mjs";
+} from "@/src/server/admin-csrf.mjs";
+import { destroyAdminSession, getAdminSession, ADMIN_SESSION_COOKIE } from "@/src/server/admin-session.mjs";
+import { apiError, PRIVATE_NO_STORE } from "@/src/server/api-response.mjs";
+import { hasCanonicalOrigin } from "@/src/server/request-security.mjs";
 
 export const runtime = "nodejs";
 

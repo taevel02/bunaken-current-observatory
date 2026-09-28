@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { errorEnvelope } from "../../../../src/api/error";
+import { errorEnvelope } from "@/src/api/error";
 
 export function GET() {
   return NextResponse.json({ status: "unavailable", reason: "no_snapshot_configured" });
