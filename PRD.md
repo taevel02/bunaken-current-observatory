@@ -1,11 +1,13 @@
 # 부나켄 조류 관측과 예측 서비스 제품 요구사항
 
-문서 버전: 1.1  
+문서 버전: 1.2\
 작성일: 2026-09-27  
 제품 가칭: Bunaken Current Observatory  
 기본 언어: 한국어 `ko` · 추가 언어: 영어 `en`  
 서비스 기준 시간대: `Asia/Makassar` · WITA · UTC+08:00  
 상태: 구현 기준 문서. 실제 데이터 공급 연결, 인증 설정, 배포 및 성능 검증은 아직 수행하지 않았다.
+
+1.2 변경: `시작 수심`을 Overall PCI의 `대표 관측 수심`으로 바로잡고, 수직조류 시작 수심은 사건별로 기록한다. 신규 observation revision schema는 1.1로 올리고, 기존 1.0 기록은 읽기 호환한다. 시간대별 표본은 별도 관측으로 보존하며 Overall 학습 label에 합치지 않는다.
 
 1.1 변경: 자체 관리자 비밀번호 인증과 공개 저장소 직접 누적 방식으로 전환했다. 외부 OAuth, 비공개 저장소, 비공개 관측 저장 후 공개 전환 단계를 제거했다. 예측·PCI·다국어의 기존 원칙은 유지한다.
 
@@ -156,7 +158,7 @@ PCI는 개인 관찰자가 같은 기준으로 반복 기록하는 무차원 체
 
 필수 수치 입력은 `overall_pci` 한 개다. `peak_pci`, 사건 시각·수심·Zone은 선택 입력이다. overall은 다이빙 전체의 대표적인 체감 수준을 회상하여 기록한다. 순간적인 강한 사건은 Peak로 보존한다. Peak가 overall보다 작으면 오류로 처리한다.
 
-전체 다이빙 target과 순간 사건 target을 같은 label로 학습하지 않는다. v1 예측은 특정 시각에 시작하는 기준 60분 다이빙의 대표 PCI를 대상으로 한다. 학습에서는 실제 start/end 구간의 환경 요약을 사용한다. end가 없으면 60분 구간을 가정하고 `window_inferred=true`와 품질 감소를 남긴다. anchor처럼 구간 의미 자체가 불명인 기록은 의미가 확인되기 전에는 학습 제외다. 30분 간격 출력은 겹치는 60분 구간의 추정이며 독립적인 30분 관측이 아니다.
+전체 다이빙 target과 순간 사건 target을 같은 label로 학습하지 않는다. 수직 방향 변화가 Peak PCI와 일치하지 않을 수도 있으므로 사건의 PCI는 비워 둔 채 시작 시각·수심·방향만 기록할 수 있다. v1 예측은 특정 시각에 시작하는 기준 60분 다이빙의 대표 PCI를 대상으로 한다. 학습에서는 실제 start/end 구간의 환경 요약을 사용한다. end가 없으면 60분 구간을 가정하고 `window_inferred=true`와 품질 감소를 남긴다. anchor처럼 구간 의미 자체가 불명인 기록은 의미가 확인되기 전에는 학습 제외다. 30분 간격 출력은 겹치는 60분 구간의 추정이며 독립적인 30분 관측이 아니다.
 
 다중 Zone 이동은 선택 경로로 저장한다. 주된 Zone을 특정할 수 없으면 Site 수준 기록으로 남기고 Exact Zone 계수를 부여하지 않는다. Peak 예측 모델은 별도 검증 데이터가 충분할 때 확장하며 v1에서는 Peak 기록과 사건 탐색만 제공한다.
 
@@ -166,12 +168,16 @@ PCI는 개인 관찰자가 같은 기준으로 반복 기록하는 무차원 체
 
 | 구분 | 필드 및 동작 |
 |---|---|
-| 필수 | 날짜·입수 시각, Site, Zone 선택 또는 unknown, 시작 수심, overall PCI, 수직 방향 선택 |
+| 필수 | 날짜·입수 시각, Site, Zone 선택 또는 unknown, 대표 관측 수심(모르면 unknown), overall PCI, 수직 방향 선택 |
 | 기본값 | 날짜는 WITA 오늘, 관측 확신도 normal. 시각·PCI·수직 방향은 자동 확정하지 않음 |
-| 선택 | 출수 시각, 대표 관측 수심, 수평 방향, 수직 강도, Peak PCI/시각/수심/Zone, 수온/측정 수심, 메모 |
+| 선택 | 출수 시각, 주요 경로 메모, 수직 강도, Peak PCI/시각/수심/Zone/지속 설명, 수직조류가 시작한 시각·수심, 시간대별 Zone·수심·실측 수온·체감 PCI·진행 경로 기준 방향, 공개 메모 |
 | 시스템 | 관찰자 ID, rubric 버전, 저장 시각, revision, 환경 결합 상태, snapshot 참조 |
 
-시작 수심은 필수지만 전체 관측을 대표한다고 단정하지 않는다. 대표 관측 수심이 없으면 시작 수심을 proxy로 쓰고 품질 플래그를 남긴다. Zone 기본 수심을 사용자 관측 수심으로 조용히 복사하지 않는다. 수온만 기록하고 수심을 모르는 경우 원문은 보존하지만 수심별 calibration에서는 제외한다.
+대표 관측 수심은 Overall PCI를 평가할 때 주로 조류를 느낀 수심이다. 최대수심, 입수 직후 수심, 상승/하강조류가 시작된 수심을 뜻하지 않는다. 여러 수심에서 조류가 달랐다면 시각·Zone·수심별 사건을 추가로 기록한다. 한 대표 수심을 정할 수 없으면 unknown으로 보존하고 수심 관련 numeric 학습에서 제외한다. 수직조류가 시작된 수심은 해당 방향 사건의 수심으로 따로 기록한다. Zone 기본 수심을 사용자 관측 수심으로 복사하지 않는다. 수온의 측정 수심·시각을 모르면 원문은 보존하지만 수심별 calibration에서는 제외한다.
+
+시간대별 표본은 시각별 현장 맥락을 보존하는 부가 관측이며 Overall PCI label이나 독립 다이빙 label이 아니다. 표본의 체감 PCI는 무차원 관찰값으로 표시하고 m/s로 환산하지 않는다. 수평 방향은 실제 지리 bearing을 추정하지 않고 다이버의 진행 경로 기준 `with_route / against_route / crossing_route / unknown`으로 저장한다. Peak 사건과 수직조류 시작 사건은 PCI가 비어 있어도 시각·수심·방향을 저장할 수 있다.
+
+Peak의 지속 설명은 자유 텍스트로 보존하며 초 단위로 환산하지 않는다. 예를 들어 반복 구간이나 시간을 측정하지 못했다는 내용을 원문으로 남긴다.
 
 ### 4.2 입력과 저장 흐름
 
@@ -349,13 +355,16 @@ backfills/2026-09-19/{backfillId}/manifest.json
 | Site | id, slug, name_ko, name_en, lat, lon, geometry_status, public_description_ko/en |
 | Zone | id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at |
 | Observer | id, rubric_id, anchor_reference_ids, public_alias |
-| Observation | id, revision, observer_id, rubric_version, site_id, zone_id nullable, start_at, end_at nullable, time_precision, start_depth_m, representative_depth_m nullable, overall_pci nullable, label_scope, legacy_category nullable, vertical, confidence, peak_events, observed_temperature, notes_public, public_summary_ko/en, record_status, use_for_model, train_eligible, created_at, updated_at |
-| PeakEvent | id, parent_observation_id, zone_id nullable, at nullable, depth_m nullable, pci nullable, vertical_direction, vertical_intensity nullable |
+| Observation | id, schema_version, revision, observer_id, rubric_version, site_id, zone_id nullable, route_description, start_at, end_at nullable, time_precision, representative_depth_m nullable, overall_pci nullable, label_scope, legacy_category nullable, vertical, vertical_onset nullable, confidence, peak_events, time_samples, observed_temperature, notes_public, public_summary_ko/en, record_status, use_for_model, train_eligible, created_at, updated_at |
+| PeakEvent | id, parent_observation_id, zone_id nullable, local_at/at nullable, depth_m nullable, pci nullable, duration_description nullable, vertical_direction, vertical_intensity nullable |
+| TimeSample | id, parent_observation_id, local_at/at, zone_id nullable, depth_m nullable, temperature_c nullable, perceived_pci nullable, horizontal_direction |
 | EnvironmentLink | observation_id, observation_revision, snapshot_id nullable, backfill_id nullable, provenance, feature_vector, feature_mask, quality_flags, extraction_version |
 | Snapshot | id, run metadata, source metadata, issued/retrieved/valid times, source_resolution, geometry/scaler/model versions, hashes |
 | Prediction | site_id, zone_id nullable, start_at, duration_minutes, reference_depth_m, pci nullable, prediction_status, support, n_eff, n_eff_days, distinct_days, same_site_days, vertical_evidence, feature_coverage, reason_codes, model_version, snapshot_id |
 | ResearchRelease | id, slug, version, status, data_cutoff, dataset_manifest_hash, model_version, metrics_hash, peer_review_status, four_document_paths, references, changelog, published_at |
 | AuditEvent | id, actor_alias, action, entity_id, previous_revision, new_revision, request_digest, timestamp, parent_commit_sha |
+
+관측용 초기 Site registry는 `packages/contracts/data/sites.json`에 둔다. Lekuan 1/2/3, Celah Celah, Alung Banua, Johnson's Wall, Fukui, Ron's Point, Mandolin, Tengah, Raymond's Point, Mike's Point, Tanjung Parigi, Sachiko's Point, Pahepa, Bunaken Timur 1/2, Pangalisang, Muka Kampung을 포함한다. 입력·수정 UI는 해당 목록을 드롭다운으로 제공하고 stable `site_id`를 저장한다. 좌표와 geometry는 검증 전까지 null/unverified다.
 
 신규 기록과 달리 과거 기록의 이관에는 `overall_pci=null`을 허용한다. 이는 기존 카테고리 기록을 원래 의미대로 보존하기 위한 예외다.
 
@@ -365,7 +374,7 @@ backfills/2026-09-19/{backfillId}/manifest.json
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "id": "11111111-1111-4111-8111-111111111111",
   "revision": 1,
   "observer_id": "observer_demo",
@@ -375,14 +384,20 @@ backfills/2026-09-19/{backfillId}/manifest.json
   "timezone": "Asia/Makassar",
   "start_at": "2026-09-28T02:00:00Z",
   "end_at": "2026-09-28T03:00:00Z",
+  "local_start": "2026-09-28T10:00",
+  "local_end": "2026-09-28T11:00",
   "time_precision": "reported_minute",
-  "start_depth_m": 15,
+  "route_description": "가상 경로 메모",
   "representative_depth_m": 18,
   "overall_pci": 0.45,
   "label_scope": "dive_overall",
   "vertical": {"direction": "unknown", "intensity": null},
+  "vertical_onset": null,
   "confidence": "normal",
   "peak_events": [],
+  "time_samples": [
+    {"id": "22222222-2222-4222-8222-222222222222", "local_at": "2026-09-28T10:20", "at": "2026-09-28T02:20:00Z", "zone_id": "zone_demo", "depth_m": 18, "temperature_c": 28.1, "perceived_pci": 0.4, "horizontal_direction": "against_route"}
+  ],
   "observed_temperature": {"celsius": 28.1, "depth_m": 18, "at": null},
   "record_status": "active",
   "use_for_model": true,

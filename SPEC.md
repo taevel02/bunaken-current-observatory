@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.0  
-작성일: 2026-09-27  
-기준: [PRD.md](PRD.md) v1.1 · [AGENTS.md](AGENTS.md)  
+버전: 1.1\
+작성일: 2026-09-29\
+기준: [PRD.md](PRD.md) v1.2 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -49,7 +49,7 @@ main은 코드 검토·검증 규칙을 적용한다. data는 관리자 서버�
 | ADMIN_PASSWORD_HASH | salt·알고리즘·파라미터를 포함한 encoded Argon2id hash |
 | ADMIN_ENABLED | 명시적 boolean 설정. 미설정은 false |
 | ADMIN_AUTH_VERSION | 비어 있지 않은 버전 문자열. 비밀번호 변경 시 증가/교체 |
-| SESSION_SECRET | 32바이트 난수의 unpadded base64url 문자열. 검증된 세션 라이브러리용 |
+| SESSION_SECRET | 검증된 세션 라이브러리가 요구하는 고엔트로피 키 |
 | IDEMPOTENCY_SECRET | 요청 digest용 독립 HMAC key |
 | GITHUB_WRITE_TOKEN | 지정 공개 저장소의 Contents read/write, 만료일 있는 fine-grained PAT |
 | GITHUB_OWNER / GITHUB_REPO | 서버 고정 저장소 식별자 |
@@ -57,8 +57,6 @@ main은 코드 검토·검증 규칙을 적용한다. data는 관리자 서버�
 | CANONICAL_ORIGIN | production 관리자 접근을 허용하는 HTTPS origin |
 
 CANONICAL_ORIGIN은 PRD의 canonical origin 검사를 구현하기 위한 설정 이름이다. 개발용 localhost origin은 개발 환경에만 명시적으로 허용한다. 운영 비밀을 NEXT_PUBLIC 변수로 노출하지 않는다. 소스 자격증명은 원칙적으로 수집 workflow의 Secrets에만 둔다.
-
-`ADMIN_ENABLED`가 `true`일 때만 관리자 인증 구성을 활성화한다. 활성화 시 username, Argon2id encoded hash, auth version, 32바이트 session secret이 모두 유효해야 한다. 누락·형식 오류는 인증 구성을 비활성화한다. `SESSION_SECRET` 생성: `node -e 'console.log(require("node:crypto").randomBytes(32).toString("base64url"))'`.
 
 stable 관리자 subject는 로그인 이름이 아닌 내부 고정 식별자다. 초기 구현은 단일 관리자를 뜻하는 고정 subject를 사용한다. 사용자명 변경·세션 재발급이 같은 요청의 멱등성을 바꾸면 안 된다.
 
@@ -87,7 +85,7 @@ CSRF 구현은 검증된 세션/CSRF 라이브러리의 signed double-submit 등
 
 ### 4.1 Site와 Zone
 
-Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. Zone은 id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at을 가진다. 확인되지 않은 좌표·방향·수심은 null과 unverified로 남긴다.
+Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측 입력의 등록 Site 목록과 stable ID는 `packages/contracts/data/sites.json`을 단일 원본으로 삼으며 새 관측·수정 폼은 목록에서 선택한다. 표시명은 각각의 stable ID로 저장하며 등록되지 않은 이름은 서버가 거부한다. 좌표·geometry는 확인되지 않았으므로 이 목록에서 만들지 않는다. Zone은 id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at을 가진다. 확인되지 않은 좌표·방향·수심은 null과 unverified로 남긴다.
 
 서버는 Zone이 Site에 속하는지 검사한다. unknown Zone은 null이다. Site명 변경은 ID를 변경하지 않는다. 검증되지 않은 geometry로 Ocean group 또는 유사 지형 multiplier를 구성하지 않는다. 기본 depth는 예측 기준이지 실제 관측 수심의 자동 입력값이 아니다.
 
@@ -102,12 +100,14 @@ Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. Zone�
 | time_precision | 예 | reported_minute 또는 approximate |
 | site_id | 예 | 등록된 Site |
 | zone_id | 키 필수 | 등록된 Zone 또는 null |
-| start_depth_m | 예 | 0–200 |
-| representative_depth_m | 아니오 | 0–200 또는 null |
+| route_description | 예 | string, 최대 300자. 빈 문자열 허용, 학습 feature 아님 |
+| representative_depth_m | 예 | 0–200 또는 null. Overall PCI를 대표하는 수심이며 모르면 null |
 | overall_pci | 예 | 0 이상, 소수 둘째 자리까지, 상한 없음 |
 | vertical | 예 | direction과 nullable intensity |
+| vertical_onset | 예 | null 또는 수직조류 시작 local 시각·UTC 시각·수심. Peak PCI와 독립 |
 | confidence | 예 | high/normal/low. UI 기본 normal을 보이게 표시 |
-| peak_events | 예 | 없으면 빈 배열 |
+| peak_events | 예 | 없으면 빈 배열. PCI·시각·수심·Zone·지속 설명·수직 방향. 사건 시각은 WITA local 시각으로 입력하며 UTC는 서버 생성 |
+| time_samples | 예 | 없으면 빈 배열, 최대 50개. 시각·Zone·수심·실측 수온·체감 PCI·진행 경로 기준 수평 방향 |
 | observed_temperature | 아니오 | celsius, nullable depth_m와 at |
 | notes_public | 아니오 | 최대 5,000자, 공개 가능한 원문 |
 | public_summary_ko/en | 아니오 | 언어별 최대 1,000자 |
@@ -115,15 +115,17 @@ Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. Zone�
 
 추가 프로퍼티는 거부한다. client가 observer_id, revision, train_eligible, label_scope, created_at, storage path를 설정하지 못하게 한다. 신규 입력의 label_scope는 서버가 dive_overall로 지정한다. 과거 이관 경로는 별도 관리자 도구에서 legacy_unspecified 및 null numeric을 허용한다. 일반 폼의 validation을 느슨하게 해서 과거 자료를 우회 입력하지 않는다.
 
-수직 direction은 unknown/none/down/up/mixed다. unknown의 intensity는 null, none은 0 또는 null, 다른 방향은 0 이상의 유한 값 또는 null이다. mixed의 방향별 사건 근거는 peak_events 등에 구분해서 저장한다. 9/19 PCI=1.0을 vertical intensity=1.0으로 변환하지 않는다.
+수직 direction은 unknown/none/down/up/mixed다. unknown의 intensity는 null, none은 0 또는 null, 다른 방향은 0 이상의 유한 값 또는 null이다. 수직 시작 시각·수심은 `vertical_onset`에 따로 저장하며 Peak PCI와 결합하지 않는다. mixed의 방향별 사건 근거는 peak_events 등에 구분해서 저장한다. 9/19 PCI=1.0을 vertical intensity=1.0으로 변환하지 않는다.
 
-PeakEvent는 UUID, nullable at/depth_m/zone_id/pci, vertical_direction, nullable vertical_intensity를 갖는다. peak PCI가 있으면 overall 이상이어야 한다. 시각이 명시되면 알려진 dive 범위와 일치하는지 검사한다. 범위가 불명확한 과거 사건은 precision/quality flag로 보존한다. 전체와 사건 label은 같은 학습행으로 취급하지 않는다.
+PeakEvent는 UUID, nullable local/UTC at, depth_m/zone_id/pci, nullable duration_description(최대 300자), vertical_direction, nullable vertical_intensity를 갖는다. duration_description은 측정된 초로 오인하지 않도록 원문 설명으로 보존한다. peak PCI가 있으면 overall 이상이어야 한다. 시각이 명시되면 알려진 dive 범위와 일치하는지 검사한다. 범위가 불명확한 과거 사건은 precision/quality flag로 보존한다. 전체와 사건 label은 같은 학습행으로 취급하지 않는다.
+
+TimeSample은 다이빙 중 특정 시점의 부가 관측이다. `perceived_pci`는 관찰자의 무차원 체감값이며 m/s가 아니다. 방향은 `with_route / against_route / crossing_route / unknown`으로 보존한다. TimeSample과 vertical_onset은 Overall 학습 label이 아니며 Overall PCI를 대체하거나 분할하지 않는다. 입력의 local 시각을 보존하고 UTC 시각은 서버가 생성한다.
 
 수온은 -3–45°C 범위를 검사한다. 깊이·시각을 모르면 null로 저장하며 depth calibration에서는 제외한다. 미래 시각 오류는 서버 시간을 기준으로 검사한다. 구현은 장치 시계 오차 허용 정책을 설정으로 명시하고 임의로 날짜를 고치지 않는다.
 
 ### 4.3 저장된 관측
 
-저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
+저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. 현재 revision은 schema_version `1.1`이며 시작 수심 필드를 저장하지 않는다. 이미 저장된 `1.0` revision은 `start_depth_m`를 보존한 채 읽을 수 있다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
 
 관측 원본과 EnvironmentLink를 분리한다. train_eligible의 정본은 observation_revision에 연결된 검증 결과다. 공개 관측 API가 이를 표시할 때 원본과 link를 합성한다. 요청 직후 아직 link가 없으면 false와 `pending_enrichment`로 표시한다. 환경 재처리만으로 관측 원문 revision을 늘리거나 label을 바꾸지 않는다.
 
@@ -263,7 +265,7 @@ Git ref 반영 이후에만 저장 성공이다. timeout으로 결과가 불명�
 
 ### 7.1 추출
 
-학습 overall은 [start_at,end_at] 구간의 환경 요약을 사용한다. end가 없으면 60분, 대표 수심이 없으면 start_depth_m proxy를 사용하며 각각 flag와 quality 감소를 적용한다. 예측은 해당 시각부터 60분, Zone reference depth를 대상으로 한다. 30분 간격은 겹치는 구간 추정이다.
+학습 overall은 [start_at,end_at] 구간의 환경 요약을 사용한다. end가 없으면 60분 proxy와 품질 감소를 적용한다. 대표 수심이 null이면 임의 수심 proxy를 만들지 않고 수심 관련 numeric 학습에서 제외한다. 예측은 해당 시각부터 60분, Zone reference depth를 대상으로 한다. 30분 간격은 겹치는 구간 추정이다.
 
 Tide는 구간 중심 전후 60분의 rate, 조차와 위상 sin/cos를 포함한다. Ocean은 along/cross current, 기준 depth current, 수평 유속의 깊이 차이, Thermal은 모델 수온·ΔT·가능한 성층 proxy, Weather는 바람·파랑·너울, Depth는 관측과 목표 수심 차이를 포함한다. feature 이름·단위·필요 source·aggregation·정규화 규칙은 versioned feature registry로 고정한다.
 
