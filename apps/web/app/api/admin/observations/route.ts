@@ -133,11 +133,6 @@ export async function POST(request: NextRequest) {
       const timestamp = Date.parse(at);
       return timestamp >= Date.parse(startAt) && (endAt === null || timestamp <= Date.parse(endAt));
     };
-    const timeSamples = (requestBody.time_samples ?? []).map((sample: { local_at: string }) => {
-      const at = localTimeToUtc(sample.local_at);
-      if (!isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
-      return { ...sample, at };
-    });
     const peakEvents = requestBody.peak_events.map((event: { local_at?: string | null; at?: string | null; depth_m?: number | null; zone_id?: string | null; duration_description?: string | null; context_description?: string | null }) => {
       const at = event.local_at ? localTimeToUtc(event.local_at) : event.at ?? null;
       if (at !== null && !isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
@@ -159,17 +154,17 @@ export async function POST(request: NextRequest) {
     if (verticalOnset?.at && !isWithinDive(verticalOnset.at)) throw new ObservationStorageError("request_invalid", false, 422);
     const requestFields = { ...requestBody };
     delete requestFields.start_depth_m;
+    delete requestFields.time_samples;
 
     const revisionDocument: Record<string, unknown> = {
       ...requestFields,
-      schema_version: "1.2",
+      schema_version: "1.3",
       observer_id: observerId,
       rubric_version: "pci-overall-v1",
       revision: 1,
       start_at: startAt,
       end_at: endAt,
       peak_events: peakEvents,
-      time_samples: timeSamples,
       route_description: requestBody.route_description ?? "",
       vertical_onset: verticalOnset,
       observed_temperature: requestBody.observed_temperature ?? null,

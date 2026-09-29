@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.2\
-작성일: 2026-09-29\
-기준: [PRD.md](PRD.md) v1.3 · [AGENTS.md](AGENTS.md)\
+버전: 1.3\
+작성일: 2026-09-30\
+기준: [PRD.md](PRD.md) v1.4 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -107,13 +107,14 @@ Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측
 | vertical_onset | 예 | null 또는 수직조류 시작 local 시각·UTC 시각·수심. Peak PCI와 독립 |
 | confidence | 예 | high/normal/low. UI 기본 normal을 보이게 표시 |
 | peak_events | 예 | 없으면 빈 배열. PCI·시각·수심·Zone·지속 설명·수직 방향. 사건 시각은 WITA local 시각으로 입력하며 UTC는 서버 생성 |
-| time_samples | 예 | 없으면 빈 배열, 최대 50개. 시각·Zone·수심·실측 수온·체감 PCI·진행 경로 기준 수평 방향 |
 | observed_temperature | 아니오 | celsius, nullable depth_m와 at |
 | notes_public | 아니오 | 최대 5,000자, 공개 가능한 원문 |
 | public_summary_ko/en | 아니오 | 언어별 최대 1,000자 |
 | use_for_model | 예 | boolean, UI 기본 true를 명시 |
 
 현장 입력 기본 화면의 필수값은 WITA 입수 시각, 등록 Site, Overall PCI다. 나머지는 선택 항목으로 표시하고 접힌 상세 그룹에 둔다. 모든 날짜·시각은 중복된 date/time 컨트롤 대신 `YYYY-MM-DDTHH:mm`의 WITA `datetime-local` 입력 하나로 받는다. Peak 사건의 지속 설명은 반복 양상 등 지속 방식의 원문이고 `context_description`은 당시 조류·지형 등 상황 원문이다. PCI·시각이 없어도 당시 상황이나 지속 설명은 원문으로 남길 수 있지만, 내용이 전혀 없는 Peak 사건은 저장하지 않는다. 관측 일반 메모 `notes_public`과 사건 상황 설명을 합치지 않는다. 저장 전에 공개되는 정보임을 표시한다.
+
+`time_samples`는 Overall 학습 label과 예측 입력에 쓰이지 않으므로 새 UI와 신규 schema 1.3 revision에 저장하지 않는다. create 요청 validator는 구버전 기기 초안의 미완료 멱등 요청을 마칠 수 있도록 legacy 필드를 선택적으로 검증하지만 서버는 신규 revision 작성 전에 제거한다. 기존 1.0–1.2 기록은 읽을 수 있다. 그 기록을 정정할 때 schema 1.3 revision에도 기존 표본을 변경 없이 보존한다. 구버전 정정 초안 재시도는 요청 hash가 유지되도록 검증된 기존 표본을 요청에 다시 포함할 수 있으며 서버는 제출값을 무시하고 기존 저장값만 보존한다.
 
 추가 프로퍼티는 거부한다. client가 observer_id, revision, train_eligible, label_scope, created_at, storage path를 설정하지 못하게 한다. 신규 입력의 label_scope는 서버가 dive_overall로 지정한다. 과거 이관 경로는 별도 관리자 도구에서 legacy_unspecified 및 null numeric을 허용한다. 일반 폼의 validation을 느슨하게 해서 과거 자료를 우회 입력하지 않는다.
 
@@ -127,7 +128,7 @@ TimeSample은 다이빙 중 특정 시점의 부가 관측이다. `perceived_pci
 
 ### 4.3 저장된 관측
 
-저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. 현재 revision은 schema_version `1.2`이며 시작 수심을 저장하지 않고 PeakEvent에 context_description을 보존한다. `1.0` 및 `1.1` revision은 기존 형상 그대로 읽을 수 있다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
+저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. 신규 기록과 일반 수정의 현재 schema_version은 `1.3`이며 시작 수심을 저장하지 않고 PeakEvent에 context_description을 보존한다. `1.0`–`1.2` revision은 기존 형상 그대로 읽을 수 있고, 그 기록의 `time_samples`는 schema 1.3 정정 revision에도 변경 없이 보존한다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
 
 관측 원본과 EnvironmentLink를 분리한다. train_eligible의 정본은 observation_revision에 연결된 검증 결과다. 공개 관측 API가 이를 표시할 때 원본과 link를 합성한다. 요청 직후 아직 link가 없으면 false와 `pending_enrichment`로 표시한다. 환경 재처리만으로 관측 원문 revision을 늘리거나 label을 바꾸지 않는다.
 

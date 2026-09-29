@@ -1,11 +1,13 @@
 # 부나켄 조류 관측과 예측 서비스 제품 요구사항
 
-문서 버전: 1.3\
-작성일: 2026-09-27  
+문서 버전: 1.4\
+작성일: 2026-09-30
 제품 가칭: Bunaken Current Observatory  
 기본 언어: 한국어 `ko` · 추가 언어: 영어 `en`  
 서비스 기준 시간대: `Asia/Makassar` · WITA · UTC+08:00  
 상태: 구현 기준 문서. 실제 데이터 공급 연결, 인증 설정, 배포 및 성능 검증은 아직 수행하지 않았다.
+
+1.4 변경: 학습·예측 입력으로 사용하지 않는 시간대별 부가 표본은 신규 입력·저장에서 제외한다. schema 1.3을 적용하고 과거 1.0–1.2 표본은 읽기 호환 및 정정 시 불변 보존한다.
 
 1.3 변경: 현장 입력에서 입수 시각·Site·Overall PCI만 필수로 먼저 제시한다. 같은 날짜를 반복 입력하지 않도록 WITA 날짜와 시각을 한 입력으로 받고 선택 항목은 접힌 상세로 분리한다. Peak 사건에 지속 양상과 구분되는 상황 설명을 추가한다. 저장 revision schema는 1.2로 올린다.
 
@@ -357,7 +359,7 @@ backfills/2026-09-19/{backfillId}/manifest.json
 | Site | id, slug, name_ko, name_en, lat, lon, geometry_status, public_description_ko/en |
 | Zone | id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at |
 | Observer | id, rubric_id, anchor_reference_ids, public_alias |
-| Observation | id, schema_version, revision, observer_id, rubric_version, site_id, zone_id nullable, route_description, start_at, end_at nullable, time_precision, representative_depth_m nullable, overall_pci nullable, label_scope, legacy_category nullable, vertical, vertical_onset nullable, confidence, peak_events, time_samples, observed_temperature, notes_public, public_summary_ko/en, record_status, use_for_model, train_eligible, created_at, updated_at |
+| Observation | id, schema_version, revision, observer_id, rubric_version, site_id, zone_id nullable, route_description, start_at, end_at nullable, time_precision, representative_depth_m nullable, overall_pci nullable, label_scope, legacy_category nullable, vertical, vertical_onset nullable, confidence, peak_events, observed_temperature, notes_public, public_summary_ko/en, record_status, use_for_model, train_eligible, created_at, updated_at. Historical schema 1.0–1.2 may contain immutable time_samples; schema 1.3 corrections preserve those legacy values unchanged. New records omit them. |
 | PeakEvent | id, parent_observation_id, zone_id nullable, local_at/at nullable, depth_m nullable, pci nullable, duration_description nullable, context_description nullable, vertical_direction, vertical_intensity nullable |
 | TimeSample | id, parent_observation_id, local_at/at, zone_id nullable, depth_m nullable, temperature_c nullable, perceived_pci nullable, horizontal_direction |
 | EnvironmentLink | observation_id, observation_revision, snapshot_id nullable, backfill_id nullable, provenance, feature_vector, feature_mask, quality_flags, extraction_version |
@@ -372,7 +374,7 @@ backfills/2026-09-19/{backfillId}/manifest.json
 
 ### 8.2 관측 JSON 예시
 
-아래는 스키마 설명용 가상 데이터이며 실제 관측으로 seed하지 않는다.
+아래는 schema 1.2 과거 호환 설명용 가상 데이터이며 실제 관측으로 seed하지 않는다. 신규 기록에는 `time_samples`를 저장하지 않는다. schema 1.0–1.2 기록의 정정 revision은 기존 표본을 변경 없이 보존한다. create 요청은 이전 클라이언트에서 만든 미완료 멱등 초안을 처리하기 위해 legacy `time_samples`를 선택적으로 검증할 수 있으며, 신규 기록 생성 전에 서버가 필드를 제거한다. 이전 정정 초안은 동일한 요청 hash로 재시도할 수 있도록 legacy 표본을 요청에 포함하고 서버는 저장된 기존 표본만 그대로 유지한다.
 
 ```json
 {

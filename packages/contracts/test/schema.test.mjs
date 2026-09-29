@@ -23,6 +23,7 @@ addFormats(ajv);
 for (const schema of schemas) ajv.addSchema(schema);
 
 async function fixture(name) { return JSON.parse(await readFile(new URL(`fixtures/synthetic/${name}.json`, base), "utf8")); }
+const legacyTimeSamples = [{ id: "41ea51b8-6e14-474c-8fe4-43b25c98b35c", local_at: "2026-09-27T11:12", at: "2026-09-27T03:12:00.000Z", zone_id: "synthetic-zone", depth_m: 18, temperature_c: 28.4, perceived_pci: 0.7, horizontal_direction: "against_route" }];
 
 test("synthetic observation validates in shared create-request contract", async () => {
   const validate = ajv.getSchema("https://bunaken-current-observatory.example/schemas/create-request.schema.json");
@@ -43,7 +44,7 @@ test("public observation exporter rejects unknown request fields and validates s
     start_at: "2026-09-27T03:00:00.000Z",
     end_at: "2026-09-27T03:20:00.000Z",
     peak_events: request.peak_events.map(event => ({ ...event, at: "2026-09-27T03:10:00.000Z" })),
-    time_samples: request.time_samples.map(sample => ({ ...sample, at: "2026-09-27T03:12:00.000Z" })),
+    time_samples: legacyTimeSamples,
     vertical_onset: null,
     label_scope: "dive_overall",
     record_status: "active",
@@ -53,6 +54,11 @@ test("public observation exporter rejects unknown request fields and validates s
     observed_temperature: null,
   };
   assert.equal(validateObservationRevision(revision).valid, true);
+  const newRevision = { ...revision, schema_version: "1.3" };
+  delete newRevision.time_samples;
+  assert.equal(validateObservationRevision(newRevision).valid, true);
+  const correctedLegacyRevision = { ...revision, schema_version: "1.3", revision: 2, record_status: "corrected", correction_reason: "Preserve legacy samples", updated_at: "2026-09-27T03:02:00.000Z" };
+  assert.equal(validateObservationRevision(correctedLegacyRevision).valid, true);
   const contextOnlyPeak = { ...revision, peak_events: [{ id: request.peak_events[0].id, local_at: null, at: null, depth_m: null, zone_id: null, pci: null, duration_description: null, context_description: "Current changed near the entrance.", vertical_direction: "unknown", vertical_intensity: null }] };
   assert.equal(validateObservationRevision(contextOnlyPeak).valid, true);
   const emptyPeakRequest = { ...request, peak_events: [{ id: request.peak_events[0].id, local_at: null, at: null, depth_m: null, zone_id: null, pci: null, duration_description: null, context_description: null, vertical_direction: "unknown", vertical_intensity: null }] };
@@ -114,7 +120,7 @@ test("legacy unsent drafts remain valid while new revisions omit dive start dept
     start_at: "2026-09-27T03:00:00.000Z",
     end_at: "2026-09-27T03:20:00.000Z",
     peak_events: observation.peak_events.map(event => ({ ...event, at: "2026-09-27T03:10:00.000Z" })),
-    time_samples: observation.time_samples.map(sample => ({ ...sample, at: "2026-09-27T03:12:00.000Z" })),
+    time_samples: legacyTimeSamples,
     label_scope: "dive_overall",
     record_status: "active",
     created_at: "2026-09-27T03:01:00.000Z",

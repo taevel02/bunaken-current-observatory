@@ -118,11 +118,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const endAt = toUtc(body.local_end as string | null);
     if (endAt && endAt <= startAt) throw new ObservationStorageError("request_invalid", false, 422);
     const isWithinDive = (at: string) => Date.parse(at) >= Date.parse(startAt) && (endAt === null || Date.parse(at) <= Date.parse(endAt));
-    const timeSamples = ((body.time_samples ?? []) as Array<{ local_at: string }>).map((sample) => {
-      const at = toUtc(sample.local_at) as string;
-      if (!isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
-      return { ...sample, at };
-    });
     const peakEvents = (body.peak_events as Array<{ local_at?: string | null; at?: string | null; depth_m?: number | null; zone_id?: string | null; duration_description?: string | null; context_description?: string | null }>).map((event) => {
       const at = event.local_at ? toUtc(event.local_at) : event.at ?? null;
       if (at && !isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
@@ -141,16 +136,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (verticalOnset?.at && !isWithinDive(verticalOnset.at)) throw new ObservationStorageError("request_invalid", false, 422);
     const revisionFields = { ...body };
     delete revisionFields.start_depth_m;
+    delete revisionFields.time_samples;
     const document = {
       ...revisionFields,
-      schema_version: "1.2",
+      schema_version: "1.3",
       observer_id: current.revision.observer_id,
       rubric_version: current.revision.rubric_version,
       revision: expectedRevision + 1,
       start_at: startAt,
       end_at: endAt,
       peak_events: peakEvents,
-      time_samples: timeSamples,
+      ...(current.revision.time_samples ? { time_samples: current.revision.time_samples } : {}),
       route_description: body.route_description ?? "",
       vertical_onset: verticalOnset,
       observed_temperature: body.observed_temperature ?? null,

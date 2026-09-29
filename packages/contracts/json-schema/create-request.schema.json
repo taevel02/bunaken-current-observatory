@@ -46,6 +46,7 @@
       }
     },
     "time_samples": {
+      "description": "Accepted only to complete idempotent requests created by older clients; ignored when writing new revisions.",
       "type": "array",
       "maxItems": 50,
       "items": {
@@ -118,11 +119,10 @@
       "if": { "properties": { "start_depth_m": { "type": "number" } }, "required": ["start_depth_m"] },
       "then": {},
       "else": {
-        "required": ["route_description", "vertical_onset", "time_samples"],
+        "required": ["route_description", "vertical_onset"],
         "properties": {
           "route_description": {},
           "vertical_onset": {},
-          "time_samples": {},
           "peak_events": {
             "type": "array",
             "items": {
