@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { NextRequest } from "next/server";
 import { validateCreateObservation, validateObservationRevision } from "@bunaken/contracts/validate";
+import { resolveSiteId } from "@bunaken/contracts/sites";
 import { getAdminAuthConfig } from "@/src/server/admin-config.mjs";
 import { hasAuthCsrfContext, validateCsrfToken } from "@/src/server/admin-csrf.mjs";
 import { apiError, apiSuccess } from "@/src/server/api-response.mjs";
@@ -17,7 +18,7 @@ import {
 import { hasCanonicalOrigin } from "@/src/server/request-security.mjs";
 import { mapStorageError } from "@/src/server/storage-error.mjs";
 import { authorizeAdminRequest } from "@/src/server/admin-api-guard.mjs";
-import { listObservations } from "@/src/server/observation-queries.mjs";
+import { listObservations, readRequestStatus } from "@/src/server/observation-queries.mjs";
 
 export const runtime = "nodejs";
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -45,6 +46,13 @@ function localTimeToUtc(value: string) {
     throw new ObservationStorageError("request_invalid", false, 422);
   }
   return date.toISOString();
+}
+
+function utcToLocalTime(value: string) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Makassar", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).format(new Date(value)).replace(" ", "T");
 }
 
 async function readJsonBody(request: Request) {
@@ -99,11 +107,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const requestBody = await readJsonBody(request);
-    const validation = validateCreateObservation(requestBody);
-    if (!validation.valid) throw new ObservationStorageError("request_invalid", false, 422);
+    const rawRequestBody = await readJsonBody(request);
+    if (!rawRequestBody || typeof rawRequestBody !== "object" || Array.isArray(rawRequestBody)) throw new ObservationStorageError("request_invalid", false, 400);
     const key = request.headers.get("idempotency-key");
     const keyDigest = createIdempotencyDigest(key);
+    const requestHash = hashCanonicalPayload(rawRequestBody);
+    const store = new GitHubDataStore({ config: getGitHubDataConfig() });
+    const replay = await readRequestStatus(store, keyDigest, requestHash);
+    if (replay.found) return apiSuccess({ ...replay, saved_to_public_repository: true }, 200, { idempotent_replay: true });
+    const requestBody = { ...rawRequestBody, site_id: resolveSiteId(rawRequestBody.site_id) };
+    if (!requestBody.site_id) throw new ObservationStorageError("request_invalid", false, 422);
+    const validation = validateCreateObservation(requestBody);
+    if (!validation.valid) throw new ObservationStorageError("request_invalid", false, 422);
     const observerId = process.env.PUBLIC_OBSERVER_ID ?? "";
     if (!/^[a-z][a-z0-9_-]{0,63}$/.test(observerId)) throw new ObservationStorageError("storage_unavailable", false, 503);
 
@@ -114,15 +129,48 @@ export async function POST(request: NextRequest) {
     if (requestBody.peak_events.some((event: { pci: number | null }) => event.pci !== null && event.pci < requestBody.overall_pci)) {
       throw new ObservationStorageError("request_invalid", false, 422);
     }
+    const isWithinDive = (at: string) => {
+      const timestamp = Date.parse(at);
+      return timestamp >= Date.parse(startAt) && (endAt === null || timestamp <= Date.parse(endAt));
+    };
+    const timeSamples = (requestBody.time_samples ?? []).map((sample: { local_at: string }) => {
+      const at = localTimeToUtc(sample.local_at);
+      if (!isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
+      return { ...sample, at };
+    });
+    const peakEvents = requestBody.peak_events.map((event: { local_at?: string | null; at?: string | null; depth_m?: number | null; zone_id?: string | null; duration_description?: string | null }) => {
+      const at = event.local_at ? localTimeToUtc(event.local_at) : event.at ?? null;
+      if (at !== null && !isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
+      return {
+        ...event,
+        local_at: event.local_at ?? (at === null ? null : utcToLocalTime(at)),
+        at,
+        depth_m: event.depth_m ?? null,
+        zone_id: event.zone_id ?? null,
+        duration_description: event.duration_description ?? null,
+      };
+    });
+    const verticalOnsetInput = requestBody.vertical_onset ?? null;
+    const verticalOnset = verticalOnsetInput === null ? null : {
+      ...verticalOnsetInput,
+      at: verticalOnsetInput.local_at === null ? null : localTimeToUtc(verticalOnsetInput.local_at),
+    };
+    if (verticalOnset?.at && !isWithinDive(verticalOnset.at)) throw new ObservationStorageError("request_invalid", false, 422);
+    const requestFields = { ...requestBody };
+    delete requestFields.start_depth_m;
 
     const revisionDocument: Record<string, unknown> = {
-      ...requestBody,
-      schema_version: "1.0",
+      ...requestFields,
+      schema_version: "1.1",
       observer_id: observerId,
       rubric_version: "pci-overall-v1",
       revision: 1,
       start_at: startAt,
       end_at: endAt,
+      peak_events: peakEvents,
+      time_samples: timeSamples,
+      route_description: requestBody.route_description ?? "",
+      vertical_onset: verticalOnset,
       observed_temperature: requestBody.observed_temperature ?? null,
       label_scope: "dive_overall",
       record_status: "active",
@@ -133,11 +181,10 @@ export async function POST(request: NextRequest) {
     const revisionValidation = validateObservationRevision(revisionDocument);
     if (!revisionValidation.valid) throw new ObservationStorageError("storage_unavailable", false, 503);
 
-    const store = new GitHubDataStore({ config: getGitHubDataConfig() });
     const result = await commitObservationTransaction({
       store,
       requestKeyDigest: keyDigest,
-      requestHash: hashCanonicalPayload(requestBody),
+      requestHash,
       observationId: requestBody.id,
       expectedRevision: null,
       revisionDocument,

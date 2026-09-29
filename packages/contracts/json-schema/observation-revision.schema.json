@@ -7,14 +7,13 @@
   "required": [
     "id", "schema_version", "observer_id", "rubric_version", "revision",
     "start_at", "end_at", "local_start", "local_end", "timezone",
-    "time_precision", "site_id", "zone_id", "start_depth_m",
-    "representative_depth_m", "overall_pci", "vertical", "confidence",
-    "peak_events", "observed_temperature", "label_scope", "record_status",
-    "created_at", "updated_at", "train_eligible", "use_for_model"
+    "time_precision", "site_id", "zone_id", "representative_depth_m",
+    "overall_pci", "vertical", "confidence", "peak_events", "observed_temperature",
+    "label_scope", "record_status", "created_at", "updated_at", "train_eligible", "use_for_model"
   ],
   "properties": {
     "id": { "type": "string", "format": "uuid" },
-    "schema_version": { "const": "1.0" },
+    "schema_version": { "enum": ["1.0", "1.1"] },
     "observer_id": { "type": "string", "minLength": 1, "maxLength": 64 },
     "rubric_version": { "type": "string", "minLength": 1, "maxLength": 64 },
     "revision": { "type": "integer", "minimum": 1 },
@@ -28,11 +27,68 @@
     "zone_id": { "type": ["string", "null"] },
     "start_depth_m": { "type": "number", "minimum": 0, "maximum": 200 },
     "representative_depth_m": { "type": ["number", "null"], "minimum": 0, "maximum": 200 },
+    "route_description": { "type": "string", "maxLength": 300 },
     "overall_pci": { "type": ["number", "null"], "minimum": 0 },
     "vertical": { "$ref": "create-request.schema.json#/$defs/vertical" },
+    "vertical_onset": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["local_at", "at", "depth_m"],
+      "properties": {
+        "local_at": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$" },
+        "at": { "type": ["string", "null"], "format": "date-time" },
+        "depth_m": { "type": ["number", "null"], "minimum": 0, "maximum": 200 }
+      }
+    },
     "confidence": { "enum": ["high", "normal", "low"] },
-    "peak_events": { "$ref": "create-request.schema.json#/properties/peak_events" },
-    "observed_temperature": { "$ref": "create-request.schema.json#/properties/observed_temperature" },
+    "peak_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "pci", "vertical_direction", "vertical_intensity"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "local_at": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$" },
+          "at": { "type": ["string", "null"], "format": "date-time" },
+          "depth_m": { "type": ["number", "null"], "minimum": 0, "maximum": 200 },
+          "zone_id": { "type": ["string", "null"] },
+          "pci": { "type": ["number", "null"], "minimum": 0 },
+          "duration_description": { "type": ["string", "null"], "maxLength": 300 },
+          "vertical_direction": { "enum": ["unknown", "none", "down", "up", "mixed"] },
+          "vertical_intensity": { "type": ["number", "null"], "minimum": 0 }
+        }
+      }
+    },
+    "time_samples": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "local_at", "at", "zone_id", "depth_m", "temperature_c", "perceived_pci", "horizontal_direction"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "local_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$" },
+          "at": { "type": "string", "format": "date-time" },
+          "zone_id": { "type": ["string", "null"] },
+          "depth_m": { "type": ["number", "null"], "minimum": 0, "maximum": 200 },
+          "temperature_c": { "type": ["number", "null"], "minimum": -3, "maximum": 45 },
+          "perceived_pci": { "type": ["number", "null"], "minimum": 0 },
+          "horizontal_direction": { "enum": ["with_route", "against_route", "crossing_route", "unknown"] }
+        }
+      }
+    },
+    "observed_temperature": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["celsius", "depth_m", "at"],
+      "properties": {
+        "celsius": { "type": ["number", "null"], "minimum": -3, "maximum": 45 },
+        "depth_m": { "type": ["number", "null"], "minimum": 0, "maximum": 200 },
+        "at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
     "notes_public": { "type": "string", "maxLength": 5000 },
     "public_summary_ko": { "type": "string", "maxLength": 1000 },
     "public_summary_en": { "type": "string", "maxLength": 1000 },
@@ -43,5 +99,32 @@
     "correction_reason": { "type": "string" },
     "train_eligible": { "type": "boolean" },
     "use_for_model": { "type": "boolean" }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "schema_version": { "const": "1.0" } }, "required": ["schema_version"] },
+      "then": { "required": ["start_depth_m"], "properties": { "start_depth_m": { "type": "number" } } }
+    },
+    {
+      "if": { "properties": { "schema_version": { "const": "1.1" } }, "required": ["schema_version"] },
+      "then": {
+        "required": ["route_description", "vertical_onset", "time_samples"],
+        "not": { "required": ["start_depth_m"] },
+        "properties": {
+          "route_description": {},
+          "vertical_onset": {},
+          "time_samples": {},
+          "start_depth_m": {},
+          "peak_events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["local_at", "at", "depth_m", "zone_id", "duration_description"],
+              "properties": { "local_at": {}, "at": {}, "depth_m": {}, "zone_id": {}, "duration_description": {} }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

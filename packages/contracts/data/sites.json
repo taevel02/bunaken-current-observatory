@@ -1,0 +1,173 @@
+[
+  {
+    "id": "lekuan-1",
+    "slug": "lekuan-1",
+    "name_en": "Lekuan 1",
+    "name_ko": "Lekuan 1",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "lekuan-2",
+    "slug": "lekuan-2",
+    "name_en": "Lekuan 2",
+    "name_ko": "Lekuan 2",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "lekuan-3",
+    "slug": "lekuan-3",
+    "name_en": "Lekuan 3",
+    "name_ko": "Lekuan 3",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "celah-celah",
+    "slug": "celah-celah",
+    "name_en": "Celah Celah",
+    "name_ko": "Celah Celah",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "alung-banua",
+    "slug": "alung-banua",
+    "name_en": "Alung Banua",
+    "name_ko": "Alung Banua",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "johnsons-wall",
+    "slug": "johnsons-wall",
+    "name_en": "Johnson's Wall",
+    "name_ko": "Johnson's Wall",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "fukui",
+    "slug": "fukui",
+    "name_en": "Fukui",
+    "name_ko": "Fukui",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "rons-point",
+    "slug": "rons-point",
+    "name_en": "Ron's Point",
+    "name_ko": "Ron's Point",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "mandolin",
+    "slug": "mandolin",
+    "name_en": "Mandolin",
+    "name_ko": "Mandolin",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "tengah",
+    "slug": "tengah",
+    "name_en": "Tengah",
+    "name_ko": "Tengah",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "raymonds-point",
+    "slug": "raymonds-point",
+    "name_en": "Raymond's Point",
+    "name_ko": "Raymond's Point",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "mikes-point",
+    "slug": "mikes-point",
+    "name_en": "Mike's Point",
+    "name_ko": "Mike's Point",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "tanjung-parigi",
+    "slug": "tanjung-parigi",
+    "name_en": "Tanjung Parigi",
+    "name_ko": "Tanjung Parigi",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "sachikos-point",
+    "slug": "sachikos-point",
+    "name_en": "Sachiko's Point",
+    "name_ko": "Sachiko's Point",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "pahepa",
+    "slug": "pahepa",
+    "name_en": "Pahepa",
+    "name_ko": "Pahepa",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "bunaken-timur-1",
+    "slug": "bunaken-timur-1",
+    "name_en": "Bunaken Timur 1",
+    "name_ko": "Bunaken Timur 1",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "bunaken-timur-2",
+    "slug": "bunaken-timur-2",
+    "name_en": "Bunaken Timur 2",
+    "name_ko": "Bunaken Timur 2",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "pangalisang",
+    "slug": "pangalisang",
+    "name_en": "Pangalisang",
+    "name_ko": "Pangalisang",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  },
+  {
+    "id": "muka-kampung",
+    "slug": "muka-kampung",
+    "name_en": "Muka Kampung",
+    "name_ko": "Muka Kampung",
+    "lat": null,
+    "lon": null,
+    "geometry_status": "unverified"
+  }
+]

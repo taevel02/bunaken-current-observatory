@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { NextRequest } from "next/server";
 import { validateCreateObservation, validateObservationRevision } from "@bunaken/contracts/validate";
+import { resolveSiteId } from "@bunaken/contracts/sites";
 import { authorizeAdminRequest } from "@/src/server/admin-api-guard.mjs";
 import { apiError, apiSuccess } from "@/src/server/api-response.mjs";
 import { getGitHubDataConfig, GitHubDataStore } from "@/src/server/github-data-store.mjs";
@@ -25,6 +26,13 @@ function toUtc(local: string | null) {
     throw new ObservationStorageError("request_invalid", false, 422);
   }
   return date.toISOString();
+}
+
+function toWitaLocal(utc: string) {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Makassar", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).format(new Date(utc)).replace(" ", "T");
 }
 
 async function readJsonBody(request: Request) {
@@ -83,30 +91,67 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const expectedRevision = getIfMatchRevision(request, id);
     const rawBody = await readJsonBody(request);
     if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) throw new ObservationStorageError("request_invalid", false, 400);
-    const { correction_reason: reason, ...body } = rawBody as Record<string, unknown>;
-    if (typeof reason !== "string" || reason.trim().length < 1 || reason.trim().length > 1000 || body.id !== id) {
+    const { correction_reason: reason, ...rawFields } = rawBody as Record<string, unknown>;
+    if (typeof reason !== "string" || reason.trim().length < 1 || reason.trim().length > 1000 || rawFields.id !== id) {
       throw new ObservationStorageError("request_invalid", false, 422);
     }
-    const validation = validateCreateObservation(body);
-    if (!validation.valid) throw new ObservationStorageError("request_invalid", false, 422);
     const keyDigest = createIdempotencyDigest(request.headers.get("idempotency-key") ?? "");
-    const requestHash = hashCanonicalPayload({ id, request_type: "correct", expected_revision: expectedRevision, payload: body, reason: reason.trim() });
+    const requestHash = hashCanonicalPayload({ id, request_type: "correct", expected_revision: expectedRevision, payload: rawFields, reason: reason.trim() });
     const store = new GitHubDataStore({ config: getGitHubDataConfig() });
     const replay = await readRequestStatus(store, keyDigest, requestHash);
     if (replay.found) return apiSuccess({ ...replay, saved_to_public_repository: true }, 200, { idempotent_replay: true }, { ETag: `"obs:${id}:rev:${replay.revision}"` });
+    const body: Record<string, unknown> = { ...rawFields, site_id: resolveSiteId(rawFields.site_id) };
+    if (!body.site_id) throw new ObservationStorageError("request_invalid", false, 422);
+    const validation = validateCreateObservation(body);
+    if (!validation.valid) throw new ObservationStorageError("request_invalid", false, 422);
+    const correctedPeakEvents = body.peak_events as Array<{ pci: number | null }>;
+    const correctedOverallPci = body.overall_pci as number;
+    if (correctedPeakEvents.some((event) => event.pci !== null && event.pci < correctedOverallPci)) {
+      throw new ObservationStorageError("request_invalid", false, 422);
+    }
     const head = await store.getHead();
     const current = await readObservation(store, id, head);
     if (!current) return apiError(404, "observation_not_found", "errors.notFound");
     if (current.revision.record_status === "withdrawn") throw new ObservationStorageError("revision_conflict", false);
     const now = new Date().toISOString();
+    const startAt = toUtc(body.local_start as string) as string;
+    const endAt = toUtc(body.local_end as string | null);
+    if (endAt && endAt <= startAt) throw new ObservationStorageError("request_invalid", false, 422);
+    const isWithinDive = (at: string) => Date.parse(at) >= Date.parse(startAt) && (endAt === null || Date.parse(at) <= Date.parse(endAt));
+    const timeSamples = ((body.time_samples ?? []) as Array<{ local_at: string }>).map((sample) => {
+      const at = toUtc(sample.local_at) as string;
+      if (!isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
+      return { ...sample, at };
+    });
+    const peakEvents = (body.peak_events as Array<{ local_at?: string | null; at?: string | null; depth_m?: number | null; zone_id?: string | null; duration_description?: string | null }>).map((event) => {
+      const at = event.local_at ? toUtc(event.local_at) : event.at ?? null;
+      if (at && !isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
+      return {
+        ...event,
+        local_at: event.local_at ?? (at === null ? null : toWitaLocal(at)),
+        at,
+        depth_m: event.depth_m ?? null,
+        zone_id: event.zone_id ?? null,
+        duration_description: event.duration_description ?? null,
+      };
+    });
+    const onset = (body.vertical_onset ?? null) as { local_at: string | null } | null;
+    const verticalOnset = onset === null ? null : { ...onset, at: toUtc(onset.local_at) };
+    if (verticalOnset?.at && !isWithinDive(verticalOnset.at)) throw new ObservationStorageError("request_invalid", false, 422);
+    const revisionFields = { ...body };
+    delete revisionFields.start_depth_m;
     const document = {
-      ...body,
-      schema_version: "1.0",
+      ...revisionFields,
+      schema_version: "1.1",
       observer_id: current.revision.observer_id,
       rubric_version: current.revision.rubric_version,
       revision: expectedRevision + 1,
-      start_at: toUtc(body.local_start as string),
-      end_at: toUtc(body.local_end as string | null),
+      start_at: startAt,
+      end_at: endAt,
+      peak_events: peakEvents,
+      time_samples: timeSamples,
+      route_description: body.route_description ?? "",
+      vertical_onset: verticalOnset,
       observed_temperature: body.observed_temperature ?? null,
       label_scope: current.revision.label_scope,
       record_status: "corrected",

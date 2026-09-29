@@ -5,8 +5,17 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { witaDate, witaLocalToUtc } from "../time.mjs";
 import { validateCreateObservation, validateObservationRevision } from "../validate.mjs";
+import { resolveSiteId, sites } from "../sites.mjs";
 
 const base = new URL("../", import.meta.url);
+test("registered Bunaken Sites have stable unique IDs and resolve display names", () => {
+  assert.equal(sites.length, 19);
+  assert.equal(new Set(sites.map(site => site.id)).size, 19);
+  assert.ok(sites.every(site => resolveSiteId(site.name_en) === site.id && site.lat === null && site.lon === null && site.geometry_status === "unverified"));
+  assert.equal(resolveSiteId("Johnson's Wall"), "johnsons-wall");
+  assert.equal(resolveSiteId("mikes-point"), "mikes-point");
+  assert.equal(resolveSiteId("unregistered-site"), null);
+});
 const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "prediction", "release", "error-envelope"];
 const schemas = await Promise.all(schemaNames.map(async name => JSON.parse(await readFile(new URL(`json-schema/${name}.schema.json`, base), "utf8"))));
 const ajv = new Ajv2020({ allErrors: true, strict: true });
@@ -27,12 +36,15 @@ test("public observation exporter rejects unknown request fields and validates s
   assert.equal(validateCreateObservation({ ...request, train_eligible: true, notes_private: "secret" }).valid, false);
   const revision = {
     ...request,
-    schema_version: "1.0",
+    schema_version: "1.1",
     observer_id: "synthetic-alias",
     rubric_version: "pci-overall-v1",
     revision: 1,
     start_at: "2026-09-27T03:00:00.000Z",
-    end_at: null,
+    end_at: "2026-09-27T03:20:00.000Z",
+    peak_events: request.peak_events.map(event => ({ ...event, at: "2026-09-27T03:10:00.000Z" })),
+    time_samples: request.time_samples.map(sample => ({ ...sample, at: "2026-09-27T03:12:00.000Z" })),
+    vertical_onset: null,
     label_scope: "dive_overall",
     record_status: "active",
     created_at: "2026-09-27T03:01:00.000Z",
@@ -42,6 +54,12 @@ test("public observation exporter rejects unknown request fields and validates s
   };
   assert.equal(validateObservationRevision(revision).valid, true);
   assert.equal(validateObservationRevision({ ...revision, password: "never-public" }).valid, false);
+  const legacyRevision = { ...revision, schema_version: "1.0", start_depth_m: 15 };
+  delete legacyRevision.route_description;
+  delete legacyRevision.vertical_onset;
+  delete legacyRevision.time_samples;
+  delete legacyRevision.peak_events[0].local_at;
+  assert.equal(validateObservationRevision(legacyRevision).valid, true);
 });
 
 test("synthetic source sample validates and stale/null remain explicit", async () => {
@@ -66,6 +84,35 @@ test("client-only training and unknown fields are rejected", async () => {
   observation.train_eligible = true;
   const validate = ajv.getSchema("https://bunaken-current-observatory.example/schemas/create-request.schema.json");
   assert.equal(validate(observation), false);
+});
+
+test("legacy unsent drafts remain valid while new revisions omit dive start depth", async () => {
+  const observation = await fixture("observation-create");
+  const validate = ajv.getSchema("https://bunaken-current-observatory.example/schemas/create-request.schema.json");
+  const legacyDraft = { ...observation, start_depth_m: 15 };
+  delete legacyDraft.route_description;
+  delete legacyDraft.vertical_onset;
+  delete legacyDraft.time_samples;
+  legacyDraft.peak_events = [{ id: "26d24fe7-5bc9-4a18-9df0-a602aefc8304", pci: null, vertical_direction: "unknown", vertical_intensity: null }];
+  assert.equal(validate(legacyDraft), true);
+  const revision = {
+    ...observation,
+    schema_version: "1.1",
+    observer_id: "synthetic-alias",
+    rubric_version: "pci-overall-v1",
+    revision: 1,
+    start_at: "2026-09-27T03:00:00.000Z",
+    end_at: "2026-09-27T03:20:00.000Z",
+    peak_events: observation.peak_events.map(event => ({ ...event, at: "2026-09-27T03:10:00.000Z" })),
+    time_samples: observation.time_samples.map(sample => ({ ...sample, at: "2026-09-27T03:12:00.000Z" })),
+    label_scope: "dive_overall",
+    record_status: "active",
+    created_at: "2026-09-27T03:01:00.000Z",
+    updated_at: "2026-09-27T03:01:00.000Z",
+    train_eligible: false,
+    observed_temperature: null,
+  };
+  assert.equal(validateObservationRevision({ ...revision, start_depth_m: 15 }).valid, false);
 });
 
 test("WITA local timestamps and day grouping match shared cross-midnight vectors", async () => {
