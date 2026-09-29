@@ -18,7 +18,8 @@ function localAtForDive(startAt: string, time: string, dateOverride = "") {
 }
 const siteLabel = (id: string, locale: Locale) => {
   const site = sites.find((candidate) => candidate.id === resolveSiteId(id));
-  return site ? locale === "ko" ? site.name_ko : site.name_en : id;
+  if (!site) return id;
+  return locale === "ko" ? site.name_ko : site.name_en;
 };
 const witaToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Makassar" }).format(new Date());
 const utcToWitaLocal = (value: string) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Makassar", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value)).replace(" ", "T");
