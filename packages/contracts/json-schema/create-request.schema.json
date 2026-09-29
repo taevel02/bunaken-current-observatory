@@ -39,6 +39,7 @@
           "zone_id": { "type": ["string", "null"] },
           "pci": { "type": ["number", "null"], "minimum": 0 },
           "duration_description": { "type": ["string", "null"], "maxLength": 300 },
+          "context_description": { "type": ["string", "null"], "maxLength": 1000 },
           "vertical_direction": { "enum": ["unknown", "none", "down", "up", "mixed"] },
           "vertical_intensity": { "type": ["number", "null"], "minimum": 0 }
         }
@@ -97,6 +98,19 @@
         "at": { "type": "null" },
         "depth_m": { "type": ["number", "null"], "minimum": 0, "maximum": 200 }
       }
+    },
+    "peak_event_details": {
+      "type": "object",
+      "anyOf": [
+        { "type": "object", "required": ["local_at"], "properties": { "local_at": { "type": "string" } } },
+        { "type": "object", "required": ["zone_id"], "properties": { "zone_id": { "type": "string", "pattern": "\\S" } } },
+        { "type": "object", "required": ["pci"], "properties": { "pci": { "type": "number" } } },
+        { "type": "object", "required": ["depth_m"], "properties": { "depth_m": { "type": "number" } } },
+        { "type": "object", "required": ["duration_description"], "properties": { "duration_description": { "type": "string", "pattern": "\\S" } } },
+        { "type": "object", "required": ["context_description"], "properties": { "context_description": { "type": "string", "pattern": "\\S" } } },
+        { "type": "object", "required": ["vertical_direction"], "properties": { "vertical_direction": { "enum": ["none", "down", "up", "mixed"] } } },
+        { "type": "object", "required": ["vertical_intensity"], "properties": { "vertical_intensity": { "type": "number" } } }
+      ]
     }
   },
   "allOf": [
@@ -114,7 +128,8 @@
             "items": {
               "type": "object",
               "required": ["local_at", "at", "depth_m", "zone_id", "duration_description"],
-              "properties": { "local_at": {}, "at": {}, "depth_m": {}, "zone_id": {}, "duration_description": {} }
+              "properties": { "local_at": {}, "at": {}, "depth_m": {}, "zone_id": {}, "duration_description": {} },
+              "allOf": [{ "$ref": "#/$defs/peak_event_details" }]
             }
           }
         }

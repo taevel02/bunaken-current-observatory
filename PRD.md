@@ -1,11 +1,13 @@
 # 부나켄 조류 관측과 예측 서비스 제품 요구사항
 
-문서 버전: 1.2\
+문서 버전: 1.3\
 작성일: 2026-09-27  
 제품 가칭: Bunaken Current Observatory  
 기본 언어: 한국어 `ko` · 추가 언어: 영어 `en`  
 서비스 기준 시간대: `Asia/Makassar` · WITA · UTC+08:00  
 상태: 구현 기준 문서. 실제 데이터 공급 연결, 인증 설정, 배포 및 성능 검증은 아직 수행하지 않았다.
+
+1.3 변경: 현장 입력에서 입수 시각·Site·Overall PCI만 필수로 먼저 제시한다. 같은 날짜를 반복 입력하지 않도록 WITA 날짜와 시각을 한 입력으로 받고 선택 항목은 접힌 상세로 분리한다. Peak 사건에 지속 양상과 구분되는 상황 설명을 추가한다. 저장 revision schema는 1.2로 올린다.
 
 1.2 변경: `시작 수심`을 Overall PCI의 `대표 관측 수심`으로 바로잡고, 수직조류 시작 수심은 사건별로 기록한다. 신규 observation revision schema는 1.1로 올리고, 기존 1.0 기록은 읽기 호환한다. 시간대별 표본은 별도 관측으로 보존하며 Overall 학습 label에 합치지 않는다.
 
@@ -168,9 +170,9 @@ PCI는 개인 관찰자가 같은 기준으로 반복 기록하는 무차원 체
 
 | 구분 | 필드 및 동작 |
 |---|---|
-| 필수 | 날짜·입수 시각, Site, Zone 선택 또는 unknown, 대표 관측 수심(모르면 unknown), overall PCI, 수직 방향 선택 |
-| 기본값 | 날짜는 WITA 오늘, 관측 확신도 normal. 시각·PCI·수직 방향은 자동 확정하지 않음 |
-| 선택 | 출수 시각, 주요 경로 메모, 수직 강도, Peak PCI/시각/수심/Zone/지속 설명, 수직조류가 시작한 시각·수심, 시간대별 Zone·수심·실측 수온·체감 PCI·진행 경로 기준 방향, 공개 메모 |
+| 필수 | WITA 입수 날짜·시각, 등록 Site, Overall PCI |
+| 기본값 | 필수값은 자동 확정하지 않음. 관찰 확신도 normal은 선택 상세 안의 초기값 |
+| 선택 | 출수 시각, 주요 Zone, 경로 메모, 대표 관측 수심, 수직 방향·강도·시작 위치, 관찰 확신도, Peak PCI/시각/수심/Zone/지속 양상/당시 상황, 시간대별 Zone·수심·실측 수온·체감 PCI·진행 경로 기준 방향, 공개 메모, 기기 임시 보관 동의, 모델 학습 사용 동의 |
 | 시스템 | 관찰자 ID, rubric 버전, 저장 시각, revision, 환경 결합 상태, snapshot 참조 |
 
 대표 관측 수심은 Overall PCI를 평가할 때 주로 조류를 느낀 수심이다. 최대수심, 입수 직후 수심, 상승/하강조류가 시작된 수심을 뜻하지 않는다. 여러 수심에서 조류가 달랐다면 시각·Zone·수심별 사건을 추가로 기록한다. 한 대표 수심을 정할 수 없으면 unknown으로 보존하고 수심 관련 numeric 학습에서 제외한다. 수직조류가 시작된 수심은 해당 방향 사건의 수심으로 따로 기록한다. Zone 기본 수심을 사용자 관측 수심으로 복사하지 않는다. 수온의 측정 수심·시각을 모르면 원문은 보존하지만 수심별 calibration에서는 제외한다.
@@ -356,7 +358,7 @@ backfills/2026-09-19/{backfillId}/manifest.json
 | Zone | id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at |
 | Observer | id, rubric_id, anchor_reference_ids, public_alias |
 | Observation | id, schema_version, revision, observer_id, rubric_version, site_id, zone_id nullable, route_description, start_at, end_at nullable, time_precision, representative_depth_m nullable, overall_pci nullable, label_scope, legacy_category nullable, vertical, vertical_onset nullable, confidence, peak_events, time_samples, observed_temperature, notes_public, public_summary_ko/en, record_status, use_for_model, train_eligible, created_at, updated_at |
-| PeakEvent | id, parent_observation_id, zone_id nullable, local_at/at nullable, depth_m nullable, pci nullable, duration_description nullable, vertical_direction, vertical_intensity nullable |
+| PeakEvent | id, parent_observation_id, zone_id nullable, local_at/at nullable, depth_m nullable, pci nullable, duration_description nullable, context_description nullable, vertical_direction, vertical_intensity nullable |
 | TimeSample | id, parent_observation_id, local_at/at, zone_id nullable, depth_m nullable, temperature_c nullable, perceived_pci nullable, horizontal_direction |
 | EnvironmentLink | observation_id, observation_revision, snapshot_id nullable, backfill_id nullable, provenance, feature_vector, feature_mask, quality_flags, extraction_version |
 | Snapshot | id, run metadata, source metadata, issued/retrieved/valid times, source_resolution, geometry/scaler/model versions, hashes |
@@ -374,7 +376,7 @@ backfills/2026-09-19/{backfillId}/manifest.json
 
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "id": "11111111-1111-4111-8111-111111111111",
   "revision": 1,
   "observer_id": "observer_demo",

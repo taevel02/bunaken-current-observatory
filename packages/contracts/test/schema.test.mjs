@@ -36,7 +36,7 @@ test("public observation exporter rejects unknown request fields and validates s
   assert.equal(validateCreateObservation({ ...request, train_eligible: true, notes_private: "secret" }).valid, false);
   const revision = {
     ...request,
-    schema_version: "1.1",
+    schema_version: "1.2",
     observer_id: "synthetic-alias",
     rubric_version: "pci-overall-v1",
     revision: 1,
@@ -53,6 +53,16 @@ test("public observation exporter rejects unknown request fields and validates s
     observed_temperature: null,
   };
   assert.equal(validateObservationRevision(revision).valid, true);
+  const contextOnlyPeak = { ...revision, peak_events: [{ id: request.peak_events[0].id, local_at: null, at: null, depth_m: null, zone_id: null, pci: null, duration_description: null, context_description: "Current changed near the entrance.", vertical_direction: "unknown", vertical_intensity: null }] };
+  assert.equal(validateObservationRevision(contextOnlyPeak).valid, true);
+  const emptyPeakRequest = { ...request, peak_events: [{ id: request.peak_events[0].id, local_at: null, at: null, depth_m: null, zone_id: null, pci: null, duration_description: null, context_description: null, vertical_direction: "unknown", vertical_intensity: null }] };
+  assert.equal(validateCreateObservation(emptyPeakRequest).valid, false);
+  const emptyLegacyPeak = { ...emptyPeakRequest, start_depth_m: 15 };
+  assert.equal(validateCreateObservation(emptyLegacyPeak).valid, true);
+  const previousRevision = { ...revision, schema_version: "1.1", peak_events: revision.peak_events.map(({ context_description, ...event }) => event) };
+  assert.equal(validateObservationRevision(previousRevision).valid, true);
+  const missingPeakContext = { ...revision, peak_events: revision.peak_events.map(({ context_description, ...event }) => event) };
+  assert.equal(validateObservationRevision(missingPeakContext).valid, false);
   assert.equal(validateObservationRevision({ ...revision, password: "never-public" }).valid, false);
   const legacyRevision = { ...revision, schema_version: "1.0", start_depth_m: 15 };
   delete legacyRevision.route_description;
@@ -97,7 +107,7 @@ test("legacy unsent drafts remain valid while new revisions omit dive start dept
   assert.equal(validate(legacyDraft), true);
   const revision = {
     ...observation,
-    schema_version: "1.1",
+    schema_version: "1.2",
     observer_id: "synthetic-alias",
     rubric_version: "pci-overall-v1",
     revision: 1,

@@ -13,7 +13,7 @@
   ],
   "properties": {
     "id": { "type": "string", "format": "uuid" },
-    "schema_version": { "enum": ["1.0", "1.1"] },
+    "schema_version": { "enum": ["1.0", "1.1", "1.2"] },
     "observer_id": { "type": "string", "minLength": 1, "maxLength": 64 },
     "rubric_version": { "type": "string", "minLength": 1, "maxLength": 64 },
     "revision": { "type": "integer", "minimum": 1 },
@@ -55,6 +55,7 @@
           "zone_id": { "type": ["string", "null"] },
           "pci": { "type": ["number", "null"], "minimum": 0 },
           "duration_description": { "type": ["string", "null"], "maxLength": 300 },
+          "context_description": { "type": ["string", "null"], "maxLength": 1000 },
           "vertical_direction": { "enum": ["unknown", "none", "down", "up", "mixed"] },
           "vertical_intensity": { "type": ["number", "null"], "minimum": 0 }
         }
@@ -121,6 +122,24 @@
               "type": "object",
               "required": ["local_at", "at", "depth_m", "zone_id", "duration_description"],
               "properties": { "local_at": {}, "at": {}, "depth_m": {}, "zone_id": {}, "duration_description": {} }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "schema_version": { "const": "1.2" } }, "required": ["schema_version"] },
+      "then": {
+        "required": ["route_description", "vertical_onset", "time_samples"],
+        "not": { "required": ["start_depth_m"] },
+        "properties": {
+          "peak_events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["local_at", "at", "depth_m", "zone_id", "duration_description", "context_description"],
+              "properties": { "local_at": {}, "at": {}, "depth_m": {}, "zone_id": {}, "duration_description": {}, "context_description": {} },
+              "allOf": [{ "$ref": "create-request.schema.json#/$defs/peak_event_details" }]
             }
           }
         }

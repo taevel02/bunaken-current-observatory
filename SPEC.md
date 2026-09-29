@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.1\
+버전: 1.2\
 작성일: 2026-09-29\
-기준: [PRD.md](PRD.md) v1.2 · [AGENTS.md](AGENTS.md)\
+기준: [PRD.md](PRD.md) v1.3 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -113,11 +113,13 @@ Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측
 | public_summary_ko/en | 아니오 | 언어별 최대 1,000자 |
 | use_for_model | 예 | boolean, UI 기본 true를 명시 |
 
+현장 입력 기본 화면의 필수값은 WITA 입수 시각, 등록 Site, Overall PCI다. 나머지는 선택 항목으로 표시하고 접힌 상세 그룹에 둔다. 모든 날짜·시각은 중복된 date/time 컨트롤 대신 `YYYY-MM-DDTHH:mm`의 WITA `datetime-local` 입력 하나로 받는다. Peak 사건의 지속 설명은 반복 양상 등 지속 방식의 원문이고 `context_description`은 당시 조류·지형 등 상황 원문이다. PCI·시각이 없어도 당시 상황이나 지속 설명은 원문으로 남길 수 있지만, 내용이 전혀 없는 Peak 사건은 저장하지 않는다. 관측 일반 메모 `notes_public`과 사건 상황 설명을 합치지 않는다. 저장 전에 공개되는 정보임을 표시한다.
+
 추가 프로퍼티는 거부한다. client가 observer_id, revision, train_eligible, label_scope, created_at, storage path를 설정하지 못하게 한다. 신규 입력의 label_scope는 서버가 dive_overall로 지정한다. 과거 이관 경로는 별도 관리자 도구에서 legacy_unspecified 및 null numeric을 허용한다. 일반 폼의 validation을 느슨하게 해서 과거 자료를 우회 입력하지 않는다.
 
 수직 direction은 unknown/none/down/up/mixed다. unknown의 intensity는 null, none은 0 또는 null, 다른 방향은 0 이상의 유한 값 또는 null이다. 수직 시작 시각·수심은 `vertical_onset`에 따로 저장하며 Peak PCI와 결합하지 않는다. mixed의 방향별 사건 근거는 peak_events 등에 구분해서 저장한다. 9/19 PCI=1.0을 vertical intensity=1.0으로 변환하지 않는다.
 
-PeakEvent는 UUID, nullable local/UTC at, depth_m/zone_id/pci, nullable duration_description(최대 300자), vertical_direction, nullable vertical_intensity를 갖는다. duration_description은 측정된 초로 오인하지 않도록 원문 설명으로 보존한다. peak PCI가 있으면 overall 이상이어야 한다. 시각이 명시되면 알려진 dive 범위와 일치하는지 검사한다. 범위가 불명확한 과거 사건은 precision/quality flag로 보존한다. 전체와 사건 label은 같은 학습행으로 취급하지 않는다.
+PeakEvent는 UUID, nullable local/UTC at, depth_m/zone_id/pci, nullable duration_description(최대 300자), nullable context_description(최대 1,000자), vertical_direction, nullable vertical_intensity를 갖는다. duration_description은 측정된 초로 오인하지 않도록 원문 지속 양상으로, context_description은 사건 당시 환경 메모로 각각 보존한다. peak PCI가 있으면 overall 이상이어야 한다. 시각이 명시되면 알려진 dive 범위와 일치하는지 검사한다. 범위가 불명확한 과거 사건은 precision/quality flag로 보존한다. 전체와 사건 label은 같은 학습행으로 취급하지 않는다.
 
 TimeSample은 다이빙 중 특정 시점의 부가 관측이다. `perceived_pci`는 관찰자의 무차원 체감값이며 m/s가 아니다. 방향은 `with_route / against_route / crossing_route / unknown`으로 보존한다. TimeSample과 vertical_onset은 Overall 학습 label이 아니며 Overall PCI를 대체하거나 분할하지 않는다. 입력의 local 시각을 보존하고 UTC 시각은 서버가 생성한다.
 
@@ -125,7 +127,7 @@ TimeSample은 다이빙 중 특정 시점의 부가 관측이다. `perceived_pci
 
 ### 4.3 저장된 관측
 
-저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. 현재 revision은 schema_version `1.1`이며 시작 수심 필드를 저장하지 않는다. 이미 저장된 `1.0` revision은 `start_depth_m`를 보존한 채 읽을 수 있다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
+저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. 현재 revision은 schema_version `1.2`이며 시작 수심을 저장하지 않고 PeakEvent에 context_description을 보존한다. `1.0` 및 `1.1` revision은 기존 형상 그대로 읽을 수 있다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
 
 관측 원본과 EnvironmentLink를 분리한다. train_eligible의 정본은 observation_revision에 연결된 검증 결과다. 공개 관측 API가 이를 표시할 때 원본과 link를 합성한다. 요청 직후 아직 link가 없으면 false와 `pending_enrichment`로 표시한다. 환경 재처리만으로 관측 원문 revision을 늘리거나 label을 바꾸지 않는다.
 

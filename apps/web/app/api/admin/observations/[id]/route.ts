@@ -123,7 +123,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (!isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
       return { ...sample, at };
     });
-    const peakEvents = (body.peak_events as Array<{ local_at?: string | null; at?: string | null; depth_m?: number | null; zone_id?: string | null; duration_description?: string | null }>).map((event) => {
+    const peakEvents = (body.peak_events as Array<{ local_at?: string | null; at?: string | null; depth_m?: number | null; zone_id?: string | null; duration_description?: string | null; context_description?: string | null }>).map((event) => {
       const at = event.local_at ? toUtc(event.local_at) : event.at ?? null;
       if (at && !isWithinDive(at)) throw new ObservationStorageError("request_invalid", false, 422);
       return {
@@ -133,6 +133,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         depth_m: event.depth_m ?? null,
         zone_id: event.zone_id ?? null,
         duration_description: event.duration_description ?? null,
+        context_description: event.context_description ?? null,
       };
     });
     const onset = (body.vertical_onset ?? null) as { local_at: string | null } | null;
@@ -142,7 +143,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     delete revisionFields.start_depth_m;
     const document = {
       ...revisionFields,
-      schema_version: "1.1",
+      schema_version: "1.2",
       observer_id: current.revision.observer_id,
       rubric_version: current.revision.rubric_version,
       revision: expectedRevision + 1,
