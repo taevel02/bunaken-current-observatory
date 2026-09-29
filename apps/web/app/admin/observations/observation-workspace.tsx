@@ -169,7 +169,17 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   }
 
   function updateCorrectionPeak(eventIndex: number, field: string, value: unknown) {
-    setCorrectionDraft((current) => current ? { ...current, peak_events: (current.peak_events ?? []).map((event: Row, index: number) => index === eventIndex ? { ...event, [field]: value, ...(field === "local_at" ? { at: null } : {}) } : event) } : current);
+    setCorrectionDraft((current) => {
+      if (!current) return current;
+      const peakEvents = current.peak_events ?? [];
+      return {
+        ...current,
+        peak_events: peakEvents.map((event: Row, index: number) => {
+          if (index !== eventIndex) return event;
+          return { ...event, [field]: value, ...(field === "local_at" ? { at: null } : {}) };
+        }),
+      };
+    });
   }
 
   function updateCorrectionTemperature(value: string) {
