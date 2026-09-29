@@ -51,9 +51,8 @@ try {
   if (password !== confirmation) throw new Error("Passwords do not match.");
 
   const byteLength = Buffer.byteLength(password, "utf8");
-  if (Array.from(password).length < 16 || byteLength > 1024) {
-    throw new Error("Use 16 or more characters and no more than 1024 UTF-8 bytes.");
-  }
+  if (Array.from(password).length < 12) throw new Error("Use 12 or more characters.");
+  if (byteLength > 1024) throw new Error("Use no more than 1024 UTF-8 bytes.");
 
   const hash = await argon2.hash(password, {
     type: argon2.argon2id,
