@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { controlClass, primaryButtonClass } from "@/src/ui/form-styles";
 import { messages } from "@/i18n/messages";
 
 type Locale = keyof typeof messages;
@@ -38,24 +39,27 @@ export function AdminLoginForm({ locale, returnTo = `/${locale}/admin` }: { loca
     }
   }
 
-  return <main lang={locale} style={{ fontFamily: "system-ui", margin: "3rem auto", maxWidth: 420, padding: "0 1rem" }}>
-    <a href="/ko">Bunaken Current Observatory</a>
-    <nav aria-label={copy.language} style={{ marginTop: "1rem" }}>
-      <a href="/ko/admin/login" aria-current={locale === "ko" ? "page" : undefined}>한국어</a>
-      {" · "}
-      <a href="/en/admin/login" aria-current={locale === "en" ? "page" : undefined}>English</a>
+  return <main lang={locale} className="mx-auto my-6 box-border grid w-full max-w-md gap-4 px-4 text-base leading-6 text-[#18302d] [font-family:system-ui,sans-serif]">
+    <a className="inline-flex min-h-11 items-center text-[#155f53]" href="/ko">Bunaken Current Observatory</a>
+    <nav aria-label={copy.language} className="flex gap-4">
+      <a className="inline-flex min-h-11 items-center text-[#155f53] aria-[current=page]:font-bold" href="/ko/admin/login" aria-current={locale === "ko" ? "page" : undefined}>한국어</a>
+      <a className="inline-flex min-h-11 items-center text-[#155f53] aria-[current=page]:font-bold" href="/en/admin/login" aria-current={locale === "en" ? "page" : undefined}>English</a>
     </nav>
-    <h1>{auth.loginTitle}</h1>
-    <p>{auth.loginDescription}</p>
-    <form onSubmit={submit}>
-      <label htmlFor="username">{auth.username}</label>
-      <input id="username" name="username" autoComplete="username" required style={{ display: "block", boxSizing: "border-box", width: "100%", minHeight: 48, margin: "0.4rem 0 1rem", padding: "0.6rem", fontSize: 16 }} />
-      <label htmlFor="password">{auth.password}</label>
-      <input id="password" name="password" type="password" autoComplete="current-password" required style={{ display: "block", boxSizing: "border-box", width: "100%", minHeight: 48, margin: "0.4rem 0 1rem", padding: "0.6rem", fontSize: 16 }} />
-      <button type="submit" disabled={busy} style={{ minHeight: 48, padding: "0.7rem 1rem", fontSize: 16 }}>
+    <h1 className="m-0 text-2xl leading-tight">{auth.loginTitle}</h1>
+    <p className="m-0">{auth.loginDescription}</p>
+    <form onSubmit={submit} className="grid gap-4">
+      <div className="grid gap-2">
+        <label htmlFor="username">{auth.username}</label>
+        <input className={controlClass} id="username" name="username" autoComplete="username" required />
+      </div>
+      <div className="grid gap-2">
+        <label htmlFor="password">{auth.password}</label>
+        <input className={controlClass} id="password" name="password" type="password" autoComplete="current-password" required />
+      </div>
+      <button type="submit" disabled={busy} className={primaryButtonClass}>
         {busy ? auth.checking : auth.login}
       </button>
-      <p aria-live="polite" role="status">{message}</p>
+      <p className="m-0" aria-live="polite" role="status">{message}</p>
     </form>
   </main>;
 }

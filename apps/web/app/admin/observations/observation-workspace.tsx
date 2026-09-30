@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { messages } from "@/i18n/messages";
+import { SelectControl } from "@/src/ui/select-control";
+import { controlClass, fieldStyles, primaryButtonClass } from "@/src/ui/form-styles";
 import { resolveSiteId, sites } from "@bunaken/contracts/sites";
 
 type Locale = "ko" | "en";
@@ -12,41 +14,41 @@ const DB = "bunaken-observation-drafts";
 const STORE = "drafts";
 const uuid = () => crypto.randomUUID();
 const ui = {
-  shell: "mx-auto box-border w-full max-w-6xl px-[18px] pb-16 pt-6 text-base leading-6 text-[#18302d] [font-family:system-ui,sans-serif] max-[680px]:px-4 max-[680px]:pt-[18px] max-[360px]:px-3",
-  header: "flex items-start justify-between gap-4 border-b border-[#c8d6d0] pb-5 max-[680px]:items-center max-[360px]:block",
-  eyebrow: "my-1.5 text-xs tracking-[.14em] text-[#54736a]",
-  title: "my-1 text-[clamp(1.8rem,6vw,2.5rem)] tracking-[-.04em]",
-  logout: "min-h-11 px-2.5 font-[inherit] text-[#155f53] active:translate-y-px max-[680px]:whitespace-nowrap max-[360px]:inline-block max-[360px]:pl-0",
-  lang: "my-3.5 flex gap-5",
+  shell: "mx-auto box-border w-full max-w-6xl px-4 pb-16 pt-6 text-base leading-6 text-[#18302d] [font-family:system-ui,sans-serif] sm:px-6",
+  header: "flex items-start justify-between gap-4 border-b border-[#c8d6d0] pb-4 max-[680px]:items-center max-[360px]:block",
+  eyebrow: "m-0 text-xs tracking-[.14em] text-[#54736a]",
+  title: "m-0 text-[clamp(1.8rem,6vw,2.5rem)] leading-tight tracking-[-.04em]",
+  logout: "min-h-11 px-3 font-[inherit] text-[#155f53] active:translate-y-px max-[680px]:whitespace-nowrap max-[360px]:inline-block max-[360px]:pl-0",
+  lang: "my-4 flex gap-4",
   langLink: "inline-flex min-h-11 items-center text-[#155f53] aria-[current=page]:font-bold aria-[current=page]:underline-offset-4",
-  layout: "grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(260px,.8fr)] items-start gap-8 max-[680px]:grid-cols-1 max-[680px]:gap-7",
-  form: "min-w-0 [&>h2]:my-3 [&>h2]:mb-[18px] [&_small]:my-1.5 [&_small]:block [&_small]:text-sm [&_small]:text-[#49625c] [&_input:not([type=checkbox])]:box-border [&_input:not([type=checkbox])]:min-h-12 [&_input:not([type=checkbox])]:w-full [&_input:not([type=checkbox])]:min-w-0 [&_input:not([type=checkbox])]:rounded-md [&_input:not([type=checkbox])]:border [&_input:not([type=checkbox])]:border-[#9aafa7] [&_input:not([type=checkbox])]:bg-white [&_input:not([type=checkbox])]:px-3 [&_input:not([type=checkbox])]:py-2.5 [&_input:not([type=checkbox])]:font-[inherit] [&_input:not([type=checkbox])]:text-base [&_input:not([type=checkbox])]:text-[#18302d] [&_select]:box-border [&_select]:min-h-12 [&_select]:w-full [&_select]:min-w-0 [&_select]:rounded-md [&_select]:border [&_select]:border-[#9aafa7] [&_select]:bg-white [&_select]:px-3 [&_select]:py-2.5 [&_select]:font-[inherit] [&_select]:text-base [&_select]:text-[#18302d] [&_textarea]:box-border [&_textarea]:min-h-24 [&_textarea]:w-full [&_textarea]:min-w-0 [&_textarea]:resize-y [&_textarea]:rounded-md [&_textarea]:border [&_textarea]:border-[#9aafa7] [&_textarea]:bg-white [&_textarea]:px-3 [&_textarea]:py-2.5 [&_textarea]:font-[inherit] [&_textarea]:text-base [&_textarea]:text-[#18302d] [&_input:focus-visible]:outline-3 [&_input:focus-visible]:outline-offset-2 [&_input:focus-visible]:outline-[#72b7a5] [&_select:focus-visible]:outline-3 [&_select:focus-visible]:outline-offset-2 [&_select:focus-visible]:outline-[#72b7a5] [&_textarea:focus-visible]:outline-3 [&_textarea:focus-visible]:outline-offset-2 [&_textarea:focus-visible]:outline-[#72b7a5] [&_details]:my-3.5",
-  records: "min-w-0 max-[680px]:border-t max-[680px]:border-[#c8d6d0] max-[680px]:pt-2.5",
-  sectionTitle: "my-3 text-xl",
-  fields: "m-0 min-w-0 border-0 p-0",
-  requiredSection: "min-w-0 rounded-lg border border-l-4 border-[#9aafa7] border-l-[#145f53] bg-[#f7faf8] p-4",
-  sectionHeading: "m-0 flex flex-wrap items-center gap-2.5 text-[1.08rem]",
+  layout: "grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(260px,.8fr)] items-start gap-6 max-[680px]:grid-cols-1",
+  form: `grid min-w-0 gap-4 [&>h2]:mb-0 [&_small]:m-0 [&_small]:block [&_small]:text-sm [&_small]:text-[#49625c] ${fieldStyles}`,
+  records: "min-w-0 max-[680px]:border-t max-[680px]:border-[#c8d6d0] max-[680px]:pt-6",
+  sectionTitle: "m-0 mb-4 text-xl",
+  fields: "m-0 grid min-w-0 gap-4 border-0 p-0",
+  requiredSection: "grid min-w-0 gap-4 rounded-lg border border-[#9aafa7] bg-[#f7faf8] p-4",
+  sectionHeading: "m-0 flex flex-wrap items-center gap-2 text-[1.08rem]",
   requiredTag: "inline-flex w-max items-center rounded-full bg-[#145f53] px-2 py-0.5 text-xs font-bold leading-6 text-white",
   optionalTag: "inline-flex shrink-0 items-center rounded-full bg-[#e8efec] px-2 py-0.5 text-xs font-bold leading-6 text-[#405a53]",
-  help: "my-1 block text-sm text-[#49625c]",
-  fieldLabel: "my-3.5 grid min-w-0 gap-1.5 font-semibold",
-  control: "box-border min-h-12 w-full min-w-0 rounded-md border border-[#9aafa7] bg-white px-3 py-2.5 font-[inherit] text-base text-[#18302d] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#72b7a5]",
-  textarea: "box-border min-h-24 w-full min-w-0 resize-y rounded-md border border-[#9aafa7] bg-white px-3 py-2.5 font-[inherit] text-base text-[#18302d] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#72b7a5]",
-  check: "my-3 flex min-h-11 min-w-0 items-center gap-3",
+  help: "m-0 block text-sm text-[#49625c]",
+  fieldLabel: "grid min-w-0 gap-2 font-semibold",
+  control: controlClass,
+  textarea: controlClass + " min-h-24 resize-y",
+  check: "m-0 flex min-h-11 min-w-0 items-center gap-3 py-2 [&_b]:ml-2",
   checkbox: "size-5 shrink-0 accent-[#145f53]",
-  optionalGroup: "my-3.5 min-w-0 border-b border-[#c8d6d0] py-3 [&[open]]:pb-[18px]",
-  summary: "flex min-h-11 min-w-0 flex-wrap items-center gap-2.5 py-1 font-semibold [&::marker]:text-[#145f53]",
-  optionalContent: "min-w-0 pt-1",
-  timePair: "grid min-w-0 grid-cols-1 items-start gap-x-3 sm:grid-cols-2",
-  sample: "my-3.5 min-w-0 rounded-md border border-[#c8d6d0] px-3 py-2.5 [&_legend]:px-1 [&_legend]:font-semibold",
-  finePrint: "my-1.5 block text-sm text-[#49625c]",
-  button: "my-1.5 mr-1 min-h-12 rounded-md border border-[#145f53] bg-white px-4 py-2.5 font-[inherit] font-semibold text-[#145f53] active:translate-y-px disabled:opacity-60",
-  primary: "mt-2 min-h-12 w-full rounded-md border-0 bg-[#145f53] px-4 py-2.5 font-[inherit] font-semibold text-white active:translate-y-px disabled:opacity-60",
-  formActions: "sticky bottom-0 z-10 mx-[-8px] mt-3 border-t border-[#c8d6d0] bg-white px-2 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))]",
-  notice: "border-l-[3px] border-[#9b7d39] bg-[#f4f1e8] p-3",
-  record: "grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-0 border-b border-[#c8d6d0] bg-transparent px-1 py-3.5 text-left font-[inherit] text-inherit [&_span:last-child]:col-span-full [&_span:last-child]:text-sm [&_span:last-child]:text-[#55716a]",
-  detail: "mt-5 min-w-0 border-t-2 border-[#145f53] pt-3.5 [&_p]:[overflow-wrap:anywhere] [&_h3]:my-2 [&_button]:min-h-11 [&_label]:my-3 [&_label]:grid [&_label]:min-w-0 [&_label]:gap-1.5 [&_label]:font-semibold [&_input:not([type=checkbox])]:box-border [&_input:not([type=checkbox])]:min-h-12 [&_input:not([type=checkbox])]:w-full [&_input:not([type=checkbox])]:min-w-0 [&_input:not([type=checkbox])]:rounded-md [&_input:not([type=checkbox])]:border [&_input:not([type=checkbox])]:border-[#9aafa7] [&_input:not([type=checkbox])]:bg-white [&_input:not([type=checkbox])]:px-3 [&_input:not([type=checkbox])]:py-2.5 [&_input:not([type=checkbox])]:font-[inherit] [&_input:not([type=checkbox])]:text-base [&_input:not([type=checkbox])]:text-[#18302d] [&_select]:box-border [&_select]:min-h-12 [&_select]:w-full [&_select]:min-w-0 [&_select]:rounded-md [&_select]:border [&_select]:border-[#9aafa7] [&_select]:bg-white [&_select]:px-3 [&_select]:py-2.5 [&_select]:font-[inherit] [&_select]:text-base [&_select]:text-[#18302d] [&_textarea]:box-border [&_textarea]:min-h-24 [&_textarea]:w-full [&_textarea]:min-w-0 [&_textarea]:resize-y [&_textarea]:rounded-md [&_textarea]:border [&_textarea]:border-[#9aafa7] [&_textarea]:bg-white [&_textarea]:px-3 [&_textarea]:py-2.5 [&_textarea]:font-[inherit] [&_textarea]:text-base [&_textarea]:text-[#18302d] [&_input:focus-visible]:outline-3 [&_input:focus-visible]:outline-offset-2 [&_input:focus-visible]:outline-[#72b7a5] [&_select:focus-visible]:outline-3 [&_select:focus-visible]:outline-offset-2 [&_select:focus-visible]:outline-[#72b7a5] [&_textarea:focus-visible]:outline-3 [&_textarea:focus-visible]:outline-offset-2 [&_textarea:focus-visible]:outline-[#72b7a5]",
-  close: "float-right min-h-11",
+  optionalGroup: "min-w-0 rounded-lg border border-[#c8d6d0] p-4",
+  summary: "flex min-h-11 min-w-0 flex-wrap items-center gap-2 font-semibold [&::marker]:text-[#145f53]",
+  optionalContent: "grid min-w-0 gap-4 pt-4",
+  timePair: "grid min-w-0 grid-cols-1 items-start gap-4 sm:grid-cols-2",
+  sample: "m-0 grid min-w-0 gap-4 rounded-md border border-[#c8d6d0] p-4 [&_legend]:px-1 [&_legend]:font-semibold",
+  finePrint: "m-0 block text-sm text-[#49625c]",
+  button: "min-h-12 rounded-md border border-[#145f53] bg-white px-4 py-3 font-[inherit] font-semibold text-[#145f53] active:translate-y-px disabled:opacity-60",
+  primary: primaryButtonClass,
+  formActions: "sticky bottom-0 z-10 grid gap-4 border-t border-[#c8d6d0] bg-white pt-4 pb-[max(16px,env(safe-area-inset-bottom))] [&_p]:m-0",
+  notice: "m-0 rounded-md border border-[#c9b98a] bg-[#f4f1e8] p-4",
+  record: "grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 border-0 border-b border-[#c8d6d0] bg-transparent px-0 py-4 text-left font-[inherit] text-inherit [&_span:last-child]:col-span-full [&_span:last-child]:text-sm [&_span:last-child]:text-[#55716a]",
+  detail: `mt-6 grid min-w-0 gap-4 border-t-2 border-[#145f53] pt-4 [&_p]:m-0 [&_p]:[overflow-wrap:anywhere] [&_h3]:m-0 [&_button]:min-h-11 [&_label]:grid [&_label]:min-w-0 [&_label]:gap-2 [&_label]:font-semibold ${fieldStyles}`,
+  close: "justify-self-end min-h-11 px-3",
 };
 function hasPeakDetails(event: Row) {
   const hasValue = (value: unknown) => typeof value === "string" ? value.trim().length > 0 : value !== null && value !== undefined;
@@ -339,17 +341,17 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   const showPeakDetails = Boolean(draftPeaks?.length || draftPayload?.notes_public || (draftPayload?.observed_temperature as Row | null | undefined)?.celsius != null);
 
   return <main className={ui.shell} lang={locale}>
-    <header className={ui.header}><div className="min-w-0"><p className={ui.eyebrow}>BUNAKEN · {alias ?? "ADMIN"}</p><h1 className={ui.title}>{t.title}</h1><p className="my-1.5">{t.publicWarning}</p></div><button className={ui.logout} onClick={async () => { await draft("clear").catch(() => undefined); try { const response = await fetch("/api/auth/csrf", { cache: "no-store" }); if (!response.ok) { window.location.assign(`/${locale}/admin/login`); return; } const csrf = (await response.json()).data.csrf_token; const result = await fetch("/api/auth/logout", { method: "POST", headers: { "x-csrf-token": csrf } }); if (result.ok) window.location.assign(`/${locale}/admin/login`); else setMessage(t.logoutError); } catch { setMessage(t.logoutError); } }}>{t.logout}</button></header>
+    <header className={ui.header}><div className="grid min-w-0 gap-2"><p className={ui.eyebrow}>BUNAKEN · {alias ?? "ADMIN"}</p><h1 className={ui.title}>{t.title}</h1><p className="m-0">{t.publicWarning}</p></div><button className={ui.logout} onClick={async () => { await draft("clear").catch(() => undefined); try { const response = await fetch("/api/auth/csrf", { cache: "no-store" }); if (!response.ok) { window.location.assign(`/${locale}/admin/login`); return; } const csrf = (await response.json()).data.csrf_token; const result = await fetch("/api/auth/logout", { method: "POST", headers: { "x-csrf-token": csrf } }); if (result.ok) window.location.assign(`/${locale}/admin/login`); else setMessage(t.logoutError); } catch { setMessage(t.logoutError); } }}>{t.logout}</button></header>
     <nav className={ui.lang}><a className={ui.langLink} href="/ko/admin" aria-current={locale === "ko" ? "page" : undefined} onClick={(event) => { event.preventDefault(); switchLocale("ko"); }}>한국어</a><a className={ui.langLink} href="/en/admin" aria-current={locale === "en" ? "page" : undefined} onClick={(event) => { event.preventDefault(); switchLocale("en"); }}>English</a></nav>
     <section className={ui.layout}>
       <form className={ui.form} key={formEpoch} onSubmit={save} onChange={(event) => { if ((event.nativeEvent.target as HTMLInputElement).name !== "draft_consent") preserveDraft(event.currentTarget); }}>
         <h2 className={ui.sectionTitle}>{t.newRecord}</h2>
         <fieldset disabled={busy || Boolean(pendingCreate)} className={ui.fields}>
         <section className={ui.requiredSection} aria-labelledby="required-heading">
-          <h3 className={ui.sectionHeading} id="required-heading">{t.requiredFieldsHeading}</h3>
-          <p className={ui.help}>{t.requiredFieldsHelp}</p>
+          <div className="grid gap-2"><h3 className={ui.sectionHeading} id="required-heading">{t.requiredFieldsHeading}</h3>
+          <p className={ui.help}>{t.requiredFieldsHelp}</p></div>
           <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.dateTime}<b className={ui.requiredTag}>{t.required}</b></span><input name="local_start" type="datetime-local" defaultValue={(draftPayload?.local_start as string | undefined) ?? ""} required /></label>
-          <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.site}<b className={ui.requiredTag}>{t.required}</b></span><select name="site_id" required defaultValue={resolveSiteId(draftPayload?.site_id) ?? ""}><option value="" disabled>{t.sitePlaceholder}</option>{sites.map((site) => <option key={site.id} value={site.id}>{locale === "ko" ? site.name_ko : site.name_en}</option>)}</select></label>
+          <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.site}<b className={ui.requiredTag}>{t.required}</b></span><SelectControl name="site_id" required defaultValue={resolveSiteId(draftPayload?.site_id) ?? ""}><option value="" disabled>{t.sitePlaceholder}</option>{sites.map((site) => <option key={site.id} value={site.id}>{locale === "ko" ? site.name_ko : site.name_en}</option>)}</SelectControl></label>
           <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.pci}<b className={ui.requiredTag}>{t.required}</b></span><input name="overall_pci" type="number" inputMode="decimal" min="0" step="0.01" required defaultValue={draftPayload?.overall_pci as number | undefined} /></label>
           <small>{t.pciHelp}</small>
         </section>
@@ -358,7 +360,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
           <div className={ui.optionalContent}>
             <label className={ui.fieldLabel}>{t.endTime}<input name="local_end" type="datetime-local" defaultValue={(draftPayload?.local_end as string | null | undefined) ?? ""} /></label>
             <small>{t.wita}</small>
-            <label className={ui.fieldLabel}>{t.timePrecision}<select name="time_precision" defaultValue={(draftPayload?.time_precision as string | undefined) ?? "reported_minute"}><option value="reported_minute">{t.minuteExact}</option><option value="approximate">{t.approximate}</option></select></label>
+            <label className={ui.fieldLabel}>{t.timePrecision}<SelectControl name="time_precision" defaultValue={(draftPayload?.time_precision as string | undefined) ?? "reported_minute"}><option value="reported_minute">{t.minuteExact}</option><option value="approximate">{t.approximate}</option></SelectControl></label>
             <label className={ui.fieldLabel}>{t.zone}<input name="zone_id" autoComplete="off" placeholder={t.unknown} defaultValue={draftPayload?.zone_id ?? ""} /></label>
             <label className={ui.fieldLabel}>{t.routeDescription}<input name="route_description" maxLength={300} placeholder={t.routePlaceholder} defaultValue={draftPayload?.route_description ?? ""} /></label>
             <label className={ui.fieldLabel}>{t.representativeDepth}<input name="representative_depth_m" type="number" inputMode="decimal" min="0" max="200" step="0.1" defaultValue={draftPayload?.representative_depth_m ?? ""} /></label>
@@ -369,9 +371,9 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
           <summary className={ui.summary}>{t.verticalDetails}<span className={ui.optionalTag}>{t.optional}</span></summary>
           <div className={ui.optionalContent}>
             <div className={ui.timePair}>
-              <label className={ui.fieldLabel}>{t.vertical}<select name="direction" defaultValue={(draftPayload?.vertical as Row | undefined)?.direction as string ?? "unknown"}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></select></label>
+              <label className={ui.fieldLabel}>{t.vertical}<SelectControl name="direction" defaultValue={(draftPayload?.vertical as Row | undefined)?.direction as string ?? "unknown"}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></SelectControl></label>
               <label className={ui.fieldLabel}>{t.intensity}<input name="intensity" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={(draftPayload?.vertical as Row | undefined)?.intensity ?? ""} /></label>
-              <label className={ui.fieldLabel}>{t.confidence}<select name="confidence" defaultValue={draftPayload?.confidence as string ?? "normal"}><option value="high">{t.high}</option><option value="normal">{t.normal}</option><option value="low">{t.low}</option></select></label>
+              <label className={ui.fieldLabel}>{t.confidence}<SelectControl name="confidence" defaultValue={draftPayload?.confidence as string ?? "normal"}><option value="high">{t.high}</option><option value="normal">{t.normal}</option><option value="low">{t.low}</option></SelectControl></label>
             </div>
             <label className={ui.fieldLabel}>{t.verticalOnset}<input name="vertical_onset_at" type="datetime-local" defaultValue={(draftPayload?.vertical_onset as Row | null | undefined)?.local_at ?? ""} /></label>
             <label className={ui.fieldLabel}>{t.onsetDepth}<input name="vertical_onset_depth" type="number" inputMode="decimal" min="0" max="200" step="0.1" defaultValue={(draftPayload?.vertical_onset as Row | null | undefined)?.depth_m ?? ""} /></label>
@@ -392,7 +394,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
             <label className={ui.fieldLabel}>{t.peakSituation}<textarea name="peak_context" maxLength={1000} rows={3} defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.context_description ?? "") as string} /></label>
             <small>{t.peakSituationHelp}</small>
             <div className={ui.timePair}>
-              <label className={ui.fieldLabel}>{t.peakDirection}<select name="peak_direction" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.vertical_direction as string) ?? "unknown"}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></select></label>
+              <label className={ui.fieldLabel}>{t.peakDirection}<SelectControl name="peak_direction" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.vertical_direction as string) ?? "unknown"}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></SelectControl></label>
               <label className={ui.fieldLabel}>{t.peakIntensity}<input name="peak_intensity" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.vertical_intensity ?? "") as number | string} /></label>
               <label className={ui.fieldLabel}>{t.temperature}<input name="temperature" type="number" inputMode="decimal" min="-3" max="45" step="0.1" defaultValue={(draftPayload?.observed_temperature as Row | null | undefined)?.celsius ?? ""} /></label>
             </div>
@@ -405,25 +407,26 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
         {restore.some((x) => x.id === "active") && <button type="button" className={ui.button} onClick={() => { const item = restore.find((x) => x.id === "active"); if (!item) return; setDraftPayload(item.payload); setId(item.payload.id); setKey(item.key); if (item.pendingCreate) setPendingCreate({ id: item.payload.id, key: item.key, payload: item.payload }); const peak = (item.payload.peak_events as Row[] | undefined)?.[0]; setPeakId((peak?.id as string) ?? uuid()); setFormEpoch((value) => value + 1); setMessage(t.restoreManual); }}>{t.restoreDraft}</button>}
         {restore.some((x) => x.id === "pending-mutation") && <button type="button" className={ui.button} onClick={() => { const item = restore.find((x) => x.id === "pending-mutation"); if (!item?.pendingMutation) return; const pending = item.pendingMutation; setPendingMutation(pending); void fetch(`/api/admin/observations/${pending.id}`, { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error(); const data = { ...(await response.json()).data, etag: pending.etag }; setSelected(data); setCorrectionDraft(pending.record); setCorrectionPCI(pending.pci); setCorrectionNotes(pending.notes); }).catch(() => setMessage(t.listError)); }}>{t.retryMutation}</button>}
         </fieldset>
-        <div className={ui.formActions}><p className={ui.notice}>{t.publicWarning}</p><button className={ui.primary} disabled={busy}>{busy ? t.saving : pendingCreate ? t.retryMutation : t.save}</button>{sessionExpired && <p><a target="_blank" rel="noreferrer" href={`/${locale}/admin/login?returnTo=${encodeURIComponent(`/${locale}/admin`)}&recover_draft=1`}>{t.relogin}</a></p>}<p role="status" aria-live="polite">{message}</p></div>
+        <p className={ui.notice}>{t.publicWarning}</p>
+        <div className={ui.formActions}><button className={ui.primary} disabled={busy}>{busy ? t.saving : pendingCreate ? t.retryMutation : t.save}</button>{sessionExpired && <p><a target="_blank" rel="noreferrer" href={`/${locale}/admin/login?returnTo=${encodeURIComponent(`/${locale}/admin`)}&recover_draft=1`}>{t.relogin}</a></p>}<p role="status" aria-live="polite">{message}</p></div>
       </form>
-      <section className={ui.records}><h2 className={ui.sectionTitle}>{t.records}</h2>{rows.length === 0 ? <p>{t.empty}</p> : rows.map((row) => <button className={ui.record} key={row.id} disabled={Boolean(pendingMutation)} onClick={() => void openRow(row)}><strong>{siteLabel(row.site_id, locale)}</strong><span>{row.local_start}</span><span>PCI {row.overall_pci} · rev {row.revision}</span></button>)}{nextCursor && <button className={ui.button} onClick={() => void load(nextCursor, true)}>{t.moreRecords}</button>}
+      <section className={ui.records}><h2 className={ui.sectionTitle}>{t.records}</h2>{rows.length === 0 ? <p>{t.empty}</p> : rows.map((row) => <button className={ui.record} key={row.id} disabled={Boolean(pendingMutation)} onClick={() => void openRow(row)}><strong>{siteLabel(row.site_id, locale)}</strong><span>{row.local_start}</span><span>PCI {row.overall_pci} · rev {row.revision}</span></button>)}{nextCursor && <button className={`${ui.button} mt-4`} onClick={() => void load(nextCursor, true)}>{t.moreRecords}</button>}
         {selected && <article className={ui.detail}>
           <button className={ui.close} disabled={Boolean(pendingMutation)} onClick={() => setSelected(null)}>{t.close}</button>
           <h3>{siteLabel(selected.site_id, locale)}</h3>
           <p>{selected.local_start} · PCI {selected.overall_pci} · rev {selected.revision}</p>
           <fieldset className={ui.fields} disabled={Boolean(pendingMutation)}>
-            <details><summary>{t.correctFields}</summary>
+            <details className={ui.optionalGroup}><summary className={ui.summary}>{t.correctFields}</summary><div className={ui.optionalContent}>
               <label>{t.dateTime}<input type="datetime-local" value={correctionDraft?.local_start ?? ""} onChange={(event) => updateCorrection("local_start", event.target.value)} /></label>
-              <label>{t.timePrecision}<select value={correctionDraft?.time_precision ?? ""} onChange={(event) => updateCorrection("time_precision", event.target.value)}><option value="reported_minute">{t.minuteExact}</option><option value="approximate">{t.approximate}</option></select></label>
-              <label>{t.site}<select value={resolveSiteId(correctionDraft?.site_id) ?? ""} onChange={(event) => updateCorrection("site_id", event.target.value)}><option value="" disabled>{t.sitePlaceholder}</option>{sites.map((site) => <option key={site.id} value={site.id}>{locale === "ko" ? site.name_ko : site.name_en}</option>)}</select></label>
+              <label>{t.timePrecision}<SelectControl value={correctionDraft?.time_precision ?? ""} onChange={(event) => updateCorrection("time_precision", event.target.value)}><option value="reported_minute">{t.minuteExact}</option><option value="approximate">{t.approximate}</option></SelectControl></label>
+              <label>{t.site}<SelectControl value={resolveSiteId(correctionDraft?.site_id) ?? ""} onChange={(event) => updateCorrection("site_id", event.target.value)}><option value="" disabled>{t.sitePlaceholder}</option>{sites.map((site) => <option key={site.id} value={site.id}>{locale === "ko" ? site.name_ko : site.name_en}</option>)}</SelectControl></label>
               <label>{t.zone}<input value={correctionDraft?.zone_id ?? ""} onChange={(event) => updateCorrection("zone_id", event.target.value)} /></label>
               <label>{t.endTime}<input type="datetime-local" value={correctionDraft?.local_end ?? ""} onChange={(event) => updateCorrection("local_end", event.target.value || null)} /></label>
               <label>{t.routeDescription}<input maxLength={300} value={correctionDraft?.route_description ?? ""} onChange={(event) => updateCorrection("route_description", event.target.value)} /></label>
               <label>{t.representativeDepth}<input type="number" inputMode="decimal" min="0" max="200" step="0.1" value={correctionDraft?.representative_depth_m ?? ""} onChange={(event) => updateCorrection("representative_depth_m", event.target.value)} /></label>
-              <label>{t.vertical}<select value={correctionDraft?.vertical?.direction ?? "unknown"} onChange={(event) => updateCorrectionVertical("direction", event.target.value)}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></select></label>
+              <label>{t.vertical}<SelectControl value={correctionDraft?.vertical?.direction ?? "unknown"} onChange={(event) => updateCorrectionVertical("direction", event.target.value)}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></SelectControl></label>
               <label>{t.intensity}<input type="number" inputMode="decimal" min="0" step="0.01" value={correctionDraft?.vertical?.intensity ?? ""} onChange={(event) => updateCorrectionVertical("intensity", event.target.value)} /></label>
-              <label>{t.confidence}<select value={correctionDraft?.confidence ?? "normal"} onChange={(event) => updateCorrection("confidence", event.target.value)}><option value="high">{t.high}</option><option value="normal">{t.normal}</option><option value="low">{t.low}</option></select></label>
+              <label>{t.confidence}<SelectControl value={correctionDraft?.confidence ?? "normal"} onChange={(event) => updateCorrection("confidence", event.target.value)}><option value="high">{t.high}</option><option value="normal">{t.normal}</option><option value="low">{t.low}</option></SelectControl></label>
               <label>{t.temperature}<input type="number" inputMode="decimal" min="-3" max="45" step="0.1" value={correctionDraft?.observed_temperature?.celsius ?? ""} onChange={(event) => updateCorrectionTemperature(event.target.value)} /></label>
               <fieldset className={ui.sample}><legend>{t.verticalOnset}</legend>
                 <label>{t.onsetTime}<input type="datetime-local" value={correctionDraft?.vertical_onset?.local_at ?? ""} onChange={(event) => setCorrectionDraft((current) => current ? { ...current, vertical_onset: event.target.value ? { ...(current.vertical_onset ?? { at: null, depth_m: null }), local_at: event.target.value } : null } : current)} /></label>
@@ -434,20 +437,20 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
                 <label>{t.peakPCI}<input type="number" inputMode="decimal" min="0" step="0.01" value={event.pci ?? ""} onChange={(input) => updateCorrectionPeak(index, "pci", input.target.value)} /></label>
                 <label>{t.peakDepth}<input type="number" inputMode="decimal" min="0" max="200" step="0.1" value={event.depth_m ?? ""} onChange={(input) => updateCorrectionPeak(index, "depth_m", input.target.value)} /></label>
                 <label>{t.peakZone}<input value={event.zone_id ?? ""} onChange={(input) => updateCorrectionPeak(index, "zone_id", input.target.value || null)} /></label>
-                <label>{t.vertical}<select value={event.vertical_direction ?? "unknown"} onChange={(input) => updateCorrectionPeak(index, "vertical_direction", input.target.value)}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></select></label>
+                <label>{t.vertical}<SelectControl value={event.vertical_direction ?? "unknown"} onChange={(input) => updateCorrectionPeak(index, "vertical_direction", input.target.value)}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></SelectControl></label>
                 <label>{t.intensity}<input type="number" inputMode="decimal" min="0" step="0.01" value={event.vertical_intensity ?? ""} onChange={(input) => updateCorrectionPeak(index, "vertical_intensity", input.target.value)} /></label>
                 <label>{t.peakDuration}<input maxLength={300} placeholder={t.peakDurationPlaceholder} value={event.duration_description ?? ""} onChange={(input) => updateCorrectionPeak(index, "duration_description", input.target.value)} /></label>
                 <label>{t.peakSituation}<textarea maxLength={1000} rows={3} value={event.context_description ?? ""} onChange={(input) => updateCorrectionPeak(index, "context_description", input.target.value)} /></label>
                 <button type="button" className={ui.button} onClick={() => setCorrectionDraft((current) => current ? { ...current, peak_events: (current.peak_events ?? []).filter((_: Row, i: number) => i !== index) } : current)}>{t.removePeak}</button>
               </fieldset>)}
               <button type="button" className={ui.button} disabled={(correctionDraft?.peak_events ?? []).length >= 20} onClick={() => setCorrectionDraft((current) => current ? { ...current, peak_events: [...(current.peak_events ?? []), { id: uuid(), local_at: null, at: null, pci: null, depth_m: null, zone_id: null, vertical_direction: "unknown", vertical_intensity: null, duration_description: null, context_description: null }] } : current)}>{t.addPeak}</button>
-            </details>
+            </div></details>
             <label>{t.correctedPCI}<input type="number" inputMode="decimal" min="0" step="0.01" value={correctionPCI} onChange={(event) => setCorrectionPCI(Number(event.target.value))} /></label>
             <label>{t.notes}<textarea maxLength={5000} rows={4} value={correctionNotes} onChange={(event) => setCorrectionNotes(event.target.value)} /></label>
           </fieldset>
           <p>{t.historyWarning}</p>
-          {selected.record_status !== "withdrawn" && <><button className={ui.button} disabled={Boolean(pendingMutation && (pendingMutation.id !== selected.id || pendingMutation.action !== "correct"))} onClick={() => void mutateSelected("correct")}>{pendingMutation?.action === "correct" && pendingMutation.id === selected.id ? t.retryMutation : t.correct}</button>
-          <button className={ui.button} disabled={Boolean(pendingMutation && (pendingMutation.id !== selected.id || pendingMutation.action !== "withdraw"))} onClick={() => void mutateSelected("withdraw")}>{pendingMutation?.action === "withdraw" && pendingMutation.id === selected.id ? t.retryMutation : t.withdraw}</button></>}
+          {selected.record_status !== "withdrawn" && <div className="flex flex-wrap gap-4"><button className={ui.button} disabled={Boolean(pendingMutation && (pendingMutation.id !== selected.id || pendingMutation.action !== "correct"))} onClick={() => void mutateSelected("correct")}>{pendingMutation?.action === "correct" && pendingMutation.id === selected.id ? t.retryMutation : t.correct}</button>
+          <button className={ui.button} disabled={Boolean(pendingMutation && (pendingMutation.id !== selected.id || pendingMutation.action !== "withdraw"))} onClick={() => void mutateSelected("withdraw")}>{pendingMutation?.action === "withdraw" && pendingMutation.id === selected.id ? t.retryMutation : t.withdraw}</button></div>}
           {conflictPair && <div className={ui.notice} role="alert"><strong>{t.conflict}</strong><p>{t.oldValue}: PCI {conflictPair.old.overall_pci}, rev {conflictPair.old.revision}</p><p>{t.newValue}: PCI {conflictPair.latest.overall_pci}, rev {conflictPair.latest.revision}</p></div>}
         </article>}
       </section>
