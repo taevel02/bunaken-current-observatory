@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.3\
+버전: 1.4\
 작성일: 2026-09-30\
 기준: [PRD.md](PRD.md) v1.4 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
@@ -136,7 +136,7 @@ TimeSample은 다이빙 중 특정 시점의 부가 관측이다. `perceived_pci
 
 ### 4.4 환경과 snapshot
 
-SourceSample은 source/product/dataset/variable/version, lat/lon, selected_grid, depth, valid_time, issued_at, retrieved_at, value/unit, native_resolution, interpolation_method, quality_flags를 갖는다. issued_at 미제공은 null과 이유를 남긴다.
+SourceSample은 source/product/dataset/variable/version, lat/lon, selected_grid, depth, valid_time, issued_at, retrieved_at, value/unit, native_resolution, interpolation_method, quality_flags를 갖는다. 신규 sample schema_version은 1.1이며 site_id/zone_id, geometry_version, 선택 셀 좌표·거리, 실제 native_depths_m, source_updated_at을 함께 보존한다. 기존 schema_version 없는 sample은 1.0 형상으로 계속 읽는다. 파랑 주기의 s와 실용 염분의 PSU를 추가 허용한다. source_updated_at은 공급 자료의 갱신 시각이며 issued_at과 같다고 가정하지 않는다. issued_at 미제공은 null과 이유를 남긴다.
 
 EnvironmentLink는 observation_id/revision, snapshot_id 또는 backfill_id, provenance, extraction_version, feature_vector, feature_mask, quality_flags, train_eligible, reason_codes를 갖는다. snapshot과 backfill을 같은 provenance로 저장하지 않는다.
 

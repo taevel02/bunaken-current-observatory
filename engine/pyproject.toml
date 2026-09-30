@@ -4,6 +4,12 @@ version = "0.1.0"
 requires-python = "==3.14.7"
 dependencies = ["jsonschema==4.26.0"]
 
+[project.optional-dependencies]
+providers = [
+    "copernicusmarine==2.5.0",
+    "pyfes==2026.5.2",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

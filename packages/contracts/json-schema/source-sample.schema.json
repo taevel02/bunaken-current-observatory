@@ -1,1 +1,167 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://bunaken-current-observatory.example/schemas/source-sample.schema.json","title":"Environmental source sample","type":"object","additionalProperties":false,"required":["source","product","dataset","variable","version","lat","lon","selected_grid","depth_m","valid_time","issued_at","retrieved_at","value","unit","native_resolution","interpolation_method","quality_flags"],"properties":{"source":{"type":"string"},"product":{"type":"string"},"dataset":{"type":"string"},"variable":{"type":"string"},"version":{"type":"string"},"lat":{"type":"number","minimum":-90,"maximum":90},"lon":{"type":"number","minimum":-180,"maximum":180},"selected_grid":{"type":["string","null"]},"depth_m":{"type":["number","null"],"minimum":0},"valid_time":{"type":"string","format":"date-time"},"issued_at":{"type":["string","null"],"format":"date-time"},"retrieved_at":{"type":"string","format":"date-time"},"value":{"type":["number","null"]},"unit":{"enum":["m/s","m","°C","degree","1"]},"native_resolution":{"type":["string","null"]},"interpolation_method":{"type":["string","null"]},"quality_flags":{"type":"array","items":{"type":"string"}}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/source-sample.schema.json",
+  "title": "Environmental source sample",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source",
+    "product",
+    "dataset",
+    "variable",
+    "version",
+    "lat",
+    "lon",
+    "selected_grid",
+    "depth_m",
+    "valid_time",
+    "issued_at",
+    "retrieved_at",
+    "value",
+    "unit",
+    "native_resolution",
+    "interpolation_method",
+    "quality_flags"
+  ],
+  "properties": {
+    "source": {
+      "type": "string"
+    },
+    "product": {
+      "type": "string"
+    },
+    "dataset": {
+      "type": "string"
+    },
+    "variable": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "lon": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180
+    },
+    "selected_grid": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "depth_m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "valid_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issued_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "value": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "unit": {
+      "enum": [
+        "m/s",
+        "m",
+        "\u00b0C",
+        "degree",
+        "1",
+        "s",
+        "PSU"
+      ]
+    },
+    "native_resolution": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "interpolation_method": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "quality_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "site_id": {
+      "type": "string"
+    },
+    "zone_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "selected_lat": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "selected_lon": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180
+    },
+    "grid_distance_km": {
+      "type": "number",
+      "minimum": 0
+    },
+    "source_updated_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "native_depths_m": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "schema_version": {
+      "enum": [
+        "1.1"
+      ]
+    },
+    "geometry_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}
