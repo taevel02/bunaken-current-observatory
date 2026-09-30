@@ -56,11 +56,11 @@ uv run --project engine --extra providers --locked python -m bunaken_engine coll
 
 `--publish`를 명시했을 때만 data branch에 저장한다. main이나 임의 branch를 쓰지 않는다. `manifest.json`, `features.json.gz`, `forecast.json.gz`는 원자적 한 Git commit으로 저장된다. gzip은 mtime=0으로 생성하고 manifest의 SHA-256과 대조한다. 새 numeric 모델은 P5 전까지 구현되지 않았으므로 forecast PCI는 항상 null이다. 유효 source가 없는 상태도 실패 manifest와 이유로 기록할 수 있으며 성공 run·유효 seal로 취급하지 않는다.
 
-receipt는 bundle 저장 성공을 확인한 뒤 별도 immutable commit으로 저장한다. D+1 seal 검증은 snapshot storage commit의 내용·artifact hash·Git commit 시각, receipt 자체의 Git 저장 시각까지 대조한다. manifest.created_at을 실제 저장 시각으로 사용하지 않는다. receipt가 cutoff 이후 저장됐으면 먼저 생성한 bundle을 과거 성공 run으로 승격하지 않는다.
+receipt는 bundle 저장 성공을 확인한 뒤 별도 immutable commit으로 저장한다. D+1 seal 검증은 snapshot storage commit의 내용·artifact hash·Git commit 시각, receipt 자체의 Git 저장 시각까지 대조한다. manifest.created_at을 실제 저장 시각으로 사용하지 않는다. receipt ref 존재 확인 직후 별도 `snapshot-confirmations`에 실제 확인 시각과 receipt hash를 남긴다. 이 확인이 cutoff 이후면 먼저 생성한 bundle을 과거 성공 run으로 승격하지 않는다. confirmation 누락도 부적격이다.
 
 seal cutoff는 목표 날짜 전날 WITA 20:00이며 정확히 cutoff에 저장한 run도 제외한다. late job은 cutoff를 바꾸지 않는다. `seal --date YYYY-MM-DD`는 Git receipt를 검증한 선택 결과만 출력하며 `--publish`가 있어야 공식 seal을 저장한다. 선택 후보가 없으면 `missed_d1_snapshot`으로 남긴다. 같은 경로의 내용이 다르면 immutable conflict이고 기존 파일을 덮어쓰지 않는다. backfill은 `collect --kind backfill`로 별도 경로에 저장되며 공식 seal 후보에서 제외한다.
 
-receipt 조회는 `snapshot-receipts` subtree만 읽는다. GitHub가 tree를 잘라 반환하면 `receipt_index_required`로 중단한다. 후보 일부만 읽고 정상 seal을 만들지 않는다. receipt 증가에 따른 조회 비용은 운영에서 날짜별 index로 줄일 수 있다.
+receipt와 날짜별 `snapshot-receipt-index`는 같은 commit에 저장한다. 공식 seal은 최대 14일 수집 horizon 안의 index만 조회한다. GitHub directory 반환 제한에 도달하면 `receipt_index_required`로 중단하며 일부 후보로 정상 seal을 만들지 않는다. index 도입 전 receipt는 검증 후 별도 index migration이 필요하다.
 
 환경 전용 historical 행의 scaler는 다음 명령으로 생성한다. 입력 행은 valid_time/retrieved_at/issued_at/features/dataset/version/geometry_version만 허용한다. label과 당시 없었던 미래 자료는 받지 않는다.
 
@@ -78,3 +78,7 @@ uv run --project engine --locked python -m bunaken_engine scaler \
 GitHub의 `environmental-data` environment에 승인·branch 정책을 설정하고 `GITHUB_WRITE_TOKEN`을 등록한다. 이 토큰은 공개 저장소 Contents 쓰기용이며 production 웹 비밀과 분리한다. 필요할 때 Copernicus 계정·Open-Meteo key와 사용 모드를 별도 등록한다. FES atlas는 공개 Git에 넣지 않는다. 현 workflow의 hosted runner에는 atlas가 없으므로 FES 수집은 결측으로 처리된다. atlas 준비·라이선스 확인·reference conformance 검증 전에는 성공 snapshot이 나오지 않는다.
 
 수동 실행은 main의 `Trusted environmental pipeline`에서 `operation=collect`와 고정 code SHA를 지정한다. 날짜를 비우면 WITA 내일이다. cutoff 이후 `operation=seal`과 목표 날짜를 지정하면 공식 D+1 seal을 저장한다. 예약 스케줄·실제 data entrypoint 설치·credential을 이용한 API smoke test는 P7 운영 연결에서 진행한다. 지금은 immutable 저장 및 trusted 호출 계약을 검증한다.
+
+Historical scaler의 `--input`에는 환경 전용 row JSON 또는 backfill의 `manifest.json`을 지정한다. 후자는 manifest·압축 artifact hash·공개 스키마를 검증한 뒤 feature window와 실제 source availability를 연결한다. cutoff 이후 retrieval·issued·valid window는 scaler에서 제외한다. 현재 실제 historical row는 없으며 빈 분포의 feature는 `no_historical_distribution`으로 비활성화된다.
+
+receipt 시각은 신뢰된 collector가 ref 반영 확인 후 기록한 시각이다. Git committer date는 보조 일관성 검사이며 독립적인 저장 시각 증명은 아니다. data 쓰기 권한자는 Git metadata도 수정할 수 있으므로 해당 권한과 main/environment 승인 정책을 함께 보호해야 한다.

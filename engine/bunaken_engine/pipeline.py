@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from bunaken_engine.features import extract_window, instant
+from bunaken_engine.features import extract_window, instant, finite
 from bunaken_engine.registry import ROOT, read_json, load_sources, load_geometry, export_allowed
 from bunaken_engine.sources import collect_fes, collect_copernicus, collect_open_meteo, SourceError, utc_now
 from bunaken_engine.git_store import StorageError
@@ -59,6 +59,10 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
                 at=start+timedelta(days=day,hours=8,minutes=30*half_hour)
                 until=at+timedelta(hours=1)
                 window=extract_window(usable_samples,geometry,at.isoformat(),until.isoformat())
+                required_features=["tide_rate_m_per_hour","tide_excursion_m","current_along_m_s","current_cross_m_s","current_speed_m_s"]
+                if any(not finite(window["values"].get(name)) for name in required_features):
+                    for source_id in REQUIRED:
+                        failures[source_id].add("required_window_coverage_missing")
                 feature_rows.append(dict(site_id=geometry["site_id"],zone_id=geometry.get("id"),**window))
     statuses={source_id:dict(status="failed" if reasons else "succeeded",reason_codes=sorted(reasons)) for source_id,reasons in failures.items()}
     success=bool(verified) and all(statuses[source_id]["status"]=="succeeded" for source_id in REQUIRED)
@@ -85,12 +89,13 @@ def publish_bundle(store, manifest, files, *, root=ROOT) -> dict:
         validate("snapshot-receipt",receipt,root)
         if receipt["manifest_sha256"]!=manifest_hash:
             raise SnapshotError("immutable_run_conflict")
+        confirm_receipt(store,receipt,root=root)
         return receipt
     storage_commit=store.insert(files)
     receipt=dict(schema_version="1.0",run_id=manifest["run_id"],kind=manifest["kind"],status=manifest["status"],manifest_path=manifest_path,manifest_sha256=manifest_hash,storage_commit=storage_commit,persisted_at=utc_now(),valid_start=manifest["valid_start"],valid_end=manifest["valid_end"])
     validate("snapshot-receipt",receipt,root)
     try:
-        store.insert({receipt_path:canonical(receipt)},"confirm immutable snapshot storage")
+        store.insert({receipt_path:canonical(receipt),f"snapshot-receipt-index/{manifest['date_wita']}/{manifest['run_id']}.json":canonical(receipt)},"confirm immutable snapshot storage")
     except StorageError as error:
         if str(error) != "immutable_conflict":
             raise
@@ -102,7 +107,36 @@ def publish_bundle(store, manifest, files, *, root=ROOT) -> dict:
         validate("snapshot-receipt",receipt,root)
         if receipt["manifest_sha256"] != manifest_hash:
             raise SnapshotError("immutable_run_conflict") from None
+    confirm_receipt(store,receipt,root=root)
     return receipt
+
+
+def confirm_receipt(store,receipt,*,root=ROOT):
+    path=f"snapshot-confirmations/{receipt['run_id']}.json"
+    expected=digest(canonical(receipt))
+    existing=store.read(path,store.head())
+    if existing is not None:
+        confirmation=json.loads(existing)
+        validate("snapshot-confirmation",confirmation,root)
+        if confirmation["receipt_sha256"]!=expected:
+            raise SnapshotError("receipt_confirmation_mismatch")
+        return confirmation
+    # This clock read follows successful receipt ref confirmation, never commit creation.
+    confirmation=dict(schema_version="1.0",run_id=receipt["run_id"],receipt_sha256=expected,confirmed_at=utc_now())
+    validate("snapshot-confirmation",confirmation,root)
+    try:
+        store.insert({path:canonical(confirmation)},"confirm receipt branch visibility")
+    except StorageError as error:
+        if str(error)!="immutable_conflict":
+            raise
+        existing=store.read(path,store.head())
+        if existing is None:
+            raise
+        confirmation=json.loads(existing)
+        validate("snapshot-confirmation",confirmation,root)
+        if confirmation["receipt_sha256"]!=expected:
+            raise SnapshotError("receipt_confirmation_mismatch") from None
+    return confirmation
 
 
 def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
@@ -115,12 +149,22 @@ def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
     prefix=bundle_path(manifest["date_wita"],manifest["run_id"],manifest["kind"])
     if receipt["manifest_path"]!=prefix+"/manifest.json" or receipt["run_id"]!=manifest["run_id"] or receipt["kind"]!=manifest["kind"] or receipt["status"]!=manifest["status"]:
         raise SnapshotError("receipt_identity_mismatch")
+    artifacts={}
     for name,expected in manifest["artifact_hashes"].items():
         content=store.read(prefix+"/"+name,receipt["storage_commit"])
         if content is None or digest(content)!=expected:
             raise SnapshotError("receipt_artifact_mismatch")
-    # A receipt written after cutoff cannot backdate a successful pre-cutoff run.
-    stored=max(instant(receipt["persisted_at"]),instant(store.commit_time(receipt["storage_commit"])),instant(store.path_commit_time(f"snapshot-receipts/{receipt['run_id']}.json",head)))
+        artifacts[name]=json.loads(gzip.decompress(content))
+    make_bundle(manifest,artifacts["features.json.gz"],artifacts["forecast.json.gz"],root=root,kind=manifest["kind"])
+    raw_confirmation=store.read(f"snapshot-confirmations/{receipt['run_id']}.json",head)
+    if raw_confirmation is None:
+        return {**receipt,"storage_verified":False,"reason_codes":["receipt_confirmation_missing"]}
+    confirmation=json.loads(raw_confirmation)
+    validate("snapshot-confirmation",confirmation,root)
+    if confirmation["run_id"]!=receipt["run_id"] or confirmation["receipt_sha256"]!=digest(canonical(receipt)):
+        raise SnapshotError("receipt_confirmation_mismatch")
+    # Confirmation time follows the receipt ref update, including delayed PATCH responses.
+    stored=max(instant(confirmation["confirmed_at"]),instant(receipt["persisted_at"]),instant(store.commit_time(receipt["storage_commit"])),instant(store.path_commit_time(f"snapshot-receipts/{receipt['run_id']}.json",head)))
     return {**receipt,"valid_start":manifest["valid_start"],"valid_end":manifest["valid_end"],"persisted_at":stored.isoformat().replace("+00:00","Z"),"storage_verified":True}
 
 
@@ -135,4 +179,21 @@ def publish_seal(store, target_date: str, receipts: list[dict], *, root=ROOT, no
     result=select_seal(target_date,candidates,now or utc_now())
     validate("seal",result,root)
     store.insert({path:canonical(result)},"seal D+1 at fixed WITA cutoff")
+    return result
+
+
+def historical_rows(manifest_path, *, root=ROOT) -> list[dict]:
+    """Consume only a validated backfill bundle, preserving its availability cutoff."""
+    manifest=json.loads(manifest_path.read_bytes())
+    if manifest.get('kind') != 'backfill':
+        raise SnapshotError('historical_backfill_required')
+    features=json.loads(gzip.decompress((manifest_path.parent/'features.json.gz').read_bytes()))
+    forecast=json.loads(gzip.decompress((manifest_path.parent/'forecast.json.gz').read_bytes()))
+    make_bundle(manifest,features,forecast,root=root,kind='backfill')
+    result=[]
+    for row in features:
+        samples=[sample for sample in manifest['samples'] if sample.get('site_id')==row['site_id'] and sample.get('zone_id')==row['zone_id']]
+        if not samples:
+            continue
+        result.append(dict(valid_time=row['end_at'],retrieved_at=max(samples,key=lambda item:instant(item['retrieved_at']))['retrieved_at'],issued_at=max((item['issued_at'] for item in samples if item.get('issued_at')),key=instant,default=None),features=row['values'],dataset=manifest['dataset_versions'],version=manifest['feature_version'],geometry_version=row['geometry_version']))
     return result

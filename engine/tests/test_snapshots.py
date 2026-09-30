@@ -55,3 +55,26 @@ class SnapshotTest(unittest.TestCase):
         self.assertTrue(all(allowed_data_path(path) for path in files))
         readiness=assess_sources([], ["fes-height","copernicus-currents"],"2026-09-30T00:00:00Z")
         self.assertTrue(all(state["status"]=="failed" for state in readiness.values()))
+
+
+    def test_backfill_bundle_connects_to_scaler_and_validates_hashes(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from bunaken_engine.pipeline import historical_rows
+        manifest,files=collect_run("2026-10-01",CODE,days=1,run_id=RUN,kind="backfill")
+        with TemporaryDirectory() as directory:
+            root=Path(directory)
+            for name,content in files.items():
+                target=root/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(content)
+            path=next(root/name for name in files if name.endswith("manifest.json"))
+            self.assertEqual(historical_rows(path),[])
+            (path.parent/"features.json.gz").write_bytes(gzip.compress(b'[{}]',mtime=0))
+            with self.assertRaises(SnapshotError):historical_rows(path)
+
+
+    def test_success_bundle_requires_actual_window_features(self):
+        manifest,files=collect_run("2026-10-01",CODE,days=1,run_id=RUN)
+        manifest["status"]="succeeded"
+        forecast=json.loads(gzip.decompress(next(content for name,content in files.items() if name.endswith("forecast.json.gz"))))
+        with self.assertRaisesRegex(SnapshotError,"required_window_coverage_missing"):
+            make_bundle(manifest,[],forecast)

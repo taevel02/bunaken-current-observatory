@@ -14,7 +14,7 @@ from jsonschema.exceptions import ValidationError
 from bunaken_engine.registry import load_sources, load_geometry, read_json
 from bunaken_engine.features import build_scaler
 from bunaken_engine.git_store import GitDataStore, StorageError
-from bunaken_engine.pipeline import collect_run, publish_bundle, publish_seal, verified_receipt
+from bunaken_engine.pipeline import collect_run, publish_bundle, publish_seal, verified_receipt, historical_rows
 from bunaken_engine.snapshots import canonical, digest, bundle_path, make_bundle, select_seal, SnapshotError
 from bunaken_engine.sources import SourceError, utc_now
 
@@ -90,6 +90,8 @@ def main(argv=None):
             result=dict(run_id=run_id,status=manifest["status"],samples=len(manifest["samples"]),source_status=manifest["source_status"],saved_to_public_repository=receipt is not None,storage_commit=receipt["storage_commit"] if receipt else None)
         elif args.command=="scaler":
             data=read_json(args.input)
+            if isinstance(data,dict):
+                data=historical_rows(args.input,root=root)
             registry=read_json(root/"config/features.json")
             features=[name for group in registry["groups"].values() for name in group["features"]]
             result=build_scaler(data,features,args.cutoff)
@@ -99,7 +101,7 @@ def main(argv=None):
             write_files(args.output.parent,{args.output.name:canonical(result)})
             result=dict(version=result["version"],row_count=result["row_count"],enabled_features=sum(item["enabled"] for item in result["features"].values()))
         else:
-            store=store_from_env();head=store.head();receipts=store.receipts(head)
+            store=store_from_env();head=store.head();receipts=store.receipts(head,args.date)
             if args.publish:
                 result=publish_seal(store,args.date,receipts,root=root)
             else:

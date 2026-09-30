@@ -16,7 +16,7 @@ test("registered Bunaken Sites have stable unique IDs and resolve display names"
   assert.equal(resolveSiteId("mikes-point"), "mikes-point");
   assert.equal(resolveSiteId("unregistered-site"), null);
 });
-const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "prediction", "release", "error-envelope", "snapshot-receipt", "seal"];
+const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "prediction", "release", "error-envelope", "snapshot-receipt", "snapshot-confirmation", "seal"];
 const schemas = await Promise.all(schemaNames.map(async name => JSON.parse(await readFile(new URL(`json-schema/${name}.schema.json`, base), "utf8"))));
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 addFormats(ajv);

@@ -2,6 +2,7 @@
 import base64
 import json
 import re
+from datetime import date, timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -24,7 +25,7 @@ class GitDataStore:
         if self.requester:
             return self.requester(method,path,body)
         payload=None if body is None else json.dumps(body).encode()
-        req=Request(self.base+path,data=payload,method=method,headers={"Authorization":f"Bearer {self.token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
+        req=Request(self.base+path,data=payload,method=method,headers={"Authorization":f"Bearer {self.token}","Accept":"application/vnd.github.object+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
         try:
             with urlopen(req,timeout=30) as response:
                 return json.load(response)
@@ -51,7 +52,12 @@ class GitDataStore:
         result=self.request("GET",f"/contents/{quote(path,safe='/')}?ref={quote(ref,safe='')}")
         if result is None:
             return None
-        if result.get("encoding")!="base64":
+        if result.get("encoding")=="none":
+            sha=result.get("sha","")
+            if not re.fullmatch(r"[0-9a-f]{40}",sha):
+                raise StorageError("invalid_blob_identity")
+            result=self.request("GET",f"/git/blobs/{sha}")
+        if not result or result.get("encoding")!="base64":
             raise StorageError("unsupported_content_encoding")
         return base64.b64decode(result["content"])
 
@@ -101,7 +107,26 @@ class GitDataStore:
             raise StorageError("storage_commit_missing")
         return commits[0]["commit"]["committer"]["date"]
 
-    def receipts(self,head):
+    def receipts(self,head,target_date=None):
+        if target_date is not None:
+            target=date.fromisoformat(target_date)
+            result=[]
+            # Collection horizons are capped at 14 days. Earlier runs cannot cover this day.
+            for offset in range(14):
+                day=(target-timedelta(days=offset)).isoformat()
+                listing=self.request("GET",f"/contents/snapshot-receipt-index/{day}?ref={quote(head,safe='')}")
+                if listing is None:
+                    continue
+                if isinstance(listing,dict):
+                    listing=listing.get("entries")
+                if not isinstance(listing,list) or len(listing)>=1000:
+                    raise StorageError("receipt_index_required")
+                for item in listing:
+                    path=item.get("path","")
+                    if item.get("type")!="file" or not allowed_data_path(path):
+                        raise StorageError("receipt_tree_invalid")
+                    result.append(json.loads(self.read(path,head)))
+            return result
         commit=self.request("GET",f"/git/commits/{head}")
         root=self.request("GET",f"/git/trees/{commit['tree']['sha']}")
         entry=next((item for item in root["tree"] if item["path"]=="snapshot-receipts" and item["type"]=="tree"),None)

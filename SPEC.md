@@ -142,7 +142,7 @@ EnvironmentLink는 observation_id/revision, snapshot_id 또는 backfill_id, prov
 
 Snapshot manifest는 run_id, local_run_date, generated_at, source metadata, code_ref, input_data_ref, model/scaler/feature/geometry version, 파일 경로·hash를 포함한다. 자기 자신 또는 자기 commit SHA를 자기 내부 해시에 넣지 않는다. 같은 run_id로 다른 바이트를 덮어쓰지 않는다.
 
-Git ref 갱신 뒤 별도 immutable receipt에 snapshot_commit_sha와 실제 성공 확인 시각 recorded_at을 남긴다. commit 작성 시각만으로 cutoff 이전 저장을 증명하지 않는다. cutoff 시점의 적격 판정에는 존재가 확인된 receipt를 사용하며 receipt 생성이 늦으면 보수적으로 부적격 처리한다. 이 규칙은 PRD의 실제 보존 시점 조건을 구현하기 위한 세부 규약이다.
+Git ref 갱신 뒤 별도 immutable receipt에 snapshot_commit_sha와 실제 성공 확인 시각 recorded_at을 남긴다. commit 작성 시각만으로 cutoff 이전 저장을 증명하지 않는다. receipt ref 갱신을 확인한 직후 별도 immutable confirmation에 receipt hash와 confirmed_at을 기록한다. cutoff 적격 판정은 이 확인 시각까지 포함하며 confirmation이 없거나 실제 receipt 확인이 늦으면 보수적으로 부적격 처리한다. confirmation 파일 자체를 늦게 작성해도 확인 시각을 과거로 바꾸지 않는다. Git committer date는 보조 검사이고 독립된 저장 시각 증명은 아니다. 이 규칙은 PRD의 실제 보존 시점 조건을 구현하기 위한 세부 규약이다.
 
 ### 4.5 Prediction과 웹 release
 
