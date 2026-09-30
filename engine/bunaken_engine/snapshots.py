@@ -42,7 +42,7 @@ def bundle_path(date_wita: str, run_id: str, kind: str="snapshot") -> str:
     return f"{'snapshots' if kind=='snapshot' else 'backfills'}/{date_wita}/{run_id}"
 
 
-def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT, *, reference_depth=None) -> dict:
+def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT, *, reference_depth=None, historical=False) -> dict:
     registry=load_sources(root)
     result={}
     for source_id in required:
@@ -61,10 +61,11 @@ def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT
             if source["stale_after_hours"] is not None:
                 age_time=row.get("issued_at") or row.get("source_updated_at")
                 if age_time is None:
-                    reasons.append("source_age_unknown")
+                    if not historical:
+                        reasons.append("source_age_unknown")
                 elif instant(age_time)>instant(now):
                     reasons.append("source_time_in_future")
-                elif (instant(now)-instant(age_time)).total_seconds()>source["stale_after_hours"]*3600:
+                elif not historical and (instant(now)-instant(age_time)).total_seconds()>source["stale_after_hours"]*3600:
                     reasons.append("stale_required_source")
         result[source_id]=dict(status="succeeded" if not reasons else "failed",reason_codes=sorted(set(reasons)))
     return result

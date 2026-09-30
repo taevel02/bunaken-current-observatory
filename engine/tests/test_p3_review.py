@@ -33,3 +33,14 @@ class ReviewRegressionTest(unittest.TestCase):
         with patch('bunaken_engine.snapshots.load_sources',return_value=sources):
             result=assess_sources(rows,['copernicus-currents'],'2026-09-30T01:00Z',reference_depth=15)
         self.assertEqual(result['copernicus-currents']['status'],'succeeded')
+
+
+    def test_historical_freshness_is_separate_from_forecast_source_age(self):
+        sources=load_sources()
+        sources['copernicus-currents']['redistribution'].update(derived_allowed=True,public_variables=['uo','vo'])
+        rows=[dict(source='copernicus-currents',variable=variable,depth_m=15,value=.2,quality_flags=[],issued_at='2026-01-01T00:00Z') for variable in ['uo','vo']]
+        with patch('bunaken_engine.snapshots.load_sources',return_value=sources):
+            live=assess_sources(rows,['copernicus-currents'],'2026-09-30T01:00Z',reference_depth=15)
+            history=assess_sources(rows,['copernicus-currents'],'2026-09-30T01:00Z',reference_depth=15,historical=True)
+        self.assertEqual(live['copernicus-currents']['status'],'failed')
+        self.assertEqual(history['copernicus-currents']['status'],'succeeded')

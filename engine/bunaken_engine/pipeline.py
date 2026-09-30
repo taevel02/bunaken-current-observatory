@@ -49,7 +49,7 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
             except SourceError as error:
                 failures[source_id].add(error.code)
         samples.extend(point_samples)
-        readiness=assess_sources(point_samples,list(registry),utc_now(),root,reference_depth=geometry["reference_depth_m"])
+        readiness=assess_sources(point_samples,list(registry),utc_now(),root,reference_depth=geometry["reference_depth_m"],historical=kind=="backfill")
         usable={source_id for source_id,state in readiness.items() if state["status"]=="succeeded"}
         usable_samples=[row for row in point_samples if row["source"] in usable]
         for source_id,state in readiness.items():
