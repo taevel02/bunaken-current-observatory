@@ -1,0 +1,226 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "id": "fes-height",
+      "provider": "fes",
+      "product": "FES2022b",
+      "dataset": "FES2022b-elevations",
+      "variables": {
+        "tide_height": "m"
+      },
+      "native_resolution": {
+        "horizontal": "1/30 degree harmonic atlas",
+        "time_hours": null,
+        "depth": "surface"
+      },
+      "update_interval_hours": null,
+      "stale_after_hours": null,
+      "metadata_checked_at": "2026-09-30",
+      "evidence_urls": [
+        "https://www.aviso.altimetry.fr/fileadmin/documents/data/tools/hdbk_FES2022.pdf",
+        "https://github.com/CNES/aviso-fes/tree/2.9.7"
+      ],
+      "dataset_version": null,
+      "access": {
+        "status": "requires_runtime_metadata",
+        "credentials": []
+      },
+      "redistribution": {
+        "license_url": "https://www.aviso.altimetry.fr/fileadmin/documents/data/License_Aviso.pdf",
+        "derived_allowed": true,
+        "raw_allowed": false,
+        "public_variables": [
+          "tide_height"
+        ],
+        "attribution": "CNES/LEGOS/NOVELTIS/CLS, FES2022, DOI 10.24400/527896/A01-2024.004; point tide predictions derived with LIBFES; AVISO License applies"
+      }
+    },
+    {
+      "id": "copernicus-currents",
+      "provider": "copernicus",
+      "product": "GLOBAL_ANALYSISFORECAST_PHY_001_024",
+      "dataset": "cmems_mod_glo_phy-cur_anfc_0.083deg_PT6H-i",
+      "variables": {
+        "uo": "m/s",
+        "vo": "m/s"
+      },
+      "native_resolution": {
+        "horizontal": "0.083 degree",
+        "time_hours": 6,
+        "depth": "50 native levels; actual depth axis captured at retrieval"
+      },
+      "update_interval_hours": 24,
+      "stale_after_hours": 36,
+      "metadata_checked_at": "2026-09-30",
+      "evidence_urls": [
+        "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/services"
+      ],
+      "dataset_version": null,
+      "access": {
+        "status": "requires_runtime_metadata",
+        "credentials": [
+          "COPERNICUSMARINE_SERVICE_USERNAME",
+          "COPERNICUSMARINE_SERVICE_PASSWORD"
+        ]
+      },
+      "redistribution": {
+        "license_url": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence",
+        "derived_allowed": false,
+        "raw_allowed": false,
+        "public_variables": [],
+        "attribution": "E.U. Copernicus Marine Service Information, DOI 10.48670/moi-00016; licence endpoint must be verified before public export"
+      }
+    },
+    {
+      "id": "copernicus-temperature",
+      "provider": "copernicus",
+      "product": "GLOBAL_ANALYSISFORECAST_PHY_001_024",
+      "dataset": "cmems_mod_glo_phy-thetao_anfc_0.083deg_PT6H-i",
+      "variables": {
+        "thetao": "\u00b0C"
+      },
+      "native_resolution": {
+        "horizontal": "0.083 degree",
+        "time_hours": 6,
+        "depth": "50 native levels; actual depth axis captured at retrieval"
+      },
+      "update_interval_hours": 24,
+      "stale_after_hours": 36,
+      "metadata_checked_at": "2026-09-30",
+      "evidence_urls": [
+        "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/services"
+      ],
+      "dataset_version": null,
+      "access": {
+        "status": "requires_runtime_metadata",
+        "credentials": [
+          "COPERNICUSMARINE_SERVICE_USERNAME",
+          "COPERNICUSMARINE_SERVICE_PASSWORD"
+        ]
+      },
+      "redistribution": {
+        "license_url": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence",
+        "derived_allowed": false,
+        "raw_allowed": false,
+        "public_variables": [],
+        "attribution": "E.U. Copernicus Marine Service Information, DOI 10.48670/moi-00016; licence endpoint must be verified before public export"
+      }
+    },
+    {
+      "id": "copernicus-salinity",
+      "provider": "copernicus",
+      "product": "GLOBAL_ANALYSISFORECAST_PHY_001_024",
+      "dataset": "cmems_mod_glo_phy-so_anfc_0.083deg_PT6H-i",
+      "variables": {
+        "so": "PSU"
+      },
+      "native_resolution": {
+        "horizontal": "0.083 degree",
+        "time_hours": 6,
+        "depth": "50 native levels; actual depth axis captured at retrieval"
+      },
+      "update_interval_hours": 24,
+      "stale_after_hours": 36,
+      "metadata_checked_at": "2026-09-30",
+      "evidence_urls": [
+        "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/services"
+      ],
+      "dataset_version": null,
+      "access": {
+        "status": "requires_runtime_metadata",
+        "credentials": [
+          "COPERNICUSMARINE_SERVICE_USERNAME",
+          "COPERNICUSMARINE_SERVICE_PASSWORD"
+        ]
+      },
+      "redistribution": {
+        "license_url": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence",
+        "derived_allowed": false,
+        "raw_allowed": false,
+        "public_variables": [],
+        "attribution": "E.U. Copernicus Marine Service Information, DOI 10.48670/moi-00016; licence endpoint must be verified before public export"
+      }
+    },
+    {
+      "id": "open-meteo-wind",
+      "provider": "open-meteo",
+      "product": "weather",
+      "dataset": "ecmwf_ifs025",
+      "variables": {
+        "wind_speed_10m": "m/s",
+        "wind_direction_10m": "degree"
+      },
+      "native_resolution": {
+        "horizontal": "0.25 degree",
+        "time_hours": null,
+        "depth": "10 m above surface"
+      },
+      "update_interval_hours": 6,
+      "stale_after_hours": 36,
+      "metadata_checked_at": "2026-09-30",
+      "evidence_urls": [
+        "https://open-meteo.com/en/docs"
+      ],
+      "dataset_version": null,
+      "access": {
+        "status": "requires_runtime_metadata",
+        "credentials": []
+      },
+      "redistribution": {
+        "license_url": "https://open-meteo.com/en/terms",
+        "derived_allowed": true,
+        "raw_allowed": false,
+        "public_variables": [
+          "wind_speed_10m",
+          "wind_direction_10m"
+        ],
+        "attribution": "Open-Meteo / ECMWF; CC BY 4.0; hourly API output may be interpolated from native forecast steps"
+      }
+    },
+    {
+      "id": "open-meteo-wave",
+      "provider": "open-meteo",
+      "product": "marine",
+      "dataset": "meteofrance_wave",
+      "variables": {
+        "wave_height": "m",
+        "wave_period": "s",
+        "wave_direction": "degree",
+        "swell_wave_height": "m",
+        "swell_wave_period": "s",
+        "swell_wave_direction": "degree"
+      },
+      "native_resolution": {
+        "horizontal": "0.08 degree",
+        "time_hours": 3,
+        "depth": "surface"
+      },
+      "update_interval_hours": 12,
+      "stale_after_hours": 36,
+      "metadata_checked_at": "2026-09-30",
+      "evidence_urls": [
+        "https://open-meteo.com/en/docs/marine-weather-api"
+      ],
+      "dataset_version": null,
+      "access": {
+        "status": "requires_runtime_metadata",
+        "credentials": []
+      },
+      "redistribution": {
+        "license_url": "https://open-meteo.com/en/terms",
+        "derived_allowed": true,
+        "raw_allowed": false,
+        "public_variables": [
+          "wave_height",
+          "wave_period",
+          "wave_direction",
+          "swell_wave_height",
+          "swell_wave_period",
+          "swell_wave_direction"
+        ],
+        "attribution": "Open-Meteo / MeteoFrance MFWAM; CC BY 4.0; hourly API output interpolated from 3-hour native data"
+      }
+    }
+  ]
+}
