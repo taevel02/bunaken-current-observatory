@@ -1,1 +1,196 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://bunaken-current-observatory.example/schemas/snapshot.schema.json","title":"Immutable environment snapshot","type":"object","additionalProperties":false,"required":["snapshot_id","schema_version","date_wita","run_id","created_at","source_issued_at","source_retrieved_at","valid_start","valid_end","dataset_versions","geometry_version","scaler_version","code_commit","samples"],"properties":{"snapshot_id":{"type":"string"},"schema_version":{"type":"string"},"date_wita":{"type":"string","format":"date"},"run_id":{"type":"string","format":"uuid"},"created_at":{"type":"string","format":"date-time"},"source_issued_at":{"type":["string","null"],"format":"date-time"},"source_retrieved_at":{"type":"string","format":"date-time"},"valid_start":{"type":"string","format":"date-time"},"valid_end":{"type":"string","format":"date-time"},"dataset_versions":{"type":"object","additionalProperties":{"type":"string"}},"geometry_version":{"type":["string","null"]},"scaler_version":{"type":["string","null"]},"code_commit":{"type":"string"},"samples":{"type":"array","items":{"$ref":"source-sample.schema.json"}}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/snapshot.schema.json",
+  "title": "Immutable environment snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "snapshot_id",
+    "schema_version",
+    "date_wita",
+    "run_id",
+    "created_at",
+    "source_issued_at",
+    "source_retrieved_at",
+    "valid_start",
+    "valid_end",
+    "dataset_versions",
+    "geometry_version",
+    "scaler_version",
+    "code_commit",
+    "samples"
+  ],
+  "properties": {
+    "snapshot_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "date_wita": {
+      "type": "string",
+      "format": "date"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_issued_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "source_retrieved_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "valid_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "dataset_versions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "geometry_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "scaler_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "code_commit": {
+      "type": "string"
+    },
+    "samples": {
+      "type": "array",
+      "items": {
+        "$ref": "source-sample.schema.json"
+      }
+    },
+    "status": {
+      "enum": [
+        "succeeded",
+        "failed"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "snapshot",
+        "backfill"
+      ]
+    },
+    "feature_version": {
+      "type": "string"
+    },
+    "source_registry_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "geometry_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "artifact_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "features.json.gz",
+        "forecast.json.gz"
+      ],
+      "properties": {
+        "features.json.gz": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "forecast.json.gz": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "source_status": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "reason_codes"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed"
+            ]
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1"
+          }
+        },
+        "required": [
+          "schema_version"
+        ]
+      },
+      "then": {
+        "required": [
+          "status",
+          "kind",
+          "feature_version",
+          "source_registry_hash",
+          "geometry_hash",
+          "artifact_hashes",
+          "source_status"
+        ],
+        "properties": {
+          "code_commit": {
+            "pattern": "^[0-9a-f]{40}$",
+            "type": "string"
+          },
+          "status": {},
+          "kind": {},
+          "feature_version": {},
+          "source_registry_hash": {},
+          "geometry_hash": {},
+          "artifact_hashes": {},
+          "source_status": {}
+        }
+      }
+    }
+  ]
+}

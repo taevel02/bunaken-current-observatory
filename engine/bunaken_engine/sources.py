@@ -39,11 +39,13 @@ def fetch_json(url: str, opener=urlopen, sleep=time.sleep) -> dict:
                 raise SourceError("provider_response_too_large")
             return json.loads(raw)
         except HTTPError as error:
-            retryable = error.code in {429, 500, 502, 503, 504}
+            status = error.code
+            error.close()
+            retryable = status in {429, 500, 502, 503, 504}
             if retryable and attempt < 2:
                 sleep(2**attempt)
                 continue
-            raise SourceError("provider_rate_limited" if error.code == 429 else "provider_http_error", retryable) from None
+            raise SourceError("provider_rate_limited" if status == 429 else "provider_http_error", retryable) from None
         except (URLError, TimeoutError):
             if attempt < 2:
                 sleep(2**attempt)
@@ -213,7 +215,7 @@ def collect_fes(source: dict, geometry: dict, start: str, end: str, *, config_pa
         for at,height,lp,flag in zip(times,tide,long_period,quality):
             value=float(height+lp)*scale if flag>0 else None
             flags=[] if flag>0 else ["fes_undefined" if flag==0 else "fes_extrapolation_rejected"]
-            flags.append("reference_engine_conformance_unverified")
+            flags.extend(["reference_engine_conformance_unverified", "atlas_version_unverified"])
             output.append(sample(source,geometry,"tide_height",value,at.isoformat().replace("+00:00","Z"),retrieved,flags=flags,version=f"FES2022b/pyfes-{package_version('pyfes')}/{config_hash}"))
         return output
     except SourceError:

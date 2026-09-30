@@ -43,3 +43,28 @@ Open-Meteo는 [weather docs](https://open-meteo.com/en/docs), [marine docs](http
 Copernicus 공식 `describe` 실제 조회에서 currents/temperature/salinity의 version `202406`과 50개 실제 depth 좌표를 확인했다. static bathymetry는 dataset `cmems_mod_glo_phy_anfc_0.083deg_static`, version `202211`, part `bathy`의 `deptho/mask`다. adapter는 바다 mask·해저 깊이·거리로 셀을 고른 뒤 동일 좌표의 profile만 사용한다. reference/10m/30m 층 사이는 유효한 layer 사이에서만 보간한다. version과 공급 갱신 시각은 수집 당시 다시 검사한다.
 
 Open-Meteo는 명시적인 사용 모드와 고정 모델로 요청한다. API의 `sea` cell selection은 선호 조건으로만 표시하며 검증된 mask라고 주장하지 않는다. issued time과 source age를 API가 제공하지 않으면 각각 null/unknown을 남긴다. HTTP 429·일시적 5xx·접속 실패만 최대 3회 재시도하고 인증 실패는 재시도하지 않는다. 오류의 요청 URL·credential은 공개 로그에 출력하지 않는다.
+
+## Snapshot·receipt·seal
+
+`python -m bunaken_engine status`는 readiness만 출력한다. 수집은 다음과 같이 실행한다. `CODE_COMMIT`은 실제 `git rev-parse HEAD` 결과이며 작업 트리가 깨끗해야 한다. 로컬 출력은 사용자 지정 디렉터리의 immutable 파일이다.
+
+```sh
+CODE_COMMIT=$(git rev-parse HEAD)
+uv run --project engine --extra providers --locked python -m bunaken_engine collect \
+  --date 2026-10-01 --days 7 --code-commit "$CODE_COMMIT" --output /tmp/bunaken-snapshot
+```
+
+`--publish`를 명시했을 때만 data branch에 저장한다. main이나 임의 branch를 쓰지 않는다. `manifest.json`, `features.json.gz`, `forecast.json.gz`는 원자적 한 Git commit으로 저장된다. gzip은 mtime=0으로 생성하고 manifest의 SHA-256과 대조한다. 새 numeric 모델은 P5 전까지 구현되지 않았으므로 forecast PCI는 항상 null이다. 유효 source가 없는 상태도 실패 manifest와 이유로 기록할 수 있으며 성공 run·유효 seal로 취급하지 않는다.
+
+receipt는 bundle 저장 성공을 확인한 뒤 별도 immutable commit으로 저장한다. D+1 seal 검증은 snapshot storage commit의 내용·artifact hash·Git commit 시각, receipt 자체의 Git 저장 시각까지 대조한다. manifest.created_at을 실제 저장 시각으로 사용하지 않는다. receipt가 cutoff 이후 저장됐으면 먼저 생성한 bundle을 과거 성공 run으로 승격하지 않는다.
+
+seal cutoff는 목표 날짜 전날 WITA 20:00이며 정확히 cutoff에 저장한 run도 제외한다. late job은 cutoff를 바꾸지 않는다. `seal --date YYYY-MM-DD`는 Git receipt를 검증한 선택 결과만 출력하며 `--publish`가 있어야 공식 seal을 저장한다. 선택 후보가 없으면 `missed_d1_snapshot`으로 남긴다. 같은 경로의 내용이 다르면 immutable conflict이고 기존 파일을 덮어쓰지 않는다. backfill은 `collect --kind backfill`로 별도 경로에 저장되며 공식 seal 후보에서 제외한다.
+
+receipt 조회는 `snapshot-receipts` subtree만 읽는다. GitHub가 tree를 잘라 반환하면 `receipt_index_required`로 중단한다. 후보 일부만 읽고 정상 seal을 만들지 않는다. receipt 증가에 따른 조회 비용은 운영에서 날짜별 index로 줄일 수 있다.
+
+환경 전용 historical 행의 scaler는 다음 명령으로 생성한다. 입력 행은 valid_time/retrieved_at/issued_at/features/dataset/version/geometry_version만 허용한다. label과 당시 없었던 미래 자료는 받지 않는다.
+
+```sh
+uv run --project engine --locked python -m bunaken_engine scaler \
+  --input /tmp/environment-history.json --cutoff 2026-09-30T00:00:00Z --output /tmp/scaler.json
+```

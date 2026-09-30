@@ -3,7 +3,7 @@ import json
 import math
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path.cwd()
 
 
 def read_json(path: Path):

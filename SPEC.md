@@ -352,6 +352,8 @@ seals/target-{localDate}.json
 backfills/{observationDate}/{backfillId}/manifest.json
 ```
 
+Snapshot schema 1.1은 status/kind, feature/source registry/geometry 버전·hash, deterministic gzip artifact hash, source별 실패 이유를 추가한다. SourceSample 1.0과 기존 snapshot 형상은 계속 읽을 수 있다. 신규 snapshot code_commit은 실제 40자 code SHA다. source_retrieved_at은 실제 수집이 없으면 null이며 retrieved time을 issued time으로 사용하지 않는다. SnapshotReceipt 1.0은 저장 commit과 manifest hash를 연결하고 Seal 1.0은 목표일/cutoff/선택 결과만 가진다. receipt와 seal에 알 수 없는 필드를 저장하지 않는다.
+
 공식 seal은 cutoff 이전 실제 보존이 확인된 성공 run 중 최신 run을 선택한다. 목표일을 포함하지 않는 run은 제외한다. 없으면 missed_d1_snapshot이다. 미래에 analysis로 과거 seal을 채우지 않는다. 한 번 생성한 공식 seal은 불변이고 정정은 새 정정 기록을 별도로 남긴다.
 
 source별 stale_after_hours 초기값은 동적 source 36시간이며 실제 갱신 주기로 조정한다. 정적 FES 파일의 다운로드 나이를 forecast age와 동일 취급하지 않는다. 필수 source가 stale이면 새 숫자를 발행하지 않고 이전 결과는 이전 생성 시각과 함께 표시한다.

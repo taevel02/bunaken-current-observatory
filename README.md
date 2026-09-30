@@ -38,3 +38,16 @@ The public root redirects to `/ko`; `/en` serves English. The initial status API
 - `packages/contracts`: JSON Schema contracts and synthetic shared fixtures
 - `engine`: Python contract validation and engine implementation area
 - `docs/setup.ko.md`: public `main`/`data` repository setup
+
+## Environmental engine (P3)
+
+See [environment sources and runbook](docs/environment-sources.ko.md) for source metadata, geometry verification, immutable snapshot/receipt/seal rules, and live integration dependencies.
+
+```sh
+uv sync --project engine --extra providers --locked
+uv run --project engine --locked python -m bunaken_engine status
+uv run --project engine --locked python -m unittest discover -s engine/tests
+uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
+```
+
+Site geometry remains unverified. Missing sources produce diagnostic failure manifests and null PCI, not synthetic operational data. Remote data writes require explicit `--publish`; CLI collection requires a clean trusted checkout and its exact commit SHA.

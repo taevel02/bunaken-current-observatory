@@ -1,0 +1,138 @@
+"""Collection to immutable public files; operational evidence is never a fixture."""
+import gzip
+import json
+from datetime import date, datetime, time, timedelta, timezone
+from uuid import uuid4
+from zoneinfo import ZoneInfo
+
+from bunaken_engine.features import extract_window, instant
+from bunaken_engine.registry import ROOT, read_json, load_sources, load_geometry, export_allowed
+from bunaken_engine.sources import collect_fes, collect_copernicus, collect_open_meteo, SourceError, utc_now
+from bunaken_engine.git_store import StorageError
+from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, bundle_path, assess_sources, select_seal, SnapshotError
+
+WITA=ZoneInfo("Asia/Makassar")
+REQUIRED=["fes-height","copernicus-currents"]
+
+
+def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind="snapshot", root=ROOT, collector=None) -> tuple[dict,dict[str,bytes]]:
+    target=date.fromisoformat(target_date)
+    if not 1<=days<=14:
+        raise SnapshotError("invalid_collection_horizon")
+    run_id=run_id or str(uuid4())
+    prefix=bundle_path(target_date,run_id,kind)
+    start=datetime.combine(target,time(),tzinfo=WITA).astimezone(timezone.utc)
+    end=start+timedelta(days=days)
+    start_at=start.isoformat().replace("+00:00","Z");end_at=end.isoformat().replace("+00:00","Z")
+    registry=load_sources(root);geometries=load_geometry(root)
+    targets=geometries["sites"]+geometries["zones"]
+    samples=[];failures={source_id:set() for source_id in registry};feature_rows=[];forecast=[]
+    verified=[geometry for geometry in targets if geometry["status"]=="verified"]
+    if not verified:
+        for reasons in failures.values(): reasons.add("unverified_geometry")
+    for geometry in verified:
+        point_samples=[]
+        for source_id,source in registry.items():
+            if not export_allowed(source,list(source["variables"])):
+                failures[source_id].add("source_redistribution_unverified")
+                continue
+            try:
+                if collector:
+                    result=collector(source,geometry,start_at,end_at)
+                elif source["provider"]=="fes":
+                    result=collect_fes(source,geometry,(start-timedelta(hours=2)).isoformat(),(end+timedelta(hours=2)).isoformat())
+                elif source["provider"]=="copernicus":
+                    result=collect_copernicus(source,geometry,start_at,end_at,geometry["reference_depth_m"],extraction_depths=[geometry["reference_depth_m"],10,30])
+                else:
+                    result=collect_open_meteo(source,geometry,start_at,end_at)
+                point_samples.extend(result)
+            except SourceError as error:
+                failures[source_id].add(error.code)
+        samples.extend(point_samples)
+        readiness=assess_sources(point_samples,list(registry),utc_now(),root)
+        usable={source_id for source_id,state in readiness.items() if state["status"]=="succeeded"}
+        usable_samples=[row for row in point_samples if row["source"] in usable]
+        for source_id,state in readiness.items():
+            failures[source_id].update(state["reason_codes"])
+        for day in range(days):
+            for half_hour in range(16):
+                at=start+timedelta(days=day,hours=8,minutes=30*half_hour)
+                until=at+timedelta(hours=1)
+                window=extract_window(usable_samples,geometry,at.isoformat(),until.isoformat())
+                feature_rows.append(dict(site_id=geometry["site_id"],zone_id=geometry.get("id"),**window))
+    statuses={source_id:dict(status="failed" if reasons else "succeeded",reason_codes=sorted(reasons)) for source_id,reasons in failures.items()}
+    success=bool(verified) and all(statuses[source_id]["status"]=="succeeded" for source_id in REQUIRED)
+    for geometry in targets:
+        reasons=["insufficient_numeric_labels"]
+        if geometry["status"]!="verified": reasons.append("unverified_geometry")
+        if not success: reasons.append("missing_required_features")
+        for day in range(days):
+            for half_hour in range(16):
+                at=start+timedelta(days=day,hours=8,minutes=30*half_hour)
+                forecast.append(dict(site_id=geometry["site_id"],zone_id=geometry.get("id"),start_at=at.isoformat().replace("+00:00","Z"),duration_minutes=60,reference_depth_m=geometry["reference_depth_m"],pci=None,prediction_status="insufficient",support="insufficient",n_eff=0,n_eff_days=0,distinct_days=0,same_site_days=0,same_zone_days=0,vertical_evidence=dict(status="insufficient"),feature_coverage={},reason_codes=reasons,model_version="cold-start-p3",source_snapshot_ids=[run_id]))
+    now=utc_now()
+    manifest=dict(snapshot_id=run_id,schema_version="1.1",date_wita=target_date,run_id=run_id,created_at=now,source_issued_at=None,source_retrieved_at=max((row["retrieved_at"] for row in samples),default=None),valid_start=start_at,valid_end=end_at,dataset_versions={row["dataset"]:row["version"] for row in samples},geometry_version=digest(canonical(geometries)) if verified else None,scaler_version=None,code_commit=code_commit,samples=samples,status="succeeded" if success else "failed",kind=kind,feature_version="environment-v1",source_registry_hash=digest(canonical(read_json(root/"config/source-registry.json"))),geometry_hash=digest(canonical(geometries)),source_status=statuses,artifact_hashes={"features.json.gz":digest(gzip.compress(canonical(feature_rows),mtime=0)),"forecast.json.gz":digest(gzip.compress(canonical(forecast),mtime=0))})
+    return manifest,make_bundle(manifest,feature_rows,forecast,root=root,kind=kind)
+
+
+def publish_bundle(store, manifest, files, *, root=ROOT) -> dict:
+    receipt_path=f"snapshot-receipts/{manifest['run_id']}.json"
+    manifest_path=next(path for path in files if path.endswith("/manifest.json"))
+    manifest_hash=digest(files[manifest_path])
+    existing=store.read(receipt_path,store.head())
+    if existing is not None:
+        receipt=json.loads(existing)
+        validate("snapshot-receipt",receipt,root)
+        if receipt["manifest_sha256"]!=manifest_hash:
+            raise SnapshotError("immutable_run_conflict")
+        return receipt
+    storage_commit=store.insert(files)
+    receipt=dict(schema_version="1.0",run_id=manifest["run_id"],kind=manifest["kind"],status=manifest["status"],manifest_path=manifest_path,manifest_sha256=manifest_hash,storage_commit=storage_commit,persisted_at=utc_now(),valid_start=manifest["valid_start"],valid_end=manifest["valid_end"])
+    validate("snapshot-receipt",receipt,root)
+    try:
+        store.insert({receipt_path:canonical(receipt)},"confirm immutable snapshot storage")
+    except StorageError as error:
+        if str(error) != "immutable_conflict":
+            raise
+        # A concurrent retry may have confirmed the identical bundle first.
+        existing=store.read(receipt_path,store.head())
+        if existing is None:
+            raise
+        receipt=json.loads(existing)
+        validate("snapshot-receipt",receipt,root)
+        if receipt["manifest_sha256"] != manifest_hash:
+            raise SnapshotError("immutable_run_conflict") from None
+    return receipt
+
+
+def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
+    validate("snapshot-receipt",receipt,root)
+    raw=store.read(receipt["manifest_path"],receipt["storage_commit"])
+    if raw is None or digest(raw)!=receipt["manifest_sha256"] or store.read(receipt["manifest_path"],head)!=raw:
+        raise SnapshotError("receipt_manifest_mismatch")
+    manifest=json.loads(raw)
+    validate("snapshot",manifest,root)
+    prefix=bundle_path(manifest["date_wita"],manifest["run_id"],manifest["kind"])
+    if receipt["manifest_path"]!=prefix+"/manifest.json" or receipt["run_id"]!=manifest["run_id"] or receipt["kind"]!=manifest["kind"] or receipt["status"]!=manifest["status"]:
+        raise SnapshotError("receipt_identity_mismatch")
+    for name,expected in manifest["artifact_hashes"].items():
+        content=store.read(prefix+"/"+name,receipt["storage_commit"])
+        if content is None or digest(content)!=expected:
+            raise SnapshotError("receipt_artifact_mismatch")
+    # A receipt written after cutoff cannot backdate a successful pre-cutoff run.
+    stored=max(instant(receipt["persisted_at"]),instant(store.commit_time(receipt["storage_commit"])),instant(store.path_commit_time(f"snapshot-receipts/{receipt['run_id']}.json",head)))
+    return {**receipt,"valid_start":manifest["valid_start"],"valid_end":manifest["valid_end"],"persisted_at":stored.isoformat().replace("+00:00","Z"),"storage_verified":True}
+
+
+def publish_seal(store, target_date: str, receipts: list[dict], *, root=ROOT, now=None) -> dict:
+    path=f"seals/target-{target_date}.json"
+    head=store.head()
+    existing=store.read(path,head)
+    if existing is not None:
+        result=json.loads(existing);validate("seal",result,root)
+        return result
+    candidates=[verified_receipt(store,receipt,head,root=root) for receipt in receipts]
+    result=select_seal(target_date,candidates,now or utc_now())
+    validate("seal",result,root)
+    store.insert({path:canonical(result)},"seal D+1 at fixed WITA cutoff")
+    return result
