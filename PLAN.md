@@ -172,3 +172,7 @@ P3-08 구현 근거: `.github/workflows/environment.yml`과 `ops/workflows/data-
 | 검증 | 명령·환경·결과·acceptance ID |
 | 제한 | 미실행 검증 또는 외부 설정 의존 |
 | 다음 단계 | 의존성이 해소된 후속 작업 |
+
+P3 최종 검증 기록: core Python 39개, provider SDK-backed mock 2개, Node 계약·인증·저장·HTTP 42개 통과. lint/typecheck 통과. 격리한 source checkout의 `next build --webpack` 통과. Python wheel/sdist 생성 및 저장소 밖 installed CLI status 확인. 실제 좌표 없는 collect 진단은 samples=0/status=failed/PCI=null로 종료하고 공개 Git 저장을 수행하지 않았다.
+
+P3 남은 운영 의존: P3-05의 실제 historical 수집은 19 Site geometry evidence·FES atlas/version/reference conformance·Copernicus 공개 재배포 권한·provider 설정 확보 후 수행한다. backfill→scaler 실행 계약과 cutoff filtering은 구현·검증했다. provider mock에서 native numpy ABI RuntimeWarning이 발생하므로 실제 atlas/NetCDF smoke test까지 운영 준비 완료로 판정하지 않는다. P3-08 template 원격 설치와 scheduled run 연결은 P7에 남긴다.

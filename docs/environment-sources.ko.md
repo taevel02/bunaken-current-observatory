@@ -73,7 +73,7 @@ uv run --project engine --locked python -m bunaken_engine scaler \
 
 `ops/workflows/data-entrypoint.yml`은 설치용 template이다. P7 운영 연결에서 동일 내용을 data branch의 `.github/workflows/data-entrypoint.yml`에 설치한다. 현재 원격 설치·push는 하지 않았다. `observations/**` push만 호출하므로 snapshot/receipt/seal 저장은 반복 trigger를 만들지 않는다. GitHub Actions의 `GITHUB_TOKEN` commit이 후속 workflow를 실행할 것에 의존하지 않는다. 수집·검증·저장은 하나의 job에서 연결하며 공개 웹 manifest 발행은 P4 이후 단계다.
 
-호출 대상 reusable workflow와 checkout code는 모두 `24ab54f93c8cf0dd84040c3799ca1917343b9a3f`로 고정했다. 갱신 시 검증한 새 main commit으로 두 참조를 함께 변경한다. 실행 전에 main ancestry를 확인하며 data branch의 코드·원고는 실행하지 않는다. 외부 PR은 이 workflow를 호출하지 않는다.
+호출 대상 reusable workflow와 checkout code는 모두 `c13c374423ad1e9c9a646118c770a0bcaa5d79d9`로 고정했다. 갱신 시 검증한 새 main commit으로 두 참조를 함께 변경한다. 실행 전에 main ancestry를 확인하며 data branch의 코드·원고는 실행하지 않는다. 외부 PR은 이 workflow를 호출하지 않는다.
 
 GitHub의 `environmental-data` environment에 승인·branch 정책을 설정하고 `GITHUB_WRITE_TOKEN`을 등록한다. 이 토큰은 공개 저장소 Contents 쓰기용이며 production 웹 비밀과 분리한다. 필요할 때 Copernicus 계정·Open-Meteo key와 사용 모드를 별도 등록한다. FES atlas는 공개 Git에 넣지 않는다. 현 workflow의 hosted runner에는 atlas가 없으므로 FES 수집은 결측으로 처리된다. atlas 준비·라이선스 확인·reference conformance 검증 전에는 성공 snapshot이 나오지 않는다.
 
@@ -82,3 +82,7 @@ GitHub의 `environmental-data` environment에 승인·branch 정책을 설정하
 Historical scaler의 `--input`에는 환경 전용 row JSON 또는 backfill의 `manifest.json`을 지정한다. 후자는 manifest·압축 artifact hash·공개 스키마를 검증한 뒤 feature window와 실제 source availability를 연결한다. cutoff 이후 retrieval·issued·valid window는 scaler에서 제외한다. 현재 실제 historical row는 없으며 빈 분포의 feature는 `no_historical_distribution`으로 비활성화된다.
 
 receipt 시각은 신뢰된 collector가 ref 반영 확인 후 기록한 시각이다. Git committer date는 보조 일관성 검사이며 독립적인 저장 시각 증명은 아니다. data 쓰기 권한자는 Git metadata도 수정할 수 있으므로 해당 권한과 main/environment 승인 정책을 함께 보호해야 한다.
+
+현재 macOS Python 3.14.7 provider mock은 통과하지만 native import에서 `numpy.ndarray size changed` RuntimeWarning이 발생했다. 실제 FES atlas·Copernicus NetCDF smoke test는 미실행이며, 해당 runner의 native compatibility도 운영 연결 전에 확인해야 한다.
+
+Backfill에는 운영 forecast의 36시간 stale gate를 적용하지 않는다. 오래된 archive의 실제 provenance를 보존하고 future source time·결측·공개 권한은 계속 검사한다. scaler는 실제 retrieval 이후의 cutoff에서만 해당 backfill을 사용하므로 오늘 구한 과거 자료를 과거 운영 검증에서 알고 있었다고 취급하지 않는다.
