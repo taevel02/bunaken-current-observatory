@@ -7,8 +7,8 @@ on:
         options: [collect, seal]
         default: collect
       date_wita:
-        description: WITA target date (YYYY-MM-DD)
-        required: true
+        description: WITA target date (YYYY-MM-DD; collect defaults to tomorrow)
+        required: false
         type: string
       code_commit:
         description: Trusted full code commit SHA
@@ -21,7 +21,7 @@ on:
         default: collect
       date_wita:
         type: string
-        required: true
+        default: ""
       code_commit:
         type: string
         required: true
@@ -49,7 +49,7 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           [[ "$CODE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ || ( -z "$TARGET_DATE" && "$OPERATION" == collect ) ]]
           [[ "$OPERATION" == collect || "$OPERATION" == seal ]]
           [[ "$EVENT" == workflow_dispatch || "$EVENT" == push ]]
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -80,6 +80,9 @@ jobs:
           OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
           OPEN_METEO_USAGE_MODE: ${{ vars.OPEN_METEO_USAGE_MODE }}
         run: |
+          if [[ -z "$TARGET_DATE" ]]; then
+            TARGET_DATE=$(TZ=Asia/Makassar date -d tomorrow +%F)
+          fi
           export GITHUB_OWNER="${REPOSITORY%/*}"
           export GITHUB_REPO="${REPOSITORY#*/}"
           if [[ "$OPERATION" == collect ]]; then
