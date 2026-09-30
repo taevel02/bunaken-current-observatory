@@ -138,7 +138,9 @@ def build_scaler(rows: list[dict], features: list[str], cutoff: str) -> dict:
         else:
             scale = quantile(values,.75)-quantile(values,.25)
             fitted[name] = {"enabled": scale > 0, "reason": None if scale > 0 else "zero_iqr", "n": len(values), "median": median(values), "iqr": scale}
-    return {"schema_version": "1.0", "cutoff": cutoff, "start": min((row["valid_time"] for row in eligible), default=None), "end": max((row["valid_time"] for row in eligible), default=None), "row_count": len(eligible), "features": fitted}
+    times = [instant(row["valid_time"]) for row in eligible]
+    period = lambda at: at.isoformat().replace("+00:00", "Z") if at is not None else None
+    return {"schema_version": "1.0", "cutoff": cutoff, "start": period(min(times, default=None)), "end": period(max(times, default=None)), "row_count": len(eligible), "features": fitted}
 
 
 def extract_window(samples: list[dict], geometry: dict, start: str, end: str) -> dict:

@@ -4,6 +4,7 @@ import json
 import os
 import time
 from datetime import datetime, timezone, timedelta
+from email.utils import parsedate_to_datetime
 from importlib.metadata import version as package_version
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -40,10 +41,23 @@ def fetch_json(url: str, opener=urlopen, sleep=time.sleep) -> dict:
             return json.loads(raw)
         except HTTPError as error:
             status = error.code
+            retry_after = error.headers.get("Retry-After") if error.headers else None
             error.close()
             retryable = status in {429, 500, 502, 503, 504}
             if retryable and attempt < 2:
-                sleep(2**attempt)
+                delay = 2**attempt
+                if retry_after:
+                    try:
+                        delay = max(delay, float(retry_after))
+                    except ValueError:
+                        try:
+                            delay = max(delay, (parsedate_to_datetime(retry_after)-datetime.now(timezone.utc)).total_seconds())
+                        except (ValueError, TypeError, OverflowError):
+                            pass
+                # Never retry earlier than the provider requested; long waits defer the run.
+                if delay > 60 or not finite(delay):
+                    raise SourceError("provider_retry_deferred", True) from None
+                sleep(delay)
                 continue
             raise SourceError("provider_rate_limited" if status == 429 else "provider_http_error", retryable) from None
         except (URLError, TimeoutError):

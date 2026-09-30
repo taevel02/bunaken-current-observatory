@@ -42,14 +42,16 @@ def bundle_path(date_wita: str, run_id: str, kind: str="snapshot") -> str:
     return f"{'snapshots' if kind=='snapshot' else 'backfills'}/{date_wita}/{run_id}"
 
 
-def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT) -> dict:
+def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT, *, reference_depth=None) -> dict:
     registry=load_sources(root)
     result={}
     for source_id in required:
         source=registry[source_id]
         rows=[row for row in samples if row["source"]==source_id]
+        if reference_depth is not None and source["provider"] == "copernicus":
+            rows=[row for row in rows if row.get("depth_m")==reference_depth]
         reasons=[]
-        if not rows or any(not finite(row["value"]) for row in rows):
+        if not rows or set(row["variable"] for row in rows) != set(source["variables"]) or any(not finite(row["value"]) for row in rows):
             reasons.append("missing_required_source")
         if not export_allowed(source,list(source["variables"])):
             reasons.append("source_redistribution_unverified")
