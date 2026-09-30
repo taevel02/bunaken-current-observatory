@@ -1,0 +1,21 @@
+# Install this exact trusted template as .github/workflows/data-entrypoint.yml on data.
+# Never substitute @main or execute scripts from the data branch.
+name: Data observation entrypoint
+on:
+  push:
+    branches: [data]
+    paths:
+      - 'observations/**'
+permissions:
+  contents: read
+jobs:
+  environment:
+    uses: taevel02/bunaken-current-observatory/.github/workflows/environment.yml@24ab54f93c8cf0dd84040c3799ca1917343b9a3f
+    with:
+      operation: collect
+      code_commit: 24ab54f93c8cf0dd84040c3799ca1917343b9a3f
+    secrets:
+      GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN }}
+      COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+      COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+      OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}

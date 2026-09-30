@@ -68,3 +68,13 @@ receipt 조회는 `snapshot-receipts` subtree만 읽는다. GitHub가 tree를 �
 uv run --project engine --locked python -m bunaken_engine scaler \
   --input /tmp/environment-history.json --cutoff 2026-09-30T00:00:00Z --output /tmp/scaler.json
 ```
+
+## Trusted workflow 연결
+
+`ops/workflows/data-entrypoint.yml`은 설치용 template이다. P7 운영 연결에서 동일 내용을 data branch의 `.github/workflows/data-entrypoint.yml`에 설치한다. 현재 원격 설치·push는 하지 않았다. `observations/**` push만 호출하므로 snapshot/receipt/seal 저장은 반복 trigger를 만들지 않는다. GitHub Actions의 `GITHUB_TOKEN` commit이 후속 workflow를 실행할 것에 의존하지 않는다. 수집·검증·저장은 하나의 job에서 연결하며 공개 웹 manifest 발행은 P4 이후 단계다.
+
+호출 대상 reusable workflow와 checkout code는 모두 `24ab54f93c8cf0dd84040c3799ca1917343b9a3f`로 고정했다. 갱신 시 검증한 새 main commit으로 두 참조를 함께 변경한다. 실행 전에 main ancestry를 확인하며 data branch의 코드·원고는 실행하지 않는다. 외부 PR은 이 workflow를 호출하지 않는다.
+
+GitHub의 `environmental-data` environment에 승인·branch 정책을 설정하고 `GITHUB_WRITE_TOKEN`을 등록한다. 이 토큰은 공개 저장소 Contents 쓰기용이며 production 웹 비밀과 분리한다. 필요할 때 Copernicus 계정·Open-Meteo key와 사용 모드를 별도 등록한다. FES atlas는 공개 Git에 넣지 않는다. 현 workflow의 hosted runner에는 atlas가 없으므로 FES 수집은 결측으로 처리된다. atlas 준비·라이선스 확인·reference conformance 검증 전에는 성공 snapshot이 나오지 않는다.
+
+수동 실행은 main의 `Trusted environmental pipeline`에서 `operation=collect`와 고정 code SHA를 지정한다. 날짜를 비우면 WITA 내일이다. cutoff 이후 `operation=seal`과 목표 날짜를 지정하면 공식 D+1 seal을 저장한다. 예약 스케줄·실제 data entrypoint 설치·credential을 이용한 API smoke test는 P7 운영 연결에서 진행한다. 지금은 immutable 저장 및 trusted 호출 계약을 검증한다.

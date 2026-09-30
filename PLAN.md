@@ -82,7 +82,7 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 - [ ] P3-05 실행 가능한 범위의 historical 환경 분포를 수집하고 scaler 생성 기간과 feature 비활성 사유를 기록한다.
 - [x] P3-06 snapshot manifest·feature·forecast를 immutable하게 저장한다. issued/retrieved/valid time과 실제 보존 시점을 분리한다.
 - [x] P3-07 WITA 20:00 cutoff의 D+1 seal을 구현한다. 늦은 job, 빈 후보, 재실행, 사후 backfill을 검증한다.
-- [ ] P3-08 data branch push entrypoint와 main의 고정 commit reusable workflow를 연결한다. data를 실행 코드로 취급하지 않는다.
+- [x] P3-08 data branch push entrypoint와 main의 고정 commit reusable workflow를 연결한다. data를 실행 코드로 취급하지 않는다.
 
 외부 데이터 연결이 막혀도 adapter contract·합성 fixture·결측 UI 개발은 진행한다. 실제 provider 연결이 안 된 테스트를 통과했다고 표시하지 않는다. 제공자 자료를 공개 보존할 권한이 없으면 다른 허용 자료를 검토하며 비공개 저장소를 임의로 도입하지 않는다.
 
@@ -93,6 +93,8 @@ P3-01/02 코드 완료 근거: `config/source-registry.json`, `config/geometry.j
 P3-03/04 구현 근거: `sources.py`의 공식 SDK/고정 모델 adapter와 `features.py`의 바다 셀·해저 수심·벡터·보간·구간 요약. core 20개/provider SDK-backed mock 2개 검증 통과. 실제 Copernicus catalogue에서 dataset version 202406과 50개 depth 좌표를 조회했다. 실제 현장 좌표·atlas·credential을 사용한 live 수집은 미실행. source age 또는 FES reference conformance가 확인되지 않으면 운영 적격으로 쓰지 않는다. P3-05의 scaler 생성 코드는 있으나 실제 historical 환경 분포 수집은 geometry·소스 권한 의존으로 미완료다.
 
 P3-06/07 구현 근거: `snapshots.py`, `git_store.py`, `pipeline.py`, CLI와 snapshot 1.1/receipt 1.0/seal 1.0 계약. 원자적 non-force 저장·unrelated head 경쟁·응답 유실·immutable 재시도, cutoff 직전/동시/직후·late rerun·backfill·빈 후보를 fixture/mock으로 검증했다. 실제 data branch 저장은 미실행이며 CLI 기본값은 로컬 진단 출력이다.
+
+P3-08 구현 근거: `.github/workflows/environment.yml`과 `ops/workflows/data-entrypoint.yml`. reusable workflow/실행 코드는 검증된 full SHA로 고정하고 main ancestry를 검사한다. data observation push만 호출하며 raw data를 실행하지 않는다. 실제 data branch 설치·예약 작업·environment 설정은 P7 운영 의존으로 남았다.
 
 ## 7 P4 공개 대시보드와 cold start
 
