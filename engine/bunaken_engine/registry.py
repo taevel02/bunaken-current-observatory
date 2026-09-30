@@ -23,7 +23,7 @@ def load_geometry(root: Path = ROOT) -> dict:
     sites = read_json(root / "packages/contracts/data/sites.json")
     geometry = read_json(root / "config/geometry.json")
     known = {site["id"] for site in sites}
-    if {site["site_id"] for site in geometry["sites"]} != known:
+    if len(geometry["sites"]) != len(known) or {site["site_id"] for site in geometry["sites"]} != known:
         raise ValueError("geometry must cover exactly the registered Sites")
     zones = geometry["zones"]
     if len({zone["id"] for zone in zones}) != len(zones):

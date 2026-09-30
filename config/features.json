@@ -1,0 +1,61 @@
+{
+  "version": "environment-v1",
+  "evaluation_interval_minutes": 30,
+  "prediction_window_minutes": 60,
+  "groups": {
+    "tide": {
+      "weight": 0.3,
+      "features": [
+        "tide_rate_m_per_hour",
+        "tide_excursion_m",
+        "tide_phase_sin",
+        "tide_phase_cos"
+      ]
+    },
+    "ocean": {
+      "weight": 0.35,
+      "features": [
+        "current_along_m_s",
+        "current_cross_m_s",
+        "current_speed_m_s",
+        "horizontal_shear_10_30_m_s"
+      ]
+    },
+    "thermal": {
+      "weight": 0.15,
+      "features": [
+        "modelled_temperature_c",
+        "temperature_difference_10_30_c"
+      ]
+    },
+    "weather": {
+      "weight": 0.1,
+      "features": [
+        "wind_along_m_s",
+        "wind_cross_m_s",
+        "wave_height_m",
+        "wave_period_s",
+        "swell_height_m",
+        "swell_period_s",
+        "wave_direction_sin",
+        "wave_direction_cos",
+        "swell_direction_sin",
+        "swell_direction_cos"
+      ]
+    },
+    "depth": {
+      "weight": 0.1,
+      "features": [
+        "reference_depth_m"
+      ]
+    }
+  },
+  "disabled": {
+    "tide_phase_sin": "phase_definition_unverified",
+    "tide_phase_cos": "phase_definition_unverified"
+  },
+  "notes": {
+    "tide_excursion_m": "range within requested window, not full-cycle tidal range",
+    "horizontal_shear_10_30_m_s": "horizontal vector difference, not vertical water velocity"
+  }
+}

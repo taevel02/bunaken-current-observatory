@@ -29,3 +29,9 @@ Open-Meteo는 [weather docs](https://open-meteo.com/en/docs), [marine docs](http
 - Open-Meteo: 운영의 비상업/상업 구분. API key는 workflow secret으로만 전달한다.
 
 검증은 `uv run --project engine --python 3.14.7 python -m unittest discover -s engine/tests`를 사용한다. credential 없이 실행하는 fixture 검증과 실제 공급 자료를 수집한 검증은 별개다.
+
+## Feature·scaler 경계
+
+`config/features.json`은 `environment-v1` 이름과 초기 group weight를 고정한다. `features.extract_window`는 actual dive 구간 또는 예측 기준 60분 구간에서 평균·벡터 투영을 계산한다. `tide_excursion_m`은 입력 구간의 조석 높이 범위이며 하루 전체 조차가 아니다. 조석 위상 산식의 검증 근거가 없어 sin/cos는 null/disabled다. `horizontal_shear_10_30_m_s`는 두 수심의 수평 벡터 차이며 수직 유속이 아니다. 임의 위상·성층·수온 bias를 만들지 않는다.
+
+`features.build_scaler`는 label 없는 환경 행만 받는다. valid/issued/retrieved time이 cutoff 이후인 행을 제외하고 median/IQR을 계산한다. 자료가 없으면 `no_historical_distribution`, IQR=0이면 `zero_iqr`로 비활성화한다. 나중에 수집한 backfill을 과거 검증 시점에 있었던 분포로 가장하지 않는다. 현재 Site 좌표와 실제 환경 분포가 없으므로 운영 scaler는 만들지 않는다.
