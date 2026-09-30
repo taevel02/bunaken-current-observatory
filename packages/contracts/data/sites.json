@@ -4,170 +4,170 @@
     "slug": "lekuan-1",
     "name_en": "Lekuan 1",
     "name_ko": "Lekuan 1",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.594889,
+    "lon": 124.771194,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "lekuan-2",
     "slug": "lekuan-2",
     "name_en": "Lekuan 2",
     "name_ko": "Lekuan 2",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.601222,
+    "lon": 124.765111,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "lekuan-3",
     "slug": "lekuan-3",
     "name_en": "Lekuan 3",
     "name_ko": "Lekuan 3",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.6052,
+    "lon": 124.767083,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "celah-celah",
     "slug": "celah-celah",
     "name_en": "Celah Celah",
     "name_ko": "Celah Celah",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.611778,
+    "lon": 124.767972,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "alung-banua",
     "slug": "alung-banua",
     "name_en": "Alung Banua",
     "name_ko": "Alung Banua",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.616667,
+    "lon": 124.753194,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "johnsons-wall",
     "slug": "johnsons-wall",
     "name_en": "Johnson's Wall",
     "name_ko": "Johnson's Wall",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.6125,
+    "lon": 124.743056,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "fukui",
     "slug": "fukui",
     "name_en": "Fukui",
     "name_ko": "Fukui",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.61225,
+    "lon": 124.739694,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "rons-point",
     "slug": "rons-point",
     "name_en": "Ron's Point",
     "name_ko": "Ron's Point",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.610694,
+    "lon": 124.736167,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "mandolin",
     "slug": "mandolin",
     "name_en": "Mandolin",
     "name_ko": "Mandolin",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.612167,
+    "lon": 124.732417,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "tengah",
     "slug": "tengah",
     "name_en": "Tengah",
     "name_ko": "Tengah",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.61903,
+    "lon": 124.73266,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "raymonds-point",
     "slug": "raymonds-point",
     "name_en": "Raymond's Point",
     "name_ko": "Raymond's Point",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.629056,
+    "lon": 124.735278,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "mikes-point",
     "slug": "mikes-point",
     "name_en": "Mike's Point",
     "name_ko": "Mike's Point",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.636833,
+    "lon": 124.739722,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "tanjung-parigi",
     "slug": "tanjung-parigi",
     "name_en": "Tanjung Parigi",
     "name_ko": "Tanjung Parigi",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.627883,
+    "lon": 124.764817,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "sachikos-point",
     "slug": "sachikos-point",
     "name_en": "Sachiko's Point",
     "name_ko": "Sachiko's Point",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.63125,
+    "lon": 124.774028,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "pahepa",
     "slug": "pahepa",
     "name_en": "Pahepa",
     "name_ko": "Pahepa",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.628056,
+    "lon": 124.778611,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "bunaken-timur-1",
     "slug": "bunaken-timur-1",
     "name_en": "Bunaken Timur 1",
     "name_ko": "Bunaken Timur 1",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.614611,
+    "lon": 124.783306,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "bunaken-timur-2",
     "slug": "bunaken-timur-2",
     "name_en": "Bunaken Timur 2",
     "name_ko": "Bunaken Timur 2",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.606694,
+    "lon": 124.782194,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "pangalisang",
     "slug": "pangalisang",
     "name_en": "Pangalisang",
     "name_ko": "Pangalisang",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.603194,
+    "lon": 124.782889,
+    "geometry_status": "coordinates_verified"
   },
   {
     "id": "muka-kampung",
     "slug": "muka-kampung",
     "name_en": "Muka Kampung",
     "name_ko": "Muka Kampung",
-    "lat": null,
-    "lon": null,
-    "geometry_status": "unverified"
+    "lat": 1.59375,
+    "lon": 124.778833,
+    "geometry_status": "coordinates_verified"
   }
 ]

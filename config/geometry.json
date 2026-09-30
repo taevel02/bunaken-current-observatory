@@ -1,271 +1,309 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "sites": [
     {
       "site_id": "lekuan-1",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.594889,
+      "lon": 124.771194,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "lekuan-2",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.601222,
+      "lon": 124.765111,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "lekuan-3",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.6052,
+      "lon": 124.767083,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "celah-celah",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.611778,
+      "lon": 124.767972,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "alung-banua",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.616667,
+      "lon": 124.753194,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "johnsons-wall",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.6125,
+      "lon": 124.743056,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "fukui",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.61225,
+      "lon": 124.739694,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "rons-point",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.610694,
+      "lon": 124.736167,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "mandolin",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.612167,
+      "lon": 124.732417,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "tengah",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.61903,
+      "lon": 124.73266,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "raymonds-point",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.629056,
+      "lon": 124.735278,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "mikes-point",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.636833,
+      "lon": 124.739722,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "tanjung-parigi",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.627883,
+      "lon": 124.764817,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "sachikos-point",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.63125,
+      "lon": 124.774028,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "pahepa",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.628056,
+      "lon": 124.778611,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "bunaken-timur-1",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.614611,
+      "lon": 124.783306,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "bunaken-timur-2",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.606694,
+      "lon": 124.782194,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "pangalisang",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.603194,
+      "lon": 124.782889,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     },
     {
       "site_id": "muka-kampung",
-      "status": "unverified",
-      "lat": null,
-      "lon": null,
+      "status": "coordinates_verified",
+      "lat": 1.59375,
+      "lon": 124.778833,
       "reference_depth_m": null,
       "wall_bearing_deg": null,
       "offshore_bearing_deg": null,
       "max_grid_distance_km": null,
       "geometry_group": null,
-      "version": null,
-      "verified_at": null,
-      "evidence": []
+      "version": "entry-points-2026-09-30",
+      "verified_at": "2026-09-30",
+      "evidence": [
+        "User confirmed on 2026-09-30 by web cross-check and prior Bunaken diving experience; representative entry point; actual boat entry may vary."
+      ]
     }
   ],
   "zones": []

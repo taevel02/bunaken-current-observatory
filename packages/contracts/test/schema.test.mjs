@@ -11,7 +11,7 @@ const base = new URL("../", import.meta.url);
 test("registered Bunaken Sites have stable unique IDs and resolve display names", () => {
   assert.equal(sites.length, 19);
   assert.equal(new Set(sites.map(site => site.id)).size, 19);
-  assert.ok(sites.every(site => resolveSiteId(site.name_en) === site.id && site.lat === null && site.lon === null && site.geometry_status === "unverified"));
+  assert.ok(sites.every(site => resolveSiteId(site.name_en) === site.id && Number.isFinite(site.lat) && Number.isFinite(site.lon) && site.geometry_status === "coordinates_verified"));
   assert.equal(resolveSiteId("Johnson's Wall"), "johnsons-wall");
   assert.equal(resolveSiteId("mikes-point"), "mikes-point");
   assert.equal(resolveSiteId("unregistered-site"), null);
