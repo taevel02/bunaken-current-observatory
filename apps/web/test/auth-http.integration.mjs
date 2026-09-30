@@ -58,7 +58,7 @@ async function waitForServer(url, child) {
 test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   const temporaryRoot = await mkdtemp(join(tmpdir(), "bunaken-auth-http-"));
   const isolatedApp = join(temporaryRoot, "apps", "web");
-  await cp(appDirectory, isolatedApp, { recursive: true, filter: (source) => !source.includes("/node_modules") && !source.includes("/.next") });
+  await cp(appDirectory, isolatedApp, { recursive: true, filter: (source) => !source.includes("/node_modules") && !source.includes("/.next") && !source.split("/").at(-1).startsWith(".env") });
   await symlink(join(appDirectory, "node_modules"), join(isolatedApp, "node_modules"), "dir");
   const port = await availablePort();
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -198,6 +198,7 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
       cookie: cookieHeader(jar),
       "content-type": "application/json",
       "x-csrf-token": csrfToken,
+      "idempotency-key": "4f6f6c58-84a8-4dd5-b882-8ce58ee14b38",
     },
     body: JSON.stringify({ id: "4f6f6c58-84a8-4dd5-b882-8ce58ee14b38", train_eligible: true, notes_private: "never public" }),
   });
@@ -214,7 +215,7 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
       "x-csrf-token": csrfToken,
       "idempotency-key": "6f5cf4c1-f809-4f6c-b521-7b7ed5ac6b1c",
     },
-    body: publicObservation,
+    body: JSON.stringify({ ...JSON.parse(publicObservation), site_id: "mandolin" }),
   });
   const providerFailure = await saveWithMissingProvider();
   const providerFailureBody = await providerFailure.json();

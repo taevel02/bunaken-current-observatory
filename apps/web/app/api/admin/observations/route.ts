@@ -112,13 +112,13 @@ export async function POST(request: NextRequest) {
     const key = request.headers.get("idempotency-key");
     const keyDigest = createIdempotencyDigest(key);
     const requestHash = hashCanonicalPayload(rawRequestBody);
-    const store = new GitHubDataStore({ config: getGitHubDataConfig() });
-    const replay = await readRequestStatus(store, keyDigest, requestHash);
-    if (replay.found) return apiSuccess({ ...replay, saved_to_public_repository: true }, 200, { idempotent_replay: true });
     const requestBody = { ...rawRequestBody, site_id: resolveSiteId(rawRequestBody.site_id) };
     if (!requestBody.site_id) throw new ObservationStorageError("request_invalid", false, 422);
     const validation = validateCreateObservation(requestBody);
     if (!validation.valid) throw new ObservationStorageError("request_invalid", false, 422);
+    const store = new GitHubDataStore({ config: getGitHubDataConfig() });
+    const replay = await readRequestStatus(store, keyDigest, requestHash);
+    if (replay.found) return apiSuccess({ ...replay, saved_to_public_repository: true }, 200, { idempotent_replay: true });
     const observerId = process.env.PUBLIC_OBSERVER_ID ?? "";
     if (!/^[a-z][a-z0-9_-]{0,63}$/.test(observerId)) throw new ObservationStorageError("storage_unavailable", false, 503);
 
