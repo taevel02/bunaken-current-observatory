@@ -25,7 +25,7 @@ class FesAtlasProviderTest(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             original = root/'fixture.nc'
-            xr.Dataset({'amplitude':(('lat','lon'),np.ones((15,15)),{'units':'cm'}),
+            xr.Dataset({'amplitude':(('lat','lon'),np.broadcast_to(np.arange(15,dtype=float)[:,None],(15,15)),{'units':'cm'}),
                         'phase':(('lat','lon'),np.zeros((15,15)),{'units':'degrees'})},
                        coords={'lat':np.linspace(1.3,1.9,15),'lon':np.linspace(124.4,125,15)}).to_netcdf(original)
             packed = lzma.compress(original.read_bytes())
@@ -51,6 +51,14 @@ class FesAtlasProviderTest(unittest.TestCase):
             self.assertEqual(ranges,[20])
             self.assertEqual(len(result['files']),len(WAVES))
             self.assertEqual(result['dataset'],'FES2022b')
+            with xr.open_dataset(output/'regional/m2_fes2022.nc') as subset:
+                self.assertEqual(subset.amplitude.dims,('lon','lat'))
+            import pyfes
+            model = pyfes.config.load(str(output/'fes2022.yaml')).models['tide']
+            harmonics,quality = model.interpolate(np.array([124.7]),np.array([1.62]))
+            expected = np.interp(1.62,np.linspace(1.3,1.9,15),np.arange(15))
+            self.assertAlmostEqual(harmonics['M2'][0].real,expected,places=5)
+            self.assertGreater(quality[0],0)
             self.assertFalse(partial.exists())
             self.assertEqual(len(list((output/'original').glob('m2*.invalid-*'))),1)
             self.assertEqual(json.loads((output/'fes2022.yaml').read_text())['tide']['cartesian']['dynamic'],['A5'])

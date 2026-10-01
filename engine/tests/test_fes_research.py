@@ -22,7 +22,7 @@ class FesResearchTest(unittest.TestCase):
             entries.append(dict(wave=wave,file=name,regional_sha256=sha256(path)))
         config = directory/'fes2022.yaml'
         config.write_text(json.dumps({'tide':{'cartesian':{'paths':paths}}}))
-        manifest = dict(dataset='FES2022b',unit='cm',files=entries,config_sha256=sha256(config))
+        manifest = dict(layout='longitude_latitude',dataset='FES2022b',unit='cm',files=entries,config_sha256=sha256(config))
         (directory/'atlas-manifest.json').write_text(json.dumps(manifest))
         return manifest
 

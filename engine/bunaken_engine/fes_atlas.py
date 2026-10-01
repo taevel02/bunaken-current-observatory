@@ -58,6 +58,8 @@ def _install(output: Path, sites: list[dict], *, seed: Path | None = None, worke
     existing_manifest = output / "atlas-manifest.json"
     if existing_manifest.exists():
         existing = json.loads(existing_manifest.read_text())
+        if existing.get("layout") != "longitude_latitude":
+            raise ValueError("atlas_layout_unverified")
         if existing.get("bounds") != bounds:
             raise ValueError("atlas_installed_bounds_differ")
         config_path = output / "fes2022.yaml"
@@ -123,6 +125,10 @@ def _install(output: Path, sites: list[dict], *, seed: Path | None = None, worke
             cropped = data.sel(lon=slice(bounds[0],bounds[2]),lat=slice(bounds[1],bounds[3])).load()
             if cropped.sizes.get("lat",0) < 4 or cropped.sizes.get("lon",0) < 4:
                 raise ValueError("atlas_subset_empty")
+            # PyFES infers longitude-major from axis lengths. A square lat/lon
+            # crop is ambiguous, so store harmonic arrays longitude-first.
+            for variable in ("amplitude", "phase"):
+                cropped[variable] = cropped[variable].transpose("lon", "lat")
             cropped.to_netcdf(subset)
         return dict(wave=wave, file=name, compressed_bytes=length, source_modified=modified,
                     compressed_sha256=sha256(packed), native_sha256=sha256(unpacked), regional_sha256=sha256(subset))
@@ -140,7 +146,7 @@ def _install(output: Path, sites: list[dict], *, seed: Path | None = None, worke
     config_temp = output / "fes2022.yaml.part"
     config_temp.write_text(json.dumps(config,indent=2)+"\n")
     from datetime import datetime, timezone
-    manifest = dict(dataset="FES2022b",atlas_release="ocean_tide_20241025",retrieved_at=datetime.now(timezone.utc).isoformat(),
+    manifest = dict(layout="longitude_latitude",dataset="FES2022b",atlas_release="ocean_tide_20241025",retrieved_at=datetime.now(timezone.utc).isoformat(),
                     bounds=bounds,files=entries,config_sha256=sha256(config_temp),unit="cm")
     manifest_temp = output / "atlas-manifest.json.part"
     manifest_temp.write_text(json.dumps(manifest,indent=2)+"\n")

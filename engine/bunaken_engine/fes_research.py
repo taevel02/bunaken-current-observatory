@@ -15,6 +15,8 @@ from bunaken_engine.registry import load_geometry, read_json
 def verify_atlas(directory):
     manifest = read_json(directory / 'atlas-manifest.json')
     config = directory / 'fes2022.yaml'
+    if manifest.get('layout') != 'longitude_latitude':
+        raise ValueError('atlas_layout_unverified')
     if manifest.get('dataset') != 'FES2022b' or manifest.get('unit') != 'cm':
         raise ValueError('atlas_metadata_invalid')
     if sha256(config) != manifest['config_sha256']:
