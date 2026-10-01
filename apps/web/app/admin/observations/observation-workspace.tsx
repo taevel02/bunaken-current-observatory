@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { messages } from "@/i18n/messages";
+import { PCIReference } from "@/src/ui/pci-reference";
 import { SelectControl } from "@/src/ui/select-control";
 import { controlClass, fieldStyles, primaryButtonClass } from "@/src/ui/form-styles";
 import { resolveSiteId, sites } from "@bunaken/contracts/sites";
@@ -354,6 +355,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
           <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.site}<b className={ui.requiredTag}>{t.required}</b></span><SelectControl name="site_id" required defaultValue={resolveSiteId(draftPayload?.site_id) ?? ""}><option value="" disabled>{t.sitePlaceholder}</option>{sites.map((site) => <option key={site.id} value={site.id}>{locale === "ko" ? site.name_ko : site.name_en}</option>)}</SelectControl></label>
           <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.pci}<b className={ui.requiredTag}>{t.required}</b></span><input name="overall_pci" type="number" inputMode="decimal" min="0" step="0.01" required defaultValue={draftPayload?.overall_pci as number | undefined} /></label>
           <small>{t.pciHelp}</small>
+          <PCIReference locale={locale} />
         </section>
         <details className={ui.optionalGroup} open={showDiveDetails}>
           <summary className={ui.summary}>{t.optionalDiveDetails}<span className={ui.optionalTag}>{t.optional}</span></summary>
