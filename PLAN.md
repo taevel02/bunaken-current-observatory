@@ -79,7 +79,7 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 - [x] P3-02 Site/Zone의 확인된 좌표·수심·방향·격자 거리 기준을 등록한다. 미확정이면 unverified로 유지한다.
 - [x] P3-03 FES, Copernicus, Open-Meteo adapter를 각각 구현하고 credential·요청 제한·retry 정책을 분리한다.
 - [x] P3-04 바다 셀 선택, u/v 투영, 깊이·시간 보간, 필수 소스 결측·stale 처리를 검증한다.
-- [ ] P3-05 실행 가능한 범위의 historical 환경 분포를 수집하고 scaler 생성 기간과 feature 비활성 사유를 기록한다.
+- [x] P3-05 실행 가능한 범위의 historical 환경 분포를 수집하고 scaler 생성 기간과 feature 비활성 사유를 기록한다.
 - [x] P3-06 snapshot manifest·feature·forecast를 immutable하게 저장한다. issued/retrieved/valid time과 실제 보존 시점을 분리한다.
 - [x] P3-07 WITA 20:00 cutoff의 D+1 seal을 구현한다. 늦은 job, 빈 후보, 재실행, 사후 backfill을 검증한다.
 - [x] P3-08 data branch push entrypoint와 main의 고정 commit reusable workflow를 연결한다. data를 실행 코드로 취급하지 않는다.
@@ -88,9 +88,9 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 완료 근거: MODEL-03, MODEL-05, SNAP-01–02, OPS-01. 실제 dataset ID와 좌표의 검증 evidence를 운영 문서에 남긴다.
 
-P3-01/02 코드 완료 근거: `config/source-registry.json`, `config/geometry.json`, `engine/bunaken_engine/registry.py`, `docs/environment-sources.ko.md`. Python 3.14.7/uv에서 10개 테스트 통과. 19개 Site는 확인 evidence가 없으므로 null/unverified이며 Zone은 빈 목록이다. Copernicus 라이선스 원문 접근 실패로 공개 export를 차단했다. 실제 geometry·provider version·credential 확인은 운영 연결 의존이다. 관련 기준: MODEL-03, MODEL-05.
+P3-01/02 코드 완료 근거: `config/source-registry.json`, `config/geometry.json`, `engine/bunaken_engine/registry.py`, `docs/environment-sources.ko.md`. Python 3.14.7/uv에서 10개 테스트 통과. 초기에는 19개 Site를 null/unverified로 등록했다. 이후 사용자가 확인한 대표 입수 좌표로 coordinates_verified를 반영했으며 수심·방향·격자 거리와 Zone은 미확정이다. Copernicus 라이선스 원문 접근 실패로 공개 export를 차단했다. 전체 geometry와 일부 공급원의 metadata·공개 재배포 조건은 운영 연결 의존이다. 관련 기준: MODEL-03, MODEL-05.
 
-P3-03/04 구현 근거: `sources.py`의 공식 SDK/고정 모델 adapter와 `features.py`의 바다 셀·해저 수심·벡터·보간·구간 요약. core 20개/provider SDK-backed mock 2개 검증 통과. 실제 Copernicus catalogue에서 dataset version 202406과 50개 depth 좌표를 조회했다. 실제 현장 좌표·atlas·credential을 사용한 live 수집은 미실행. source age 또는 FES reference conformance가 확인되지 않으면 운영 적격으로 쓰지 않는다. P3-05의 scaler 생성 코드는 있으나 실제 historical 환경 분포 수집은 geometry·소스 권한 의존으로 미완료다.
+P3-03/04 구현 근거: `sources.py`의 공식 SDK/고정 모델 adapter와 `features.py`의 바다 셀·해저 수심·벡터·보간·구간 요약. core 20개/provider SDK-backed mock 2개 검증 통과. 실제 Copernicus catalogue에서 dataset version 202406과 50개 depth 좌표를 조회했다. 초기 검증에서는 live 수집을 실행하지 않았으며, 2026-10-01 실제 FES atlas 수집·독립 비교·adapter 확인을 완료했다. source age 또는 FES reference conformance가 확인되지 않으면 운영 적격으로 쓰지 않는다. P3-05의 실행 가능한 조석 historical 분포 수집·부분 scaler는 아래 추가 검증 기록에 따라 완료했다. 다른 공급원·geometry 의존 feature는 명시적으로 비활성이다.
 
 P3-06/07 구현 근거: `snapshots.py`, `git_store.py`, `pipeline.py`, CLI와 snapshot 1.1/receipt 1.0/seal 1.0 계약. 원자적 non-force 저장·unrelated head 경쟁·응답 유실·immutable 재시도, cutoff 직전/동시/직후·late rerun·backfill·빈 후보를 fixture/mock으로 검증했다. 실제 data branch 저장은 미실행이며 CLI 기본값은 로컬 진단 출력이다.
 
@@ -175,4 +175,8 @@ P3-08 구현 근거: `.github/workflows/environment.yml`과 `ops/workflows/data-
 
 P3 최종 검증 기록: core Python 39개, provider SDK-backed mock 2개, Node 계약·인증·저장·HTTP 42개 통과. lint/typecheck 통과. 격리한 source checkout의 `next build --webpack` 통과. Python wheel/sdist 생성 및 저장소 밖 installed CLI status 확인. 실제 좌표 없는 collect 진단은 samples=0/status=failed/PCI=null로 종료하고 공개 Git 저장을 수행하지 않았다.
 
-P3 남은 운영 의존: P3-05의 실제 historical 수집은 19 Site geometry evidence·FES atlas/version/reference conformance·Copernicus 공개 재배포 권한·provider 설정 확보 후 수행한다. backfill→scaler 실행 계약과 cutoff filtering은 구현·검증했다. provider mock에서 native numpy ABI RuntimeWarning이 발생하므로 실제 atlas/NetCDF smoke test까지 운영 준비 완료로 판정하지 않는다. P3-08 template 원격 설치와 scheduled run 연결은 P7에 남긴다.
+P3 추가 검증 (2026-10-01): FES2022b ocean_tide_20241025 실제 34개 성분 다운로드·길이·XZ CRC·단위·hash 확인. 정사각 crop의 축 해석 오류를 재현하고 `(lon, lat)` 저장으로 수정했다. 19개 대표 입수 좌표 × 30일(2026-09 WITA), 27,341행의 historical 환경 분포와 scaler 생성. 활성 feature 2개, 비활성 19개 및 사유 기록. LIBFES 2.9.7 독립 비교 4,560건 통과, 거부값 0건, 최대 차이 0.000843149m(기준 0.001m). 이는 구현 간 수치 비교이며 현장 정확도 검증이 아니다. 실제 adapter 추가 확인 19 Site/57 sample, 검증 flag 0개. 현재 core 45개/provider 6개 테스트 통과. 같은 작업에서 Node 42개·lint·typecheck 통과. 최종 wheel/sdist 재생성, 저장소 밖 Python 3.14.7 환경에서 두 CLI와 provenance module 확인, archive 비밀·원자료·pyc 제외 및 연구 산출물 hash 확인. 원본·산출물은 ignored `.local/`에만 저장했다. 공개 Git·운영 forecast 발행은 수행하지 않았다.
+
+P3-05 근거: `fes_atlas.py`, `fes_research.py`, `fes_validation.py`, `docs/fes-atlas.ko.md`; 로컬 `.local/history-2026-09/manifest.json` SHA-256 `35e2f7dde21fbac3eff3e5b35ccc8e063539cc1b3065d386f3a21d6e5c67a575`. 실제 확보 cutoff `2026-10-01T12:44:19.124938Z`. 과거 cutoff 이전에 확보한 분포로 가장하지 않는다. phase 정의와 다른 공급원·geometry가 미확인인 feature는 null/disabled이며 PCI label을 만들지 않는다.
+
+P3 남은 운영 의존: 수심·벽/외해 방향·Zone geometry·허용 격자 거리의 현장 확인, Copernicus 공개 재배포 권한과 source age 확인. 실제 FES atlas/NetCDF smoke 및 참조 비교는 완료했지만 이를 다른 공급원 검증으로 대체하지 않는다. P3-08 template 원격 설치·protected environment Secrets·runner 참조 증거·scheduled run 연결은 P7에 남긴다. 로컬 `.env`는 등록 완료했으며 GitHub로 전달하지 않았다.

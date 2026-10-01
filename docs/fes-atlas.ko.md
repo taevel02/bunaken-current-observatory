@@ -7,18 +7,18 @@
 ```sh
 uv sync --project engine --extra providers --locked
 uv run --env-file .env --project engine --extra providers --locked \
-  python -m bunaken_engine.fes_atlas --output .local/fes2022b \
+  python -m bunaken_engine.fes_atlas --output .local/fes2022b-lon-lat \
   --seed "$HOME/Downloads/m2_fes2022.nc.xz" --workers 3
 ```
 
 공식 `ocean_tide_20241025`의 34개 성분을 받는다. 중단하면 같은 명령으로 재개한다. 완료 atlas는 hash 확인 후 재사용한다. 다른 좌표 범위는 새 출력 경로를 사용한다. 동시 설치는 lock으로 거부한다. 완료 파일은 HTTP 길이를 확인하고 XZ를 끝까지 읽어 CRC를 검사한다. CRC 손상본은 로컬에 격리하고 한 번 다시 받는다. 부분 파일은 서버가 올바른 Range 응답을 반환할 때 이어 받는다. 전체 설치 성공 후에만 `fes2022.yaml`, `atlas-manifest.json`을 생성한다.
 
-진폭 `cm`, 위상 `degrees`를 확인하고, 부나켄 좌표 주변의 원래 1/30° 격자를 잘라 저장한다. 좌표 주변 0.15°는 파일 읽기 범위다. 허용 격자 거리나 현장 geometry 검증 기준이 아니다. manifest에 원본·압축·지역 파일의 SHA-256과 서버 수정 시각을 기록한다.
+진폭 `cm`, 위상 `degrees`를 확인하고, 부나켄 좌표 주변의 원래 1/30° 격자를 잘라 저장한다. 좌표 주변 0.15°는 파일 읽기 범위다. 허용 격자 거리나 현장 geometry 검증 기준이 아니다. 진폭·위상 배열은 `(lon, lat)` 순서로 저장한다. 정사각 격자에서 PyFES가 배열 순서를 잘못 해석하는 문제를 방지한다. manifest의 `layout=longitude_latitude`를 검사한다. manifest에 원본·압축·지역 파일의 SHA-256과 서버 수정 시각을 기록한다.
 
 설치가 끝나면 로컬 `.env`에 다음 값을 등록한다. 경로는 해당 checkout의 절대 경로를 사용한다.
 
 ```dotenv
-FES_CONFIG_PATH=/absolute/path/to/checkout/.local/fes2022b/fes2022.yaml
+FES_CONFIG_PATH=/absolute/path/to/checkout/.local/fes2022b-lon-lat/fes2022.yaml
 FES_ATLAS_UNIT=cm
 ```
 
@@ -41,7 +41,7 @@ cmake --build /tmp/bunaken-libfes-build -j 3
 
 ```sh
 uv run --project engine --extra providers --locked \
-  python -m bunaken_engine.fes_research --atlas .local/fes2022b \
+  python -m bunaken_engine.fes_research --atlas .local/fes2022b-lon-lat \
   --start 2026-09-01T00:00:00+08:00 --days 30 \
   --reference-library /tmp/bunaken-libfes-build/src/libfes.dylib \
   --output .local/history-2026-09
@@ -53,4 +53,20 @@ uv run --project engine --extra providers --locked \
 
 현재 연구 수집은 `tide_rate_m_per_hour`, `tide_excursion_m`의 부분 분포다. phase 정의, 수심·벽/외해 방향과 다른 공급원 조건이 확인되지 않은 feature는 null과 비활성 사유를 남긴다. 관측 label·PCI·운영 forecast를 생성하지 않는다. retrieval 시각을 cutoff로 사용하므로 이 자료를 과거에 이미 확보했던 것처럼 검증에 넣을 수 없다.
 
+## 완료된 로컬 검증 (2026-10-01)
+
+34개 실제 성분으로 19개 Site의 2026-09-01~09-30 WITA 분포 27,341행을 생성했다. 독립 참조 비교 4,560건 통과, 거부값 0건, 최대 차이 0.000843149m다. 활성 feature 2개, 비활성 feature 19개다. manifest SHA-256은 `35e2f7dde21fbac3eff3e5b35ccc8e063539cc1b3065d386f3a21d6e5c67a575`다. 실제 확보 시각은 `2026-10-01T12:44:19.124938Z`이며 과거 D+1 forecast로 사용하지 않는다.
+
+연구 성공 후 로컬 `.env`에 증거 manifest의 절대 경로를 등록한다.
+
+```dotenv
+FES_VALIDATION_MANIFEST_PATH=/absolute/path/to/checkout/.local/history-2026-09/manifest.json
+```
+
+adapter는 동일 evaluator를 사용하며 atlas·코드·SDK·보고서 hash와 Site 좌표가 일치해야 검증 flag를 해제한다. 실제 adapter에서 19개 Site, 조석값 57개를 추가 확인했다. 좌표 확인만으로 FES 계산이 가능하지만 수심·방향·Zone geometry가 확인된 것으로 처리하지 않는다. 원본 atlas·분포·scaler·참조 binary와 `.env`는 공개 Git에 포함되지 않는다.
+
+## 운영 연결
+
 Actions 원격 설치·예약 실행은 P7 운영 연결 범위다. hosted runner의 로컬 atlas는 job 종료 후 사라지므로 저장 방식·라이선스·전송 시간·cutoff를 확인하고 연결해야 한다. 로컬 `.env`는 GitHub Secrets에 자동 등록되지 않는다.
+
+workflow는 승인받은 AVISO Secrets로 private atlas를 준비한다. 독립 참조 증거가 없는 runner에서는 검증 flag가 남는다. 현재 로컬 성공만으로 예약 작업이나 운영 PCI 예측이 준비됐다고 판정하지 않는다.
