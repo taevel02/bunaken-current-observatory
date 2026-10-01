@@ -34,12 +34,17 @@ on:
         required: false
       OPEN_METEO_API_KEY:
         required: false
+      AVISO_USERNAME:
+        required: false
+      AVISO_PASSWORD:
+        required: false
 permissions:
   contents: read
 jobs:
   environment:
     runs-on: ubuntu-latest
     environment: environmental-data
+    timeout-minutes: 180
     steps:
       - name: Validate trusted invocation
         env:
@@ -67,6 +72,19 @@ jobs:
         run: |
           uv run --project engine --locked python -m unittest discover -s engine/tests
           uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
+      - name: Prepare private FES atlas
+        if: inputs.operation == 'collect'
+        env:
+          AVISO_USERNAME: ${{ secrets.AVISO_USERNAME }}
+          AVISO_PASSWORD: ${{ secrets.AVISO_PASSWORD }}
+        run: |
+          if [[ -z "$AVISO_USERNAME" || -z "$AVISO_PASSWORD" ]]; then
+            echo "Private FES credentials unavailable; collection remains fail closed"
+            exit 0
+          fi
+          uv run --project engine --extra providers --locked python -m bunaken_engine.fes_atlas --output .local/fes2022b --workers 3
+          echo "FES_CONFIG_PATH=$GITHUB_WORKSPACE/.local/fes2022b/fes2022.yaml" >> "$GITHUB_ENV"
+          echo "FES_ATLAS_UNIT=cm" >> "$GITHUB_ENV"
       - name: Collect or seal in one chain
         env:
           CODE_COMMIT: ${{ inputs.code_commit }}
