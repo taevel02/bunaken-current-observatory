@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import shutil
+from uuid import uuid4
 from urllib.request import Request, urlopen
 
 BASE = "https://tds-odatis.aviso.altimetry.fr/thredds/fileServer/dataset-auxiliary-fes-tide-model/fes2022b/ocean_tide_20241025/"
@@ -24,6 +25,17 @@ def sha256(path):
 
 
 def install(output: Path, sites: list[dict], *, seed: Path | None = None, workers: int = 3):
+    import fcntl
+    output.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (output / ".install.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError("atlas_install_busy") from None
+        return _install(output, sites, seed=seed, workers=workers)
+
+
+def _install(output: Path, sites: list[dict], *, seed: Path | None = None, workers: int = 3):
     if not 1 <= workers <= 6:
         raise ValueError("atlas_workers_out_of_range")
     if not sites or any(not all(isinstance(site.get(key), (int, float)) and not isinstance(site[key], bool)
@@ -43,6 +55,26 @@ def install(output: Path, sites: list[dict], *, seed: Path | None = None, worker
     # A file-read extent with several native cells of halo, not a model grid-distance policy.
     bounds = [min(s["lon"] for s in sites)-.15, min(s["lat"] for s in sites)-.15,
               max(s["lon"] for s in sites)+.15, max(s["lat"] for s in sites)+.15]
+    existing_manifest = output / "atlas-manifest.json"
+    if existing_manifest.exists():
+        existing = json.loads(existing_manifest.read_text())
+        if existing.get("bounds") != bounds:
+            raise ValueError("atlas_installed_bounds_differ")
+        config_path = output / "fes2022.yaml"
+        pending_config = output / "fes2022.yaml.part"
+        check_config = config_path if config_path.exists() else pending_config
+        if not check_config.is_file():
+            raise ValueError("atlas_incomplete_publication")
+        if sha256(check_config) != existing["config_sha256"] or len(existing["files"]) != len(WAVES) or {item["wave"] for item in existing["files"]} != set(WAVES):
+            raise ValueError("atlas_installed_integrity_invalid")
+        for item in existing["files"]:
+            if item["file"] != item["wave"].lower()+"_fes2022.nc" or sha256(regional/item["file"]) != item["regional_sha256"]:
+                raise ValueError("atlas_installed_integrity_invalid")
+        if not config_path.exists():
+            pending_config.replace(config_path)
+        return existing
+    if (output / "fes2022.yaml").exists():
+        raise ValueError("atlas_incomplete_publication")
     if seed and seed.is_file() and not (raw / "m2_fes2022.nc.xz").exists():
         shutil.copyfile(seed, raw / "m2_fes2022.nc.xz")
 
@@ -73,12 +105,18 @@ def install(output: Path, sites: list[dict], *, seed: Path | None = None, worker
             partial.replace(packed)
         return wave, name, packed, unpacked, subset, length, modified
 
-    def crop(downloaded):
+    def crop(downloaded, retry=True):
         import xarray as xr
         wave, name, packed, unpacked, subset, length, modified = downloaded
         # Reading to EOF verifies the XZ checksum, including reused seed files.
-        with lzma.open(packed) as source, unpacked.open("wb") as target:
-            shutil.copyfileobj(source, target, 1024*1024)
+        try:
+            with lzma.open(packed) as source, unpacked.open("wb") as target:
+                shutil.copyfileobj(source, target, 1024*1024)
+        except (lzma.LZMAError, EOFError):
+            packed.replace(packed.with_name(packed.name+".invalid-"+uuid4().hex))
+            if retry:
+                return crop(download(wave), retry=False)
+            raise ValueError("atlas_crc_invalid") from None
         with xr.open_dataset(unpacked) as data:
             if data.amplitude.attrs.get("units") != "cm" or data.phase.attrs.get("units") != "degrees":
                 raise ValueError("atlas_units_invalid")
@@ -99,11 +137,16 @@ def install(output: Path, sites: list[dict], *, seed: Path | None = None, worker
     entries.sort(key=lambda entry: WAVES.index(entry["wave"]))
     config = {"tide":{"cartesian":{"amplitude":"amplitude","phase":"phase","latitude":"lat","longitude":"lon",
                                     "dynamic":["A5"],"paths":{wave:str((regional / (wave.lower()+"_fes2022.nc")).resolve()) for wave in WAVES}}}}
-    (output / "fes2022.yaml").write_text(json.dumps(config,indent=2)+"\n")
+    config_temp = output / "fes2022.yaml.part"
+    config_temp.write_text(json.dumps(config,indent=2)+"\n")
     from datetime import datetime, timezone
     manifest = dict(dataset="FES2022b",atlas_release="ocean_tide_20241025",retrieved_at=datetime.now(timezone.utc).isoformat(),
-                    bounds=bounds,files=entries,config_sha256=sha256(output/"fes2022.yaml"),unit="cm")
-    (output / "atlas-manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+                    bounds=bounds,files=entries,config_sha256=sha256(config_temp),unit="cm")
+    manifest_temp = output / "atlas-manifest.json.part"
+    manifest_temp.write_text(json.dumps(manifest,indent=2)+"\n")
+    # The config is the provider entry point: expose it only after all atlas checks.
+    manifest_temp.replace(output / "atlas-manifest.json")
+    config_temp.replace(output / "fes2022.yaml")
     return manifest
 
 

@@ -33,6 +33,9 @@ class FesAtlasProviderTest(unittest.TestCase):
             (output/'original').mkdir(parents=True)
             partial = output/'original/2n2_fes2022.nc.xz.part'
             partial.write_bytes(packed[:20])
+            damaged = bytearray(packed)
+            damaged[-12] ^= 1
+            (output/'original/m2_fes2022.nc.xz').write_bytes(damaged)
             ranges = []
             def opener(request,timeout):
                 headers = {'Content-Length':str(len(packed)),'Last-Modified':'Thu, 01 Jan 2026 00:00:00 GMT'}
@@ -49,7 +52,18 @@ class FesAtlasProviderTest(unittest.TestCase):
             self.assertEqual(len(result['files']),len(WAVES))
             self.assertEqual(result['dataset'],'FES2022b')
             self.assertFalse(partial.exists())
+            self.assertEqual(len(list((output/'original').glob('m2*.invalid-*'))),1)
             self.assertEqual(json.loads((output/'fes2022.yaml').read_text())['tide']['cartesian']['dynamic'],['A5'])
+            with patch.dict(os.environ,{'AVISO_USERNAME':'synthetic','AVISO_PASSWORD':'synthetic'}), patch('bunaken_engine.fes_atlas.urlopen',side_effect=AssertionError('completed atlas must not reopen network')):
+                reused = install(output,[{'lat':1.6,'lon':124.7}])
+            self.assertEqual(reused,result)
+            (output/'fes2022.yaml').rename(output/'fes2022.yaml.part')
+            with patch.dict(os.environ,{'AVISO_USERNAME':'synthetic','AVISO_PASSWORD':'synthetic'}), patch('bunaken_engine.fes_atlas.urlopen',side_effect=AssertionError('publication recovery must not download')):
+                self.assertEqual(install(output,[{'lat':1.6,'lon':124.7}]),result)
+            self.assertTrue((output/'fes2022.yaml').is_file())
+            with patch.dict(os.environ,{'AVISO_USERNAME':'synthetic','AVISO_PASSWORD':'synthetic'}), self.assertRaisesRegex(ValueError,'atlas_installed_bounds_differ'):
+                install(output,[{'lat':1.61,'lon':124.7}])
+
 
     def test_invalid_coordinates_fail_before_network(self):
         with TemporaryDirectory() as tmp, patch('bunaken_engine.fes_atlas.urlopen') as opener:
@@ -57,3 +71,12 @@ class FesAtlasProviderTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'atlas_coordinates_invalid'):
                     install(Path(tmp),sites)
             opener.assert_not_called()
+
+    def test_concurrent_installer_is_rejected(self):
+        import fcntl
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with (root/'.install.lock').open('a') as lock:
+                fcntl.flock(lock.fileno(),fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with self.assertRaisesRegex(ValueError,'atlas_install_busy'):
+                    install(root,[{'lat':1.6,'lon':124.7}])
