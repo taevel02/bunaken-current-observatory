@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import json
 from importlib.metadata import version as package_version
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from bunaken_engine.features import build_scaler, finite, instant, interpolate
 from bunaken_engine.fes_atlas import WAVES, sha256
@@ -59,7 +60,6 @@ def compare(directory, sites, times, values, library):
     lib.fes_min_number.argtypes = [ptr]
     lib.fes_min_number.restype = ctypes.c_int
     lib.fes_delete.argtypes = [ptr]
-    config = directory / 'reference.ini'
     lines = []
     for wave in WAVES:
         prefix = 'TIDE_' + wave.upper()
@@ -68,11 +68,13 @@ def compare(directory, sites, times, values, library):
             lines.append(f'{prefix}_{key} = {value}')
     # Official LIBFES 2.9.7 FES2022b configuration excludes the atlas MSf from LPE.
     lines.append('TIDE_MSF_LP_DYNAMIC = 1')
-    config.write_text('\n'.join(lines)+'\n')
     handle = ptr()
-    if lib.fes_new(ctypes.byref(handle),0,1,str(config).encode()):
-        lib.fes_delete(handle)
-        raise ValueError('reference_initialization_failed')
+    with NamedTemporaryFile(mode='w',suffix='.ini') as config:
+        config.write('\n'.join(lines)+'\n')
+        config.flush()
+        if lib.fes_new(ctypes.byref(handle),0,1,config.name.encode()):
+            lib.fes_delete(handle)
+            raise ValueError('reference_initialization_failed')
     errors = []
     rejected = 0
     epoch = datetime(1950,1,1,tzinfo=timezone.utc)
@@ -107,6 +109,11 @@ def history(directory, root, start, days, library, output):
         raise ValueError('history_future_interval')
     if output.exists():
         raise ValueError('history_output_exists')
+    code_paths = {name:Path(__file__).parent/name for name in ('fes_research.py','fes_atlas.py','features.py','registry.py')}
+    input_paths = {'atlas_manifest':directory/'atlas-manifest.json','atlas_config':directory/'fes2022.yaml',
+                   'geometry':root/'config/geometry.json','features':root/'config/features.json',
+                   'sites':root/'packages/contracts/data/sites.json',**code_paths}
+    input_hashes = {name:sha256(path) for name,path in input_paths.items()}
     atlas = verify_atlas(directory)
     sites = load_geometry(root)['sites']
     if any(site['status'] not in {'coordinates_verified','verified'} for site in sites):
@@ -147,16 +154,19 @@ def history(directory, root, start, days, library, output):
     for name,item in scaler['features'].items():
         if not item['enabled'] and name not in {'tide_rate_m_per_hour','tide_excursion_m'}:
             item['reason'] = registry['disabled'].get(name,'historical_source_or_geometry_unverified')
+    if any(sha256(path) != input_hashes[name] for name,path in input_paths.items()):
+        raise ValueError('history_inputs_changed')
+    verify_atlas(directory)
     output.mkdir(parents=True,mode=0o700)
     for name,data in [('rows.json',rows),('scaler.json',scaler),('conformance.json',conformance),('site-rows.json',site_rows)]:
         (output/name).write_text(json.dumps(data,indent=2,allow_nan=False)+'\n')
     manifest = dict(kind='historical_environment_analysis',partial=True,site_count=len(sites),
                     start=start,end=last.isoformat(),retrieved_at=retrieved,cutoff=retrieved,
-                    atlas_sha256=sha256(directory/'atlas-manifest.json'),
-                    geometry_sha256=sha256(root/'config/geometry.json'),
-                    feature_version=registry['version'],feature_registry_sha256=sha256(root/'config/features.json'),
+                    atlas_sha256=input_hashes['atlas_manifest'],
+                    geometry_sha256=input_hashes['geometry'],site_registry_sha256=input_hashes['sites'],
+                    feature_version=registry['version'],feature_registry_sha256=input_hashes['features'],
                     runtime_versions={name:package_version(name) for name in ('pyfes','numpy','netCDF4','xarray')},
-                    code_hashes={name:sha256(Path(__file__).parent/name) for name in ('fes_research.py','fes_atlas.py','features.py','registry.py')},
+                    code_hashes={name:input_hashes[name] for name in code_paths},
                     files={name:sha256(output/name) for name in ('rows.json','scaler.json','conformance.json','site-rows.json')},
                     note='No labels, PCI, operational forecast or pre-retrieval validation eligibility')
     (output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

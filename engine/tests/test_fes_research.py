@@ -70,6 +70,8 @@ class FesResearchTest(unittest.TestCase):
             self.atlas(root)
             (root/'config').mkdir()
             (root/'config/geometry.json').write_text('{}')
+            (root/'packages/contracts/data').mkdir(parents=True)
+            (root/'packages/contracts/data/sites.json').write_text('[]')
             (root/'config/features.json').write_text(json.dumps(dict(version='synthetic',groups={'tide':{'features':['tide_rate_m_per_hour','tide_excursion_m']},'ocean':{'features':['current_speed_m_s']}},disabled={})))
             site = dict(site_id='synthetic',status='coordinates_verified',version='fixture',lat=1.6,lon=124.7)
             def evaluate(atlas,sites,times):
@@ -85,3 +87,11 @@ class FesResearchTest(unittest.TestCase):
             self.assertEqual(scaler['features']['current_speed_m_s']['reason'],'historical_source_or_geometry_unverified')
             self.assertEqual(rows[0]['retrieved_at'],scaler['cutoff'])
             self.assertNotIn('overall_pci',rows[0])
+
+            def mutate_inputs(atlas,sites,times):
+                (root/'config/geometry.json').write_text('{"changed":true}')
+                return evaluate(atlas,sites,times)
+            with patch('bunaken_engine.fes_research.load_geometry',return_value={'sites':[site]}), patch('bunaken_engine.fes_research.evaluate',side_effect=mutate_inputs), patch('bunaken_engine.fes_research.compare',return_value={'passed':True}), patch('bunaken_engine.fes_research.package_version',return_value='synthetic'):
+                with self.assertRaisesRegex(ValueError,'history_inputs_changed'):
+                    history(root,root,'2026-01-01T00:00Z',1,root/'lib',root/'out-changed')
+            self.assertFalse((root/'out-changed').exists())
