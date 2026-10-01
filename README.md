@@ -41,7 +41,7 @@ The public root redirects to `/ko`; `/en` serves English. The initial status API
 
 ## Environmental engine (P3)
 
-See [environment sources and runbook](docs/environment-sources.ko.md) for source metadata, geometry verification, immutable snapshot/receipt/seal rules, and live integration dependencies.
+See [private FES installation and historical research](docs/fes-atlas.ko.md) and [environment sources and runbook](docs/environment-sources.ko.md) for source metadata, geometry verification, immutable snapshot/receipt/seal rules, and live integration dependencies.
 
 ```sh
 uv sync --project engine --extra providers --locked
@@ -50,4 +50,4 @@ uv run --project engine --locked python -m unittest discover -s engine/tests
 uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
 ```
 
-Site geometry remains unverified. Missing sources produce diagnostic failure manifests and null PCI, not synthetic operational data. Remote data writes require explicit `--publish`; CLI collection requires a clean trusted checkout and its exact commit SHA.
+Representative entry coordinates are confirmed; depth, bearings and grid-distance policy remain unverified. Missing sources produce diagnostic failure manifests and null PCI, not synthetic operational data. Remote data writes require explicit `--publish`; CLI collection requires a clean trusted checkout and its exact commit SHA.
