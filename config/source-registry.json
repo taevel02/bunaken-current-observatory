@@ -16,14 +16,15 @@
       },
       "update_interval_hours": null,
       "stale_after_hours": null,
-      "metadata_checked_at": "2026-09-30",
+      "metadata_checked_at": "2026-10-01",
       "evidence_urls": [
         "https://www.aviso.altimetry.fr/fileadmin/documents/data/tools/hdbk_FES2022.pdf",
-        "https://github.com/CNES/aviso-fes/tree/2.9.7"
+        "https://github.com/CNES/aviso-fes/tree/2.9.7",
+        "https://tds-odatis.aviso.altimetry.fr/thredds/catalog/dataset-auxiliary-fes-tide-model/fes2022b/ocean_tide_20241025/catalog.html"
       ],
-      "dataset_version": null,
+      "dataset_version": "ocean_tide_20241025",
       "access": {
-        "status": "requires_runtime_metadata",
+        "status": "atlas_metadata_verified",
         "credentials": []
       },
       "redistribution": {
@@ -33,7 +34,7 @@
         "public_variables": [
           "tide_height"
         ],
-        "attribution": "CNES/LEGOS/NOVELTIS/CLS, FES2022, DOI 10.24400/527896/A01-2024.004; point tide predictions derived with LIBFES; AVISO License applies"
+        "attribution": "CNES/LEGOS/NOVELTIS/CLS, FES2022, DOI 10.24400/527896/A01-2024.004; point tide predictions derived with PyFES; numerical reference LIBFES 2.9.7; AVISO License applies"
       }
     },
     {

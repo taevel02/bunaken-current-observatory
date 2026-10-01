@@ -56,8 +56,9 @@ def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT
         if not export_allowed(source,list(source["variables"])):
             reasons.append("source_redistribution_unverified")
         for row in rows:
-            if "reference_engine_conformance_unverified" in row["quality_flags"]:
-                reasons.append("reference_engine_conformance_unverified")
+            for flag in ("reference_engine_conformance_unverified", "atlas_version_unverified"):
+                if flag in row["quality_flags"]:
+                    reasons.append(flag)
             if source["stale_after_hours"] is not None:
                 age_time=row.get("issued_at") or row.get("source_updated_at")
                 if age_time is None:

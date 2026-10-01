@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 
 from bunaken_engine.features import finite, instant, distance_km, sea_cell, profile_value
 from bunaken_engine.registry import validate_geometry
+from bunaken_engine.fes_validation import provenance as fes_provenance
 
 
 class SourceError(Exception):
@@ -195,17 +196,21 @@ def collect_copernicus(source: dict, geometry: dict, start: str, end: str, depth
         raise SourceError("provider_read_failed",True) from None
 
 
-def collect_fes(source: dict, geometry: dict, start: str, end: str, *, config_path: str | None = None, atlas_unit: str | None = None, evaluator=None) -> list[dict]:
-    require_geometry(geometry)
+def collect_fes(source: dict, geometry: dict, start: str, end: str, *, config_path: str | None = None, atlas_unit: str | None = None, validation_path: str | None = None, evaluator=None) -> list[dict]:
+    validate_geometry(geometry)
+    if geometry['status'] not in {'verified','coordinates_verified'}:
+        raise SourceError("unverified_geometry")
     config_path = config_path or os.environ.get("FES_CONFIG_PATH")
     atlas_unit = atlas_unit or os.environ.get("FES_ATLAS_UNIT")
-    if not config_path or atlas_unit not in {"cm","m"}:
+    if not config_path or atlas_unit != "cm":
         raise SourceError("fes_atlas_unconfigured")
     try:
-        import numpy as np
         import pyfes
         path = Path(config_path)
         config_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        atlas_verified, conformance_verified = fes_provenance(path,geometry,validation_path or os.environ.get("FES_VALIDATION_MANIFEST_PATH"))
+        if evaluator is not None:
+            conformance_verified = False
         first,last = instant(start),instant(end)
         if last < first or (last-first).total_seconds() > 999*1800:
             raise SourceError("provider_window_invalid")
@@ -216,21 +221,28 @@ def collect_fes(source: dict, geometry: dict, start: str, end: str, *, config_pa
             current += timedelta(minutes=30)
         if not times or len(times) > 1000:
             raise SourceError("provider_window_invalid")
-        dates = np.array([at.replace(tzinfo=None) for at in times],dtype="datetime64[us]")
         if evaluator is None:
-            config = pyfes.config.load(str(path))
-            evaluator = lambda: pyfes.evaluate_tide(config.models["tide"],dates,np.full(len(times),geometry["lon"]),np.full(len(times),geometry["lat"]),settings=config.settings)
-        tide, long_period, quality = evaluator()
-        if not (len(tide)==len(long_period)==len(quality)==len(times)):
+            from bunaken_engine.fes_research import evaluate
+            values = evaluate(path.parent,[geometry],times)[geometry['site_id']]
+        else:
+            tide, long_period, quality = evaluator()
+            if not (len(tide)==len(long_period)==len(quality)==len(times)):
+                raise SourceError("provider_shape_invalid")
+            values = [(float(height+lp)*.01 if flag>0 else None,int(flag))
+                      for height,lp,flag in zip(tide,long_period,quality)]
+        if len(values) != len(times):
             raise SourceError("provider_shape_invalid")
-        scale = .01 if atlas_unit == "cm" else 1
         output=[]
         retrieved=utc_now()
-        for at,height,lp,flag in zip(times,tide,long_period,quality):
-            value=float(height+lp)*scale if flag>0 else None
+        for at,(value,flag) in zip(times,values):
             flags=[] if flag>0 else ["fes_undefined" if flag==0 else "fes_extrapolation_rejected"]
-            flags.extend(["reference_engine_conformance_unverified", "atlas_version_unverified"])
-            output.append(sample(source,geometry,"tide_height",value,at.isoformat().replace("+00:00","Z"),retrieved,flags=flags,version=f"FES2022b/pyfes-{package_version('pyfes')}/{config_hash}"))
+            if not conformance_verified:
+                flags.append("reference_engine_conformance_unverified")
+            if not atlas_verified:
+                flags.append("atlas_version_unverified")
+            row = sample(source,geometry,"tide_height",value,at.isoformat().replace("+00:00","Z"),retrieved,flags=flags,version=f"FES2022b/pyfes-{package_version('pyfes')}/{config_hash}")
+            row["interpolation_method"] = "bounded_harmonic_bilinear"
+            output.append(row)
         return output
     except SourceError:
         raise
