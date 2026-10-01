@@ -11,7 +11,7 @@ uv run --env-file .env --project engine --extra providers --locked \
   --seed "$HOME/Downloads/m2_fes2022.nc.xz" --workers 3
 ```
 
-공식 `ocean_tide_20241025`의 34개 성분을 받는다. 중단하면 같은 명령으로 재개한다. 완료 파일은 HTTP 길이를 확인하고 XZ를 끝까지 읽어 CRC를 검사한다. 부분 파일은 서버가 올바른 Range 응답을 반환할 때 이어 받는다. 전체 설치 성공 후에만 `fes2022.yaml`, `atlas-manifest.json`을 생성한다.
+공식 `ocean_tide_20241025`의 34개 성분을 받는다. 중단하면 같은 명령으로 재개한다. 완료 atlas는 hash 확인 후 재사용한다. 다른 좌표 범위는 새 출력 경로를 사용한다. 동시 설치는 lock으로 거부한다. 완료 파일은 HTTP 길이를 확인하고 XZ를 끝까지 읽어 CRC를 검사한다. CRC 손상본은 로컬에 격리하고 한 번 다시 받는다. 부분 파일은 서버가 올바른 Range 응답을 반환할 때 이어 받는다. 전체 설치 성공 후에만 `fes2022.yaml`, `atlas-manifest.json`을 생성한다.
 
 진폭 `cm`, 위상 `degrees`를 확인하고, 부나켄 좌표 주변의 원래 1/30° 격자를 잘라 저장한다. 좌표 주변 0.15°는 파일 읽기 범위다. 허용 격자 거리나 현장 geometry 검증 기준이 아니다. manifest에 원본·압축·지역 파일의 SHA-256과 서버 수정 시각을 기록한다.
 
@@ -47,7 +47,7 @@ uv run --project engine --extra providers --locked \
   --output .local/history-2026-09
 ```
 
-1~31일의 종료된 구간만 허용한다. atlas 구성·각 성분 hash를 확인하고 19개 대표 입수 좌표에서 계산한다. PyFES의 undefined·extrapolated 값은 결측 처리한다. 3시간마다 독립 C 참조와 비교하며, 하나라도 유효하지 않거나 차이가 0.001m를 넘으면 scaler 생성을 차단한다. 이 tolerance는 구현 간 수치 일치 기준이며 현장 예측 정확도 검증이 아니다.
+1~31일의 종료된 구간만 허용한다. atlas 구성·각 성분 hash를 확인하고 19개 대표 입수 좌표에서 계산한다. PyFES의 undefined·extrapolated 값은 결측 처리한다. 3시간마다 시각별 새 LIBFES 세션으로 독립 C 참조와 비교하며, 하나라도 유효하지 않거나 차이가 0.001m를 넘으면 scaler 생성을 차단한다. [공식 알고리즘 차이 문서](https://www.aviso.altimetry.fr/fileadmin/documents/data/tools/Note_Pyfes_FES2022_Finite_Element_AVISO_20260320.pdf)에 명시된 LIBFES의 24시간 nodal cache를 비교 시 유지하지 않는다. 이 tolerance는 구현 간 수치 일치 기준이며 현장 예측 정확도 검증이 아니다.
 
 수집 성공 시 `rows.json`, `site-rows.json`, `scaler.json`, `conformance.json`, `manifest.json`을 만든다. Site별 row 범위, source·geometry·feature·코드 hash와 SDK 버전을 보존한다. 출력 디렉터리가 이미 존재하면 덮어쓰지 않는다. 실패한 비교 보고서는 새 출력 경로에 남고 다음 시도는 별도 경로를 사용한다.
 

@@ -68,34 +68,37 @@ def compare(directory, sites, times, values, library):
             lines.append(f'{prefix}_{key} = {value}')
     # Official LIBFES 2.9.7 FES2022b configuration excludes the atlas MSf from LPE.
     lines.append('TIDE_MSF_LP_DYNAMIC = 1')
-    handle = ptr()
-    with NamedTemporaryFile(mode='w',suffix='.ini') as config:
-        config.write('\n'.join(lines)+'\n')
-        config.flush()
-        if lib.fes_new(ctypes.byref(handle),0,1,config.name.encode()):
-            lib.fes_delete(handle)
-            raise ValueError('reference_initialization_failed')
     errors = []
     rejected = 0
     epoch = datetime(1950,1,1,tzinfo=timezone.utc)
-    try:
-        for site in sites:
-            for at,(value,flag) in zip(times,values[site['site_id']]):
-                h,lp = double(),double()
-                status = lib.fes_core(handle,site['lat'],site['lon'],(at-epoch).total_seconds()/86400,ctypes.byref(h),ctypes.byref(lp))
-                if status or lib.fes_min_number(handle) <= 0 or flag <= 0 or value is None:
-                    rejected += 1
-                    continue
-                reference = (h.value+lp.value)*.01
-                if not finite(reference):
-                    rejected += 1
-                    continue
-                errors.append(abs(reference-value))
-    finally:
-        lib.fes_delete(handle)
+    with NamedTemporaryFile(mode='w',suffix='.ini') as config:
+        config.write('\n'.join(lines)+'\n')
+        config.flush()
+        # LIBFES caches nodal factors for 24 hours; compare a cold evaluation at
+        # each timestamp with PyFES's per-timestamp nodal corrections.
+        for index,at in enumerate(times):
+            handle = ptr()
+            if lib.fes_new(ctypes.byref(handle),0,1,config.name.encode()):
+                lib.fes_delete(handle)
+                raise ValueError('reference_initialization_failed')
+            try:
+                for site in sites:
+                    value,flag = values[site['site_id']][index]
+                    h,lp = double(),double()
+                    status = lib.fes_core(handle,site['lat'],site['lon'],(at-epoch).total_seconds()/86400,ctypes.byref(h),ctypes.byref(lp))
+                    if status or lib.fes_min_number(handle) <= 0 or flag <= 0 or value is None:
+                        rejected += 1
+                        continue
+                    reference = (h.value+lp.value)*.01
+                    if not finite(reference):
+                        rejected += 1
+                        continue
+                    errors.append(abs(reference-value))
+            finally:
+                lib.fes_delete(handle)
     # Millimetre tolerance is a numerical conformance criterion only.
     return dict(reference='LIBFES 2.9.7',reference_library_sha256=sha256(library),
-                comparisons=len(errors),rejected=rejected,tolerance_m=.001,
+                evaluation_mode='fresh_reference_session_per_timestamp',comparisons=len(errors),rejected=rejected,tolerance_m=.001,
                 max_absolute_difference_m=max(errors,default=None),
                 passed=bool(errors) and rejected == 0 and max(errors) <= .001)
 
