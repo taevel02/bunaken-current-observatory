@@ -8,7 +8,7 @@ class RegistryTest(unittest.TestCase):
         geometry = load_geometry()
         self.assertEqual(len(geometry["sites"]), 19)
         self.assertEqual(geometry["zones"], [])
-        self.assertTrue(all(entry["status"] == "coordinates_verified" for entry in geometry["sites"]))
+        self.assertTrue(all(entry["status"] == "coordinates_depth_verified" for entry in geometry["sites"]))
         self.assertEqual(resolve_geometry("mandolin")["lat"], 1.612167)
         self.assertTrue(all(entry["wall_bearing_deg"] is None for entry in geometry["sites"]))
         with self.assertRaises(ValueError):

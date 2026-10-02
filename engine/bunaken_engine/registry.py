@@ -41,11 +41,13 @@ def validate_geometry(entry: dict) -> None:
     for value in values:
         if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)):
             raise ValueError("non-finite geometry value")
-    if entry["status"] == "coordinates_verified":
+    if entry["status"] in {"coordinates_verified", "coordinates_depth_verified"}:
         lat, lon = values[:2]
         if lat is None or lon is None or not (-90 <= lat <= 90 and -180 <= lon <= 180):
             raise ValueError("verified coordinates require valid latitude and longitude")
-        if any(value is not None for value in values[2:]):
+        if entry["status"] == "coordinates_depth_verified" and (values[2] is None or not 0 <= values[2] <= 200):
+            raise ValueError("verified reference depth required")
+        if (entry["status"] == "coordinates_verified" and values[2] is not None) or any(value is not None for value in values[3:]):
             raise ValueError("coordinate verification cannot supply unverified geometry fields")
         if not entry.get("verified_at") or not entry.get("evidence") or not entry.get("version"):
             raise ValueError("coordinates require verification evidence and version")

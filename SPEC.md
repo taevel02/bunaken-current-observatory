@@ -1,7 +1,7 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.4\
-작성일: 2026-09-30\
+버전: 1.5\
+작성일: 2026-10-03\
 기준: [PRD.md](PRD.md) v1.4 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
@@ -86,6 +86,8 @@ CSRF 구현은 검증된 세션/CSRF 라이브러리의 signed double-submit 등
 ### 4.1 Site와 Zone
 
 Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측 입력의 등록 Site 목록과 stable ID는 `packages/contracts/data/sites.json`을 단일 원본으로 삼으며 새 관측·수정 폼은 목록에서 선택한다. 표시명은 각각의 stable ID로 저장하며 등록되지 않은 이름은 서버가 거부한다. 좌표·geometry는 확인되지 않았으므로 이 목록에서 만들지 않는다. Zone은 id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at을 가진다. 확인되지 않은 좌표·방향·수심은 null과 unverified로 남긴다.
+
+2026-10-03 사용자 결정: 모든 Site의 예측 대표 수심은 18m다. geometry schema 1.2의 `coordinates_depth_verified`는 대표 입수 좌표·기준 수심만 확인한 상태다. wall/offshore bearing·허용 격자 거리·Zone은 null로 유지하고 전체 verified 또는 Ocean 투영 적격으로 승격하지 않는다. 이전 coordinates_verified 형상은 계속 읽는다. 실제 관측 수심과 과거 anchor 수심을 18m로 덮어쓰지 않는다.
 
 서버는 Zone이 Site에 속하는지 검사한다. unknown Zone은 null이다. Site명 변경은 ID를 변경하지 않는다. 검증되지 않은 geometry로 Ocean group 또는 유사 지형 multiplier를 구성하지 않는다. 기본 depth는 예측 기준이지 실제 관측 수심의 자동 입력값이 아니다.
 

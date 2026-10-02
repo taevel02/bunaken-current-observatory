@@ -6,7 +6,8 @@
     "name_ko": "Lekuan 1",
     "lat": 1.594889,
     "lon": 124.771194,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "lekuan-2",
@@ -15,7 +16,8 @@
     "name_ko": "Lekuan 2",
     "lat": 1.601222,
     "lon": 124.765111,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "lekuan-3",
@@ -24,7 +26,8 @@
     "name_ko": "Lekuan 3",
     "lat": 1.6052,
     "lon": 124.767083,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "celah-celah",
@@ -33,7 +36,8 @@
     "name_ko": "Celah Celah",
     "lat": 1.611778,
     "lon": 124.767972,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "alung-banua",
@@ -42,7 +46,8 @@
     "name_ko": "Alung Banua",
     "lat": 1.616667,
     "lon": 124.753194,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "johnsons-wall",
@@ -51,7 +56,8 @@
     "name_ko": "Johnson's Wall",
     "lat": 1.6125,
     "lon": 124.743056,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "fukui",
@@ -60,7 +66,8 @@
     "name_ko": "Fukui",
     "lat": 1.61225,
     "lon": 124.739694,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "rons-point",
@@ -69,7 +76,8 @@
     "name_ko": "Ron's Point",
     "lat": 1.610694,
     "lon": 124.736167,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "mandolin",
@@ -78,7 +86,8 @@
     "name_ko": "Mandolin",
     "lat": 1.612167,
     "lon": 124.732417,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "tengah",
@@ -87,7 +96,8 @@
     "name_ko": "Tengah",
     "lat": 1.61903,
     "lon": 124.73266,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "raymonds-point",
@@ -96,7 +106,8 @@
     "name_ko": "Raymond's Point",
     "lat": 1.629056,
     "lon": 124.735278,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "mikes-point",
@@ -105,7 +116,8 @@
     "name_ko": "Mike's Point",
     "lat": 1.636833,
     "lon": 124.739722,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "tanjung-parigi",
@@ -114,7 +126,8 @@
     "name_ko": "Tanjung Parigi",
     "lat": 1.627883,
     "lon": 124.764817,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "sachikos-point",
@@ -123,7 +136,8 @@
     "name_ko": "Sachiko's Point",
     "lat": 1.63125,
     "lon": 124.774028,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "pahepa",
@@ -132,7 +146,8 @@
     "name_ko": "Pahepa",
     "lat": 1.628056,
     "lon": 124.778611,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "bunaken-timur-1",
@@ -141,7 +156,8 @@
     "name_ko": "Bunaken Timur 1",
     "lat": 1.614611,
     "lon": 124.783306,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "bunaken-timur-2",
@@ -150,7 +166,8 @@
     "name_ko": "Bunaken Timur 2",
     "lat": 1.606694,
     "lon": 124.782194,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "pangalisang",
@@ -159,7 +176,8 @@
     "name_ko": "Pangalisang",
     "lat": 1.603194,
     "lon": 124.782889,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   },
   {
     "id": "muka-kampung",
@@ -168,6 +186,7 @@
     "name_ko": "Muka Kampung",
     "lat": 1.59375,
     "lon": 124.778833,
-    "geometry_status": "coordinates_verified"
+    "geometry_status": "coordinates_depth_verified",
+    "reference_depth_m": 18
   }
 ]

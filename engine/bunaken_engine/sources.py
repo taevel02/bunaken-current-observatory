@@ -198,7 +198,7 @@ def collect_copernicus(source: dict, geometry: dict, start: str, end: str, depth
 
 def collect_fes(source: dict, geometry: dict, start: str, end: str, *, config_path: str | None = None, atlas_unit: str | None = None, validation_path: str | None = None, evaluator=None) -> list[dict]:
     validate_geometry(geometry)
-    if geometry['status'] not in {'verified','coordinates_verified'}:
+    if geometry['status'] not in {'verified','coordinates_verified','coordinates_depth_verified'}:
         raise SourceError("unverified_geometry")
     config_path = config_path or os.environ.get("FES_CONFIG_PATH")
     atlas_unit = atlas_unit or os.environ.get("FES_ATLAS_UNIT")
