@@ -53,7 +53,7 @@
       },
       "update_interval_hours": 24,
       "stale_after_hours": 36,
-      "metadata_checked_at": "2026-09-30",
+      "metadata_checked_at": "2026-10-04",
       "evidence_urls": [
         "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/services"
       ],
@@ -67,10 +67,14 @@
       },
       "redistribution": {
         "license_url": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence",
-        "derived_allowed": false,
+        "derived_allowed": true,
         "raw_allowed": false,
-        "public_variables": [],
-        "attribution": "E.U. Copernicus Marine Service Information, DOI 10.48670/moi-00016; licence endpoint must be verified before public export"
+        "public_variables": [
+          "uo",
+          "vo"
+        ],
+        "attribution": "Generated using E.U. Copernicus Marine Service Information; https://doi.org/10.48670/moi-00016; CMEMS Licence sections 2.2, 2.4, 2.6",
+        "evidence_sha256": "af05e45ab412104b3525d5a6bfba2b7aa354b618015aaa2b3c9cb027c95f6097"
       },
       "native_depths_m": [
         0.49402499198913574,
@@ -131,7 +135,7 @@
       "product": "GLOBAL_ANALYSISFORECAST_PHY_001_024",
       "dataset": "cmems_mod_glo_phy-thetao_anfc_0.083deg_PT6H-i",
       "variables": {
-        "thetao": "\u00b0C"
+        "thetao": "°C"
       },
       "native_resolution": {
         "horizontal": "0.083 degree",
@@ -140,7 +144,7 @@
       },
       "update_interval_hours": 24,
       "stale_after_hours": 36,
-      "metadata_checked_at": "2026-09-30",
+      "metadata_checked_at": "2026-10-04",
       "evidence_urls": [
         "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/services"
       ],
@@ -154,10 +158,13 @@
       },
       "redistribution": {
         "license_url": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence",
-        "derived_allowed": false,
+        "derived_allowed": true,
         "raw_allowed": false,
-        "public_variables": [],
-        "attribution": "E.U. Copernicus Marine Service Information, DOI 10.48670/moi-00016; licence endpoint must be verified before public export"
+        "public_variables": [
+          "thetao"
+        ],
+        "attribution": "Generated using E.U. Copernicus Marine Service Information; https://doi.org/10.48670/moi-00016; CMEMS Licence sections 2.2, 2.4, 2.6",
+        "evidence_sha256": "af05e45ab412104b3525d5a6bfba2b7aa354b618015aaa2b3c9cb027c95f6097"
       },
       "native_depths_m": [
         0.49402499198913574,
@@ -227,7 +234,7 @@
       },
       "update_interval_hours": 24,
       "stale_after_hours": 36,
-      "metadata_checked_at": "2026-09-30",
+      "metadata_checked_at": "2026-10-04",
       "evidence_urls": [
         "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/services"
       ],
@@ -241,10 +248,13 @@
       },
       "redistribution": {
         "license_url": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence",
-        "derived_allowed": false,
+        "derived_allowed": true,
         "raw_allowed": false,
-        "public_variables": [],
-        "attribution": "E.U. Copernicus Marine Service Information, DOI 10.48670/moi-00016; licence endpoint must be verified before public export"
+        "public_variables": [
+          "so"
+        ],
+        "attribution": "Generated using E.U. Copernicus Marine Service Information; https://doi.org/10.48670/moi-00016; CMEMS Licence sections 2.2, 2.4, 2.6",
+        "evidence_sha256": "af05e45ab412104b3525d5a6bfba2b7aa354b618015aaa2b3c9cb027c95f6097"
       },
       "native_depths_m": [
         0.49402499198913574,
