@@ -142,3 +142,97 @@ class GitDataStore:
                 raise StorageError("receipt_tree_invalid")
             result.append(json.loads(self.read(path,head)))
         return result
+
+    def publish_release(self, files, expected_head):
+        """One non-force commit, with validated immutable files and latest pointer."""
+        from bunaken_engine.snapshots import digest, validate
+        pointer = json.loads(files['web/latest.json'])
+        validate('latest',pointer)
+        prefix = f"web/releases/{pointer['release_id']}"
+        if set(files) != {'web/latest.json',prefix+'/manifest.json',prefix+'/dashboard.json'}:
+            raise StorageError('release_paths_invalid')
+        manifest = json.loads(files[prefix+'/manifest.json'])
+        payload = json.loads(files[prefix+'/dashboard.json'])
+        validate('release',manifest)
+        from bunaken_engine.public_release import validate_payload
+        validate_payload(payload)
+        if manifest['release_id'] != pointer['release_id'] or manifest['source_data_commit_sha'] != expected_head or manifest['status'] != 'published' or pointer['manifest_sha256'] != digest(files[prefix+'/manifest.json']) or manifest['files'] != [dict(path='dashboard.json',sha256=digest(files[prefix+'/dashboard.json']))]:
+            raise StorageError('release_integrity_invalid')
+        head = self.head()
+        if all(self.read(path,head) == content for path,content in files.items()):
+            return head
+        if head != expected_head:
+            raise StorageError('branch_conflict')
+        # Verify snapshot and current revisions really belong to the declared source head.
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from bunaken_engine.snapshots import make_bundle
+        import gzip
+        if not manifest['snapshot_ids'] and (payload['predictions'] or payload['tides']):
+            raise StorageError('release_source_mismatch')
+        if len(manifest['snapshot_ids']) > 1:
+            raise StorageError('release_source_mismatch')
+        for snapshot_id in manifest['snapshot_ids']:
+            day=datetime.fromisoformat(payload['valid_start'].replace('Z','+00:00')).astimezone(ZoneInfo('Asia/Makassar')).date().isoformat()
+            snapshot_prefix=f'snapshots/{day}/{snapshot_id}'
+            snapshot=json.loads(self.read(snapshot_prefix+'/manifest.json',head))
+            features=json.loads(gzip.decompress(self.read(snapshot_prefix+'/features.json.gz',head)))
+            forecasts=json.loads(gzip.decompress(self.read(snapshot_prefix+'/forecast.json.gz',head)))
+            from bunaken_engine.registry import load_geometry
+            from bunaken_engine.snapshots import canonical
+            if snapshot['geometry_hash'] != digest(canonical(load_geometry())):
+                raise StorageError('release_geometry_mismatch')
+            make_bundle(snapshot,features,forecasts)
+            tides=[row for row in snapshot['samples'] if row['variable']=='tide_height']
+            if snapshot['snapshot_id'] != snapshot_id or forecasts != payload['predictions'] or tides != payload['tides'] or payload['source_generated_at'] != snapshot['created_at'] or payload['valid_start'] != snapshot['valid_start'] or payload['valid_end'] != snapshot['valid_end']:
+                raise StorageError('release_source_mismatch')
+        current=self.current_observations(head)
+        if {row['id']:row for row in current} != {row['id']:row for row in payload['observations']}:
+            raise StorageError('release_observations_incomplete')
+        entries=[]
+        for path,content in files.items():
+            existing=self.read(path,head)
+            if path != 'web/latest.json' and existing is not None and existing != content:
+                raise StorageError('immutable_conflict')
+            blob=self.request('POST','/git/blobs',dict(content=base64.b64encode(content).decode(),encoding='base64'))
+            entries.append(dict(path=path,mode='100644',type='blob',sha=blob['sha']))
+        parent=self.request('GET',f'/git/commits/{head}')
+        tree=self.request('POST','/git/trees',dict(base_tree=parent['tree']['sha'],tree=entries))
+        commit=self.request('POST','/git/commits',dict(message='publish verified web release',tree=tree['sha'],parents=[head]))
+        try:
+            self.request('PATCH','/git/refs/heads/data',dict(sha=commit['sha'],force=False))
+        except StorageError:
+            visible=self.head()
+            if all(self.read(path,visible) == content for path,content in files.items()):
+                return commit['sha']
+            raise
+        visible=self.head()
+        if any(self.read(path,visible) != content for path,content in files.items()):
+            raise StorageError('release_confirmation_failed')
+        return commit['sha']
+
+    def current_observations(self, head):
+        from bunaken_engine.snapshots import validate
+        commit=self.request('GET',f'/git/commits/{head}')
+        root=self.request('GET',f"/git/trees/{commit['tree']['sha']}")
+        entry=next((row for row in root['tree'] if row['path']=='observations' and row['type']=='tree'),None)
+        if entry is None:return []
+        tree=self.request('GET',f"/git/trees/{entry['sha']}?recursive=1")
+        if tree.get('truncated'):raise StorageError('observation_tree_truncated')
+        def read(path):
+            result=self.request('GET',f"/contents/{quote(path,safe='/')}?ref={head}")
+            if not result or result.get('encoding')!='base64':raise StorageError('release_source_mismatch')
+            return json.loads(base64.b64decode(result['content']))
+        output=[]
+        for row in tree['tree']:
+            if row['type']!='blob' or not re.fullmatch(r'[0-9a-f-]{36}/current\.json',row['path']):continue
+            observation_id=row['path'].split('/')[0]
+            pointer=read('observations/'+row['path'])
+            revision=pointer.get('revision')
+            if type(revision) is not int or revision<1:raise StorageError('release_source_mismatch')
+            path=f'observations/{observation_id}/revisions/{revision:06d}.json'
+            if pointer.get('id')!=observation_id or pointer.get('revision_path')!=path:raise StorageError('release_source_mismatch')
+            observation=read(path);validate('observation-revision',observation)
+            if observation['id']!=observation_id or observation['revision']!=revision:raise StorageError('release_source_mismatch')
+            output.append(observation)
+        return sorted(output,key=lambda row:row['id'])

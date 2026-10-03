@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/dashboard.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "valid_start",
+    "valid_end",
+    "sites",
+    "predictions",
+    "tides",
+    "observations",
+    "sources",
+    "anchor_similarity",
+    "source_generated_at",
+    "forecast_kind"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid_start": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "valid_end": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "sites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name_ko",
+          "name_en",
+          "lat",
+          "lon",
+          "reference_depth_m",
+          "geometry_status",
+          "slug"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name_ko": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          },
+          "lat": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "lon": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "reference_depth_m": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "geometry_status": {
+            "enum": [
+              "unverified",
+              "coordinates_verified",
+              "coordinates_depth_verified",
+              "verified"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          }
+        }
+      },
+      "minItems": 19,
+      "maxItems": 19
+    },
+    "predictions": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bunaken-current-observatory.example/schemas/prediction.schema.json"
+      }
+    },
+    "tides": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bunaken-current-observatory.example/schemas/source-sample.schema.json"
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bunaken-current-observatory.example/schemas/observation-revision.schema.json"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "dataset",
+          "version",
+          "attribution",
+          "license_url",
+          "public_export_allowed",
+          "reason_codes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "dataset": {
+            "type": "string"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attribution": {
+            "type": "string"
+          },
+          "license_url": {
+            "type": "string"
+          },
+          "public_export_allowed": {
+            "type": "boolean"
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "anchor_similarity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "environment_restored",
+        "validated",
+        "reason_codes"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "environment_restored": {
+          "type": "boolean"
+        },
+        "validated": {
+          "const": false
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source_generated_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "forecast_kind": {
+      "const": "experimental"
+    }
+  }
+}

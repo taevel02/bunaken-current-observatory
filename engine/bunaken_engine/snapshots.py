@@ -137,4 +137,4 @@ def select_seal(target_date: str, receipts: list[dict], now: str) -> dict:
 def allowed_data_path(path: str) -> bool:
     uuid=r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     date_pattern=r"\d{4}-\d{2}-\d{2}"
-    return bool(re.fullmatch(rf"(?:snapshots|backfills)/{date_pattern}/{uuid}/(?:manifest\.json|features\.json\.gz|forecast\.json\.gz)",path) or re.fullmatch(rf"snapshot-receipts/{uuid}\.json",path) or re.fullmatch(rf"snapshot-receipt-index/{date_pattern}/{uuid}\.json",path) or re.fullmatch(rf"snapshot-confirmations/{uuid}\.json",path) or re.fullmatch(rf"seals/target-{date_pattern}\.json",path))
+    return bool(re.fullmatch(rf"web/releases/{uuid}/(?:manifest|dashboard)\.json",path) or path == "web/latest.json" or re.fullmatch(rf"(?:snapshots|backfills)/{date_pattern}/{uuid}/(?:manifest\.json|features\.json\.gz|forecast\.json\.gz)",path) or re.fullmatch(rf"snapshot-receipts/{uuid}\.json",path) or re.fullmatch(rf"snapshot-receipt-index/{date_pattern}/{uuid}\.json",path) or re.fullmatch(rf"snapshot-confirmations/{uuid}\.json",path) or re.fullmatch(rf"seals/target-{date_pattern}\.json",path))

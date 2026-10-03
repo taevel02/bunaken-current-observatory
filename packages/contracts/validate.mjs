@@ -19,3 +19,13 @@ export function validateObservationRevision(value) {
   const valid = validate(value);
   return { valid, errors: validate.errors ?? [] };
 }
+
+import predictionSchema from "./json-schema/prediction.schema.json" with { type: "json" };
+import sampleSchema from "./json-schema/source-sample.schema.json" with { type: "json" };
+import dashboardSchema from "./json-schema/dashboard.schema.json" with { type: "json" };
+import releaseSchema from "./json-schema/release.schema.json" with { type: "json" };
+import latestSchema from "./json-schema/latest.schema.json" with { type: "json" };
+for (const schema of [predictionSchema, sampleSchema, dashboardSchema, releaseSchema, latestSchema]) ajv.addSchema(schema);
+export const validatePublicDashboard = ajv.compile(dashboardSchema);
+export const validatePublicRelease = ajv.compile(releaseSchema);
+export const validateLatest = ajv.compile(latestSchema);
