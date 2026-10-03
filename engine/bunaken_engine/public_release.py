@@ -36,12 +36,14 @@ def build_release(source_commit, *, manifest_path=None, observations=None, root=
     validate_payload(payload,root=root)
     release_id=release_id or str(uuid4())
     prefix=f'web/releases/{release_id}'
-    raw=canonical(payload)
-    release=dict(release_id=release_id,schema_version='1.0',generated_at=payload['generated_at'],source_data_commit_sha=source_commit,snapshot_ids=snapshot_ids,files=[dict(path='dashboard.json',sha256=digest(raw))],status='published')
+    raw=gzip.compress(canonical(payload),mtime=0)
+    if len(raw)>1_250_000 or len(canonical(payload))>10_000_000:
+        raise SnapshotError('release_size_exceeded')
+    release=dict(release_id=release_id,schema_version='1.1',generated_at=payload['generated_at'],source_data_commit_sha=source_commit,snapshot_ids=snapshot_ids,files=[dict(path='dashboard.json.gz',sha256=digest(raw))],status='published')
     validate('release',release,root)
     pointer=dict(schema_version='1.0',release_id=release_id,manifest_sha256=digest(canonical(release)))
     validate('latest',pointer,root)
-    return release,{prefix+'/dashboard.json':raw,prefix+'/manifest.json':canonical(release),'web/latest.json':canonical(pointer)}
+    return release,{prefix+'/dashboard.json.gz':raw,prefix+'/manifest.json':canonical(release),'web/latest.json':canonical(pointer)}
 
 
 def validate_payload(payload, *, root=ROOT):
@@ -90,7 +92,7 @@ def main():
             if not args.publish:raise ValueError('release_output_exists')
             pointer=read_json(args.output/'web/latest.json');validate('latest',pointer)
             prefix=f"web/releases/{pointer['release_id']}"
-            paths=['web/latest.json',prefix+'/manifest.json',prefix+'/dashboard.json']
+            paths=['web/latest.json',prefix+'/manifest.json',prefix+'/dashboard.json.gz']
             files={path:(args.output/path).read_bytes() for path in paths}
             release=json.loads(files[prefix+'/manifest.json'])
         else:

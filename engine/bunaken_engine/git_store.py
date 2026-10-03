@@ -1,4 +1,5 @@
 """Git Data API: immutable path allowlist, optimistic non-force commits, no local DB."""
+from io import BytesIO
 import base64
 import json
 import re
@@ -149,14 +150,20 @@ class GitDataStore:
         pointer = json.loads(files['web/latest.json'])
         validate('latest',pointer)
         prefix = f"web/releases/{pointer['release_id']}"
-        if set(files) != {'web/latest.json',prefix+'/manifest.json',prefix+'/dashboard.json'}:
+        if set(files) != {'web/latest.json',prefix+'/manifest.json',prefix+'/dashboard.json.gz'}:
             raise StorageError('release_paths_invalid')
         manifest = json.loads(files[prefix+'/manifest.json'])
-        payload = json.loads(files[prefix+'/dashboard.json'])
+        import gzip
+        compressed=files[prefix+'/dashboard.json.gz']
+        if len(compressed)>1_250_000:raise StorageError('release_size_exceeded')
+        with gzip.GzipFile(fileobj=BytesIO(compressed)) as stream:
+            raw=stream.read(10_000_001)
+        if len(raw)>10_000_000:raise StorageError('release_size_exceeded')
+        payload = json.loads(raw)
         validate('release',manifest)
         from bunaken_engine.public_release import validate_payload
         validate_payload(payload)
-        if manifest['release_id'] != pointer['release_id'] or manifest['source_data_commit_sha'] != expected_head or manifest['status'] != 'published' or pointer['manifest_sha256'] != digest(files[prefix+'/manifest.json']) or manifest['files'] != [dict(path='dashboard.json',sha256=digest(files[prefix+'/dashboard.json']))]:
+        if manifest['release_id'] != pointer['release_id'] or manifest['source_data_commit_sha'] != expected_head or manifest['status'] != 'published' or manifest['schema_version'] != '1.1' or pointer['manifest_sha256'] != digest(files[prefix+'/manifest.json']) or manifest['files'] != [dict(path='dashboard.json.gz',sha256=digest(files[prefix+'/dashboard.json.gz']))]:
             raise StorageError('release_integrity_invalid')
         head = self.head()
         if all(self.read(path,head) == content for path,content in files.items()):
