@@ -10,7 +10,11 @@ P4 화면은 ko/en, WITA 내일 기본값, 오늘부터 D+7, Site 비교·상세
 pnpm dev
 ```
 
-`/ko`, `/en`, `/{locale}/sites/{slug}`, `/{locale}/observations`, `/{locale}/pci`, `/{locale}/methodology`, `/{locale}/status`, `/api/public/status`를 제공한다. 언어 전환은 선택 Site와 날짜를 유지한다. 조석은 높이 m이며 현장 유속이 아니다. 곡선 아래 접이식 수치 표를 제공한다.
+`/ko`, `/en`, `/{locale}/sites/{slug}`, `/{locale}/observations`, `/{locale}/pci`, `/{locale}/methodology`, `/{locale}/status`, `/api/public/status`를 제공한다. 언어 전환은 선택 Site와 날짜를 유지한다. 1920×1080에서는 19 Site 비교표와 선택 Site의 PCI·조석을 좌우로 배치한다. Site 선택은 비교표를 유지하면서 오른쪽 그래프를 바꾸며, 상세 페이지는 두 그래프를 나란히 표시한다. 헤더·필터·생성 정보는 상단에 모으고 설명·수치 표는 접어서 볼 수 있다.
+
+PCI 그래프의 가로축은 08:00–16:00 WITA의 다이빙 시작 시각, 세로축은 60분 대표 체감 PCI다. 서버의 유효한 30분 시작 슬롯만 연결하고 null·중복·빠진 시간 구간은 끊는다. 1.0 초과를 허용하며 1.0을 상한·위험선으로 사용하지 않는다. 현재 P5가 구현되지 않아 실제 숫자 곡선은 없고 미제공 이유를 표시한다. 수직조류·방향·위험도는 이 곡선만으로 판단하지 않는다.
+
+조석은 높이 m이며 현장 유속이 아니다. 독립 보조 그래프로 표시하고 PCI와 서로 다른 단위를 같은 축에 겹치지 않는다. 곡선 아래 접이식 수치 표를 제공한다.
 
 로컬 수집은 clean trusted checkout과 실제 code SHA가 필요하다. 아래 명령은 기본값이 로컬 저장이며 공개 Git에 쓰지 않는다. 기존 output에 다른 바이트를 덮어쓰지 않는다.
 
