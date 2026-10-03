@@ -11,8 +11,9 @@ from bunaken_engine.sources import utc_now
 
 
 def build_release(source_commit, *, manifest_path=None, observations=None, root=ROOT, release_id=None):
-    predictions, tides, snapshot_ids = [], [], []
+    predictions, tides, environment_samples, snapshot_ids = [], [], [], []
     first = last = source_generated = None
+    source_status = {}
     if manifest_path:
         manifest = read_json(manifest_path)
         features = json.loads(gzip.decompress((manifest_path.parent/'features.json.gz').read_bytes()))
@@ -22,16 +23,16 @@ def build_release(source_commit, *, manifest_path=None, observations=None, root=
             raise SnapshotError('release_geometry_mismatch')
         if manifest['kind'] != 'snapshot':
             raise SnapshotError('analysis_is_not_public_forecast')
-        tides = [row for row in manifest['samples'] if row['variable'] == 'tide_height']
+        tides, environment_samples = public_samples(manifest['samples'], root=root)
         snapshot_ids = [manifest['snapshot_id']]
         first,last = manifest['valid_start'],manifest['valid_end']
         source_generated = manifest['created_at']
+        source_status = manifest['source_status']
     sites = read_json(root/'packages/contracts/data/sites.json')
-    registry = load_sources(root)
-    sources = [dict(id=key,dataset=s['dataset'],version=s['dataset_version'],attribution=s['redistribution']['attribution'],license_url=s['redistribution']['license_url'],public_export_allowed=s['redistribution']['derived_allowed'],reason_codes=[] if s['redistribution']['derived_allowed'] else ['source_redistribution_unverified']) for key,s in registry.items()]
-    payload = dict(schema_version='1.0',forecast_kind='experimental',generated_at=utc_now(),source_generated_at=source_generated,valid_start=first,valid_end=last,
+    sources = public_source_metadata(source_status, root=root)
+    payload = dict(schema_version='1.1',forecast_kind='experimental',generated_at=utc_now(),source_generated_at=source_generated,valid_start=first,valid_end=last,
         sites=[{key:s[key] for key in ('id','slug','name_ko','name_en','lat','lon','reference_depth_m','geometry_status')} for s in sites],
-        predictions=predictions,tides=tides,observations=[] if observations is None else observations,sources=sources,
+        predictions=predictions,tides=tides,environment_samples=environment_samples,observations=[] if observations is None else observations,sources=sources,
         anchor_similarity=dict(value=None,environment_restored=False,validated=False,reason_codes=['anchor_environment_unavailable']))
     validate_payload(payload,root=root)
     release_id=release_id or str(uuid4())
@@ -46,6 +47,25 @@ def build_release(source_commit, *, manifest_path=None, observations=None, root=
     return release,{prefix+'/dashboard.json.gz':raw,prefix+'/manifest.json':canonical(release),'web/latest.json':canonical(pointer)}
 
 
+def public_source_metadata(status, *, root=ROOT):
+    registry = load_sources(root)
+    return [dict(id=key, dataset=source['dataset'], version=source['dataset_version'],
+                 attribution=source['redistribution']['attribution'], license_url=source['redistribution']['license_url'],
+                 public_export_allowed=source['redistribution']['derived_allowed'],
+                 reason_codes=sorted(set(status.get(key, {}).get('reason_codes', []) +
+                     ([] if source['redistribution']['derived_allowed'] else ['source_redistribution_unverified']))))
+            for key, source in registry.items()]
+
+
+def public_samples(samples, *, root=ROOT):
+    """Only licensed point samples from the same immutable snapshot."""
+    from bunaken_engine.registry import export_allowed
+    registry = load_sources(root)
+    permitted = [row for row in samples if row['source'] in registry and export_allowed(registry[row['source']], [row['variable']])]
+    return ([row for row in permitted if row['variable'] == 'tide_height'],
+            [row for row in permitted if row['variable'] != 'tide_height'])
+
+
 def validate_payload(payload, *, root=ROOT):
     from bunaken_engine.registry import export_allowed
     from bunaken_engine.features import instant
@@ -58,13 +78,15 @@ def validate_payload(payload, *, root=ROOT):
     known={s['id']:s for s in read_json(root/'packages/contracts/data/sites.json')}
     if any(any(row[key]!=known[row['id']][key] for key in row) for row in payload['sites']):
         raise SnapshotError('release_geometry_mismatch')
-    for row in payload['tides']:
+    for row in payload['tides'] + payload.get('environment_samples', []):
         source=registry.get(row['source'])
-        if source is None or row['variable']!='tide_height' or row['unit']!='m' or row['product']!=source['product'] or row['dataset']!=source['dataset'] or not export_allowed(source,[row['variable']]) or row.get('site_id') not in expected:
+        if source is None or source['variables'].get(row['variable'])!=row['unit'] or row['product']!=source['product'] or row['dataset']!=source['dataset'] or not export_allowed(source,[row['variable']]) or row.get('site_id') not in expected:
             raise SnapshotError('public_source_forbidden')
+    if any(row['variable']!='tide_height' for row in payload['tides']) or any(row['variable']=='tide_height' for row in payload.get('environment_samples', [])):
+        raise SnapshotError('public_source_forbidden')
     if payload['anchor_similarity']['value'] is not None and not payload['anchor_similarity']['environment_restored']:
         raise SnapshotError('anchor_environment_unavailable')
-    if payload['tides'] or payload['predictions']:
+    if payload['tides'] or payload['predictions'] or payload.get('environment_samples'):
         if not payload['source_generated_at'] or not payload['valid_start'] or not payload['valid_end'] or instant(payload['valid_start'])>=instant(payload['valid_end']):
             raise SnapshotError('public_source_time_missing')
     for row in payload['predictions']:

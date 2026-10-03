@@ -175,7 +175,7 @@ class GitDataStore:
         from zoneinfo import ZoneInfo
         from bunaken_engine.snapshots import make_bundle
         import gzip
-        if not manifest['snapshot_ids'] and (payload['predictions'] or payload['tides']):
+        if not manifest['snapshot_ids'] and (payload['predictions'] or payload['tides'] or payload.get('environment_samples')):
             raise StorageError('release_source_mismatch')
         if len(manifest['snapshot_ids']) > 1:
             raise StorageError('release_source_mismatch')
@@ -190,7 +190,10 @@ class GitDataStore:
             if snapshot['geometry_hash'] != digest(canonical(load_geometry())):
                 raise StorageError('release_geometry_mismatch')
             make_bundle(snapshot,features,forecasts)
-            tides=[row for row in snapshot['samples'] if row['variable']=='tide_height']
+            from bunaken_engine.public_release import public_samples, public_source_metadata
+            tides, environment_samples=public_samples(snapshot['samples'])
+            if payload['schema_version']=='1.1' and (environment_samples!=payload['environment_samples'] or payload['sources']!=public_source_metadata(snapshot['source_status'])):
+                raise StorageError('release_source_mismatch')
             if snapshot['snapshot_id'] != snapshot_id or forecasts != payload['predictions'] or tides != payload['tides'] or payload['source_generated_at'] != snapshot['created_at'] or payload['valid_start'] != snapshot['valid_start'] or payload['valid_end'] != snapshot['valid_end']:
                 raise StorageError('release_source_mismatch')
         current=self.current_observations(head)

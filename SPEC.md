@@ -154,7 +154,7 @@ prediction_status는 insufficient/experimental/available이다. support는 insuf
 
 Release manifest는 release_id, schema_version, generated_at, source_data_commit_sha, snapshot_ids, 파일 상대 경로·sha256, status를 갖는다. latest.json은 이 manifest를 가리키는 작은 pointer다. 웹은 latest를 한 번 해석한 후 모든 자산을 동일 immutable release에서 읽는다.
 
-P4 신규 웹 release는 schema 1.1과 `dashboard.json.gz` 하나를 사용한다. gzip은 mtime=0으로 생성하고 압축 바이트의 SHA-256을 manifest에 넣는다. latest schema 1.0은 release UUID와 manifest hash를 가진다. dashboard schema 1.0은 해당 release의 19 Site metadata·예측·조석·현재 관측 revision 전체·출처·anchor 상태를 연결한다. source_data_commit_sha의 현재 관측 집합과 저장된 snapshot이 일치해야 발행한다. 세 파일을 한 commit으로 쓰며 실패하면 latest를 먼저 바꾸지 않는다. timeout 후 같은 후보 파일로 재시도하면 이미 반영된 성공을 확인한다.
+P4 신규 웹 release는 schema 1.1과 `dashboard.json.gz` 하나를 사용한다. gzip은 mtime=0으로 생성하고 압축 바이트의 SHA-256을 manifest에 넣는다. latest schema 1.0은 release UUID와 manifest hash를 가진다. dashboard schema 1.1은 해당 release의 19 Site metadata·예측·조석·환경 sample·현재 관측 revision 전체·출처·anchor 상태를 연결한다. 1.1의 environment_samples는 같은 snapshot에서 공개 allowlist를 통과한 비조석 SourceSample 원문이며 필수 배열이다. 기존 dashboard 1.0은 환경 배열 없는 형상으로 읽는다. source_status 실패 사유는 sources.reason_codes에 보존하고 저장 시 snapshot과 대조한다. 웹 reader도 현재 source registry의 공개 허용 변수·dataset·product·unit을 검사한다. source_data_commit_sha의 현재 관측 집합과 저장된 snapshot이 일치해야 발행한다. 세 파일을 한 commit으로 쓰며 실패하면 latest를 먼저 바꾸지 않는다. timeout 후 같은 후보 파일로 재시도하면 이미 반영된 성공을 확인한다.
 
 압축 파일은 1,250,000byte, 해제된 JSON은 10,000,000byte 이하로 제한한다. 웹은 latest를 60초 재검증하고 immutable 자산을 공유 캐시한다. 해제 크기를 제한하고 pointer→manifest→gzip hash와 JSON Schema를 모두 검사한다. Site 표시도 같은 release metadata를 사용한다.
 
@@ -414,3 +414,9 @@ publish 요청은 네 원고의 존재, 번역 상태, hash/version 일치, 참�
 정확한 FES/Copernicus dataset·변수·수심, Site 좌표·wall/offshore bearing, grid 거리 제한, feature registry와 normalization 분포, High 허용 오차, 코드·데이터 라이선스, 실제 관리자 secret·PAT·domain은 미확정이다. 미설정이면 관련 기능을 unavailable/disabled로 표시하고 값을 발명하지 않는다.
 
 스키마·API·모델 계약을 바꾸면 SPEC 버전과 실제 schema/model 버전을 함께 검토하고 fixture·migration·PRD 영향·PLAN 작업을 갱신한다. 기록 저장을 공개→비공개로 바꾸거나 외부 OAuth/DB를 추가하는 변경은 단순 구현 세부가 아니라 제품 결정 변경이다.
+
+### 환경 종합 표시
+
+선택 Site·WITA 날짜의 PCI, 조석과 u/v, 모델 수온, 염분, 10m 바람·방향, 파고·주기·방향, 너울 높이·주기·방향을 함께 표시한다. 환경 값은 예측 PCI와 단위를 섞지 않는다. 일 범위는 제공 시각의 min/max이며 하루 전체 coverage를 주장하지 않는다. 방향은 circular min/max 대신 시각별 점·값을 표시한다. 수치가 없는 경우 공개 권한·geometry·freshness·결측 사유를 보존한다. source 실패 또는 나이 미확인 자료를 유효 환경값으로 표시하지 않는다.
+
+달은 USNO Complete Sun and Moon Data for One Day API의 해당 날짜 WITA 정오 위상·밝은 면 비율을 사용한다. 고정 HTTPS endpoint, 4초 timeout, 16KB 응답 제한, 24시간 cache, 좌표·날짜·위상·비율 검증을 적용한다. API 실패는 달만 미제공으로 처리한다. 달 모양은 위상 도식이며 관측 사진·현지 하늘 방향을 뜻하지 않는다. 천문 metadata는 forecast snapshot 밖의 별도 표시 자료로 구분하며 PCI feature나 weight를 추가하지 않는다. 가입·API key·신규 환경변수는 필요 없다.

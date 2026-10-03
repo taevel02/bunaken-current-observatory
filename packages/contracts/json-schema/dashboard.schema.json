@@ -19,7 +19,10 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "1.0"
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
     },
     "generated_at": {
       "type": "string",
@@ -204,6 +207,42 @@
     },
     "forecast_kind": {
       "const": "experimental"
+    },
+    "environment_samples": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bunaken-current-observatory.example/schemas/source-sample.schema.json"
+      }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1",
+            "type": "string"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "environment_samples"
+        ],
+        "properties": {
+          "environment_samples": {}
+        }
+      },
+      "else": {
+        "not": {
+          "required": [
+            "environment_samples"
+          ],
+          "properties": {
+            "environment_samples": {}
+          }
+        }
+      }
+    }
+  ]
 }

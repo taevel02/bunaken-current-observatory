@@ -2,12 +2,13 @@ import Link from "next/link";
 import { messages } from "@/i18n/messages";
 import { sites } from "@bunaken/contracts/sites";
 import { SelectControl } from "@/src/ui/select-control";
-import { halfDay, witaDate, dayOffset, type Locale, type Dashboard, type Prediction } from "@/src/public/model";
+import { halfDay, witaDate, dayOffset, type Locale, type Dashboard, type Prediction, type Moon } from "@/src/public/model";
 import { TideChart } from "@/src/public/tide-chart";
+import { EnvironmentOverview, MoonSummary } from "@/src/public/environment-overview";
 import { PCIChart } from "@/src/public/pci-chart";
 
 type State={data:Dashboard;status:string;reason:string|null;releaseId:string|null};
-export function DashboardView({locale,day,siteId,state,detail=false}:{locale:Locale;day:string;siteId:string;state:State;detail?:boolean}) {
+export function DashboardView({locale,day,siteId,state,detail=false,moon=null}:{locale:Locale;day:string;siteId:string;state:State;detail?:boolean;moon?:Moon}) {
  const t=messages[locale].public;
  const today=witaDate(), days=Array.from({length:7},(_,i)=>dayOffset(today,i+1));
  const reason=(code:string)=>t.reasonLabels[code as keyof typeof t.reasonLabels]??t.unknownReason;
@@ -41,6 +42,7 @@ export function DashboardView({locale,day,siteId,state,detail=false}:{locale:Loc
    <button className="min-h-11 rounded-md bg-[#145f53] px-4 font-semibold text-white active:translate-y-px">{t.apply}</button>
   </form>
   <nav className="flex flex-wrap gap-1" aria-label={t.date}>{[today,...days].map(date=><Link key={date} href={`?${query(date,siteId)}`} aria-current={date===day?'date':undefined} className="inline-flex min-h-11 items-center rounded-md px-3 text-sm text-[#155f53] aria-[current=date]:bg-[#e8efec] active:translate-y-px">{date===today?t.today:date===days[0]?t.tomorrow:date.slice(5)}</Link>)}</nav>
+  <MoonSummary moon={moon} locale={locale}/>
   <details className="relative ml-auto"><summary className="inline-flex min-h-11 cursor-pointer items-center text-[#155f53]">{t.releaseDetails}</summary><div className="mt-1 max-w-xl border border-[#c8d6d0] bg-white p-3"><p className="m-0">{t.snapshotModeHelp}</p><p className="my-1">{t.sourceGenerated}: {state.data.source_generated_at?stamp(state.data.source_generated_at):t.noData}</p><p className="my-1 break-all">{t.release}: {state.releaseId??t.noGenerated}</p><p className="m-0">{t.unit}</p></div></details>
  </div>
  <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[#c8d6d0] pb-0 text-sm text-[#49625c]">
@@ -56,10 +58,11 @@ export function DashboardView({locale,day,siteId,state,detail=false}:{locale:Loc
   <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{name(chartSite)} · {t.pciCurve}</h2><span className="text-sm text-[#49625c]">{t.depth}: {chartSite.reference_depth_m===null?t.unverified:`${chartSite.reference_depth_m}m`}</span><Link className="inline-flex min-h-11 items-center text-sm text-[#155f53] underline" href={`/${locale}/sites/${chartSite.slug}?date=${day}`}>{t.details}</Link></div>
   <div className={detail?'grid min-w-0 gap-5 xl:grid-cols-2':'grid min-w-0 gap-2'}>
    <div className="min-w-0"><PCIChart rows={curveRows} day={day} locale={locale}/>
-    {current&&<dl className="my-3 grid grid-cols-2 gap-4 border-y border-[#c8d6d0] py-3">{[current.morning,current.afternoon].map((summary,i)=><div key={i}><dt className="text-sm font-semibold">{i===0?t.morning:t.afternoon} · {t.median}</dt><dd className="m-0 tabular-nums"><strong className="text-xl">{format(summary.median)}</strong> <span className="text-sm">{summary.count}/8 · {support(summary.support)}</span></dd><dd className="m-0 mt-1 text-sm">{summary.partial?t.partialMaximum:t.maximum}: {format(summary.max)}<span className="hidden sm:inline"> · </span><span className="block sm:inline">{t.maxSupport}: <span className="whitespace-nowrap">{support(summary.maxSupport)}</span></span></dd></div>)}</dl>}
+    {current&&<dl className="my-1 grid grid-cols-2 gap-4 border-y border-[#c8d6d0] py-1">{[current.morning,current.afternoon].map((summary,i)=><div key={i}><dt className="text-sm font-semibold">{i===0?t.morning:t.afternoon} · {t.median}</dt><dd className="m-0 tabular-nums"><strong className="text-xl">{format(summary.median)}</strong> <span className="text-sm">{summary.count}/8 · {support(summary.support)}</span></dd><dd className="m-0 mt-1 text-sm">{summary.partial?t.partialMaximum:t.maximum}: {format(summary.max)}<span className="hidden sm:inline"> · </span><span className="block sm:inline">{t.maxSupport}: <span className="whitespace-nowrap">{support(summary.maxSupport)}</span></span></dd></div>)}</dl>}
     <details><summary className="min-h-11 cursor-pointer py-2 text-sm text-[#155f53]">{t.readGraph}</summary><p className="my-2 text-sm">{t.graphHelp}</p><p className="my-2 text-sm">{t.pciReferenceMarker}</p><p className="my-2 text-sm">{t.method2}</p><p className="my-2 text-sm">{t.method4}</p></details>
    </div>
    <div className="min-w-0 border-t border-[#c8d6d0] pt-3 xl:pt-2"><h3 className="m-0 text-base font-semibold">{t.tide}</h3><p className="my-1 text-sm text-[#49625c]">{t.tideHelp}</p><TideChart rows={tides} locale={locale}/><p className="my-1 text-sm text-[#49625c]">{t.tideDatum}</p>
+    <EnvironmentOverview data={state.data} day={day} siteId={chartSite.id} depth={chartSite.reference_depth_m} locale={locale} moon={moon} status={state.status}/>
     <details className="mt-2"><summary className="min-h-11 cursor-pointer py-2 text-sm text-[#155f53]">{t.anchor}</summary><p className="my-2 text-sm">{t.anchorHelp}</p><p className="my-2 text-sm">{state.data.anchor_similarity.value===null||!state.data.anchor_similarity.environment_restored?t.similarityUnavailable:`${t.similarity}: ${state.data.anchor_similarity.value.toFixed(2)} · ${t.similarityUnvalidated}`}</p></details>
    </div>
   </div>

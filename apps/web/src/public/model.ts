@@ -6,10 +6,17 @@ export type Prediction = {
   prediction_status: string; model_version: string;
 };
 export type Tide = { site_id?: string; zone_id?: string | null; valid_time: string; value: number | null; quality_flags: string[]; unit: string; variable: string };
+export type EnvironmentSample = Tide & {
+ source: string; dataset: string; product: string; version: string | null;
+ source_updated_at?: string | null; depth_m: number | null; issued_at: string | null; retrieved_at: string;
+ native_resolution: string | null;
+ interpolation_method: string | null; grid_distance_km?: number;
+};
+export type Moon = { phase: string; illumination: number; at: string; retrievedAt: string; apiVersion: string } | null;
 export type Observation = { id: string; site_id: string; local_start: string; overall_pci: number; record_status: string; label_scope: string; notes_public?: string; revision: number };
 export type Dashboard = {
   forecast_kind: "experimental"; sites: RegisteredSite[]; source_generated_at: string | null; schema_version: string; generated_at: string | null; valid_start: string | null; valid_end: string | null;
-  predictions: Prediction[]; tides: Tide[]; observations: Observation[];
+  predictions: Prediction[]; tides: Tide[]; environment_samples?: EnvironmentSample[]; observations: Observation[];
   sources: { id: string; dataset: string; version: string | null; attribution: string; license_url: string; public_export_allowed: boolean; reason_codes: string[] }[];
   anchor_similarity: { value: number | null; environment_restored: boolean; validated: false; reason_codes: string[] };
 };

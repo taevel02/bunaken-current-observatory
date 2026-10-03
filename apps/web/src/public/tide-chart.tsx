@@ -20,10 +20,10 @@ export function TideChart({ rows, locale }: {rows: Tide[]; locale: Locale}) {
    previous=at;
  }
  if(points.length) segments.push(points.join(' '));
- return <div className="min-w-0"><svg viewBox="0 0 620 225" className="block w-full max-h-48" role="img" aria-label={t.tide}>
+ return <div className="min-w-0"><svg viewBox="0 0 620 225" className="block w-full max-h-32" role="img" aria-label={t.tide}>
   <line x1="50" x2="570" y1="180" y2="180" stroke="#9aafa7"/>
-  <text x="4" y="45" fill="#49625c" fontSize="16">{max.toFixed(2)}</text><text x="4" y="185" fill="#49625c" fontSize="16">{min.toFixed(2)}</text>
+  <text x="4" y="45" fill="#49625c" fontSize="22">{max.toFixed(2)}</text><text x="4" y="185" fill="#49625c" fontSize="22">{min.toFixed(2)}</text>
   {segments.map((points,i)=><polyline key={i} points={points} fill="none" stroke="#145f53" strokeWidth="3"/>)}
-  <text x="50" y="215" fill="#49625c" fontSize="16">{witaTime(sorted[0].valid_time)}</text><text x="570" y="215" textAnchor="end" fill="#49625c" fontSize="16">{witaTime(sorted[sorted.length-1].valid_time)}</text>
- </svg><details className="mt-3"><summary className="min-h-11 cursor-pointer py-2 text-[#155f53] focus-visible:outline-2">{t.viewData}</summary><div className="max-h-80 overflow-auto"><table className="w-full border-collapse"><caption className="text-left">{t.tide}</caption><thead><tr><th className="py-2 text-left">{t.time}</th><th className="py-2 text-right">m</th></tr></thead><tbody>{sorted.map(row=><tr key={row.valid_time} className="border-t border-[#c8d6d0]"><td className="py-2">{witaTime(row.valid_time)}</td><td className="py-2 text-right tabular-nums">{values.includes(row)?row.value?.toFixed(2):t.noData}</td></tr>)}</tbody></table></div></details></div>;
+  <text x="50" y="215" fill="#49625c" fontSize="22">{witaTime(sorted[0].valid_time)}</text><text x="570" y="215" textAnchor="end" fill="#49625c" fontSize="22">{witaTime(sorted[sorted.length-1].valid_time)}</text>
+ </svg><details className="mt-1"><summary className="min-h-11 cursor-pointer py-2 text-[#155f53] focus-visible:outline-2">{t.viewData}</summary><div className="max-h-80 overflow-auto"><table className="w-full border-collapse"><caption className="text-left">{t.tide}</caption><thead><tr><th className="py-2 text-left">{t.time}</th><th className="py-2 text-right">m</th></tr></thead><tbody>{sorted.map(row=><tr key={row.valid_time} className="border-t border-[#c8d6d0]"><td className="py-2">{witaTime(row.valid_time)}</td><td className="py-2 text-right tabular-nums">{values.includes(row)?row.value?.toFixed(2):t.noData}</td></tr>)}</tbody></table></div></details></div>;
 }

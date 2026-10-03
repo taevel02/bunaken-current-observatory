@@ -19,10 +19,10 @@ export function PCIChart({rows,day,locale}:{rows:Prediction[];day:string;locale:
  }
  if(points.length)segments.push(points.join(' '));
  return <div>
-  <div className="relative"><svg viewBox="0 0 800 275" className="block min-h-44 w-full max-h-60" role="img" aria-label={`${t.pciCurve}: ${valid.length}/16`}>
-   {[0,.2,.4,.6,.8,1].filter(value=>value<=ceiling).map(value=><g key={value}><line x1="48" x2="748" y1={y(value)} y2={y(value)} stroke="#dce5e0" strokeDasharray={value===1?'4 4':undefined}/><text x="38" y={y(value)+5} textAnchor="end" fontSize="14" fill="#49625c">{value.toFixed(1)}</text></g>)}
-   {ceiling>1.2&&<text x="38" y="36" textAnchor="end" fontSize="14" fill="#49625c">{ceiling.toFixed(1)}</text>}
-   {[8,10,12,14,16].map(hour=><text key={hour} x={48+(hour-8)/8*700} y="258" textAnchor={hour===8?'start':hour===16?'end':'middle'} fontSize="14" fill="#49625c">{hour}:00</text>)}
+  <div className="relative"><svg viewBox="0 0 800 275" className="block min-h-44 w-full max-h-44" role="img" aria-label={`${t.pciCurve}: ${valid.length}/16`}>
+   {[0,.2,.4,.6,.8,1].filter(value=>value<=ceiling).map(value=><g key={value}><line x1="48" x2="748" y1={y(value)} y2={y(value)} stroke="#dce5e0" strokeDasharray={value===1?'4 4':undefined}/><text x="38" y={y(value)+5} textAnchor="end" fontSize="20" fill="#49625c">{value.toFixed(1)}</text></g>)}
+   {ceiling>1.2&&<text x="38" y="36" textAnchor="end" fontSize="20" fill="#49625c">{ceiling.toFixed(1)}</text>}
+   {[8,10,12,14,16].map(hour=><text key={hour} x={48+(hour-8)/8*700} y="258" textAnchor={hour===8?'start':hour===16?'end':'middle'} fontSize="20" fill="#49625c">{hour}:00</text>)}
    {segments.map((points,i)=><polyline key={i} points={points} fill="none" stroke="#145f53" strokeWidth="3"/>)}
    {valid.map(row=><circle key={row.start_at} cx={x(row.start_at)} cy={y(row.pci as number)} r="4" fill="#145f53"><title>{witaTime(row.start_at)} · PCI {row.pci?.toFixed(2)} · {t.support}: {t.supportLabels[row.support as keyof typeof t.supportLabels]??t.insufficient}</title></circle>)}
   </svg>{valid.length===0&&<div className="absolute inset-x-8 top-1/4 grid gap-1 bg-white/95 px-2 py-1 text-center"><strong>{t.allNull}</strong><span className="text-sm text-[#49625c]">{t.pciCurvePending}</span></div>}</div>

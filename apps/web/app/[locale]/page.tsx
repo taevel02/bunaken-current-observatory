@@ -3,6 +3,7 @@ import { messages } from "@/i18n/messages";
 import { sites } from "@bunaken/contracts/sites";
 import { PublicShell } from "@/src/public/shell";
 import { DashboardView } from "@/src/public/dashboard";
+import { loadMoon } from "@/src/server/moon";
 import { loadPublicRelease } from "@/src/server/public-release";
 import { validDay, witaDate, dayOffset } from "@/src/public/model";
 
@@ -13,5 +14,8 @@ export default async function Home({params,searchParams}:{params:Promise<{locale
  const siteId=sites.some(site=>site.id===query.site)?query.site as string:'';
  const preserved='?'+new URLSearchParams({date:day,site:siteId});
  const state=await loadPublicRelease();
- return <PublicShell locale={locale} title={messages[locale].public.dashboard} query={preserved}><DashboardView locale={locale} day={day} siteId={siteId} state={state}/></PublicShell>;
+ const registry=state.data.sites.length?state.data.sites:sites;
+ const selected=registry.find(site=>site.id===siteId)??registry[0];
+ const moon=await loadMoon(day,selected.lat,selected.lon);
+ return <PublicShell locale={locale} title={messages[locale].public.dashboard} query={preserved}><DashboardView locale={locale} day={day} siteId={siteId} state={state} moon={moon}/></PublicShell>;
 }

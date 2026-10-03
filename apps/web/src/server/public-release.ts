@@ -3,6 +3,7 @@ import { gunzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { cache } from "react";
 import { validateLatest, validatePublicRelease, validatePublicDashboard } from "@bunaken/contracts/validate";
+import sourceRegistry from "@config/source-registry.json";
 import type { Dashboard } from "@/src/public/model";
 
 const hash = (raw: string | Uint8Array) => createHash("sha256").update(raw).digest("hex");
@@ -45,6 +46,12 @@ export const loadPublicRelease = cache(async () => {
     if (!validatePublicDashboard(payloadInput)) throw new Error("release_invalid");
     const payload = payloadInput as Dashboard;
     if (payload.generated_at !== manifest.generated_at || payload.tides.some((row: { variable: string; unit: string }) => row.variable !== "tide_height" || row.unit !== "m") || (payload.anchor_similarity.value !== null && !payload.anchor_similarity.environment_restored)) throw new Error("release_invalid");
+    for (const row of [...payload.tides, ...(payload.environment_samples ?? [])]) {
+      if (!("source" in row) || !("product" in row) || !("dataset" in row)) throw new Error("release_invalid");
+      const source = sourceRegistry.sources.find(item=>item.id===row.source);
+      if (!source || !source.redistribution.derived_allowed || !(source.redistribution.public_variables as string[]).includes(row.variable) || row.product!==source.product || row.dataset!==source.dataset || (source.variables as Record<string,string|undefined>)[row.variable]!==row.unit) throw new Error("release_invalid");
+    }
+    if (payload.environment_samples?.some(row=>row.variable==="tide_height")) throw new Error("release_invalid");
     const data = payload as Dashboard;
     const generatedAge = Date.now() - new Date(data.generated_at as string).getTime();
     if (generatedAge < 0) throw new Error("release_invalid");
