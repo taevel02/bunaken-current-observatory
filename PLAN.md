@@ -1,9 +1,9 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.0  
-작성일: 2026-09-27  
-기준: [PRD.md](PRD.md) v1.1 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.0  
-상태: 계획 확정용 문서. 아래 구현 작업은 아직 완료되지 않았다.
+버전: 1.1\
+작성일: 2026-10-03\
+기준: [PRD.md](PRD.md) v1.4 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.6\
+상태: P0–P4 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
 
@@ -88,7 +88,7 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 완료 근거: MODEL-03, MODEL-05, SNAP-01–02, OPS-01. 실제 dataset ID와 좌표의 검증 evidence를 운영 문서에 남긴다.
 
-P3-01/02 코드 완료 근거: `config/source-registry.json`, `config/geometry.json`, `engine/bunaken_engine/registry.py`, `docs/environment-sources.ko.md`. Python 3.14.7/uv에서 10개 테스트 통과. 초기에는 19개 Site를 null/unverified로 등록했다. 이후 사용자가 확인한 대표 입수 좌표로 coordinates_verified를 반영했으며 수심·방향·격자 거리와 Zone은 미확정이다. Copernicus 라이선스 원문 접근 실패로 공개 export를 차단했다. 전체 geometry와 일부 공급원의 metadata·공개 재배포 조건은 운영 연결 의존이다. 관련 기준: MODEL-03, MODEL-05.
+P3-01/02 코드 완료 근거: `config/source-registry.json`, `config/geometry.json`, `engine/bunaken_engine/registry.py`, `docs/environment-sources.ko.md`. Python 3.14.7/uv에서 10개 테스트 통과. 초기에는 19개 Site를 null/unverified로 등록했다. 이후 사용자 확인 대표 입수 좌표를 반영했고, 2026-10-03에는 모든 Site의 대표 수심 18m를 coordinates_depth_verified로 반영했다. 방향·격자 거리와 Zone은 미확정이다. Copernicus 라이선스 원문 접근 실패로 공개 export를 차단했다. 전체 geometry와 일부 공급원의 metadata·공개 재배포 조건은 운영 연결 의존이다. 관련 기준: MODEL-03, MODEL-05.
 
 P3-03/04 구현 근거: `sources.py`의 공식 SDK/고정 모델 adapter와 `features.py`의 바다 셀·해저 수심·벡터·보간·구간 요약. core 20개/provider SDK-backed mock 2개 검증 통과. 실제 Copernicus catalogue에서 dataset version 202406과 50개 depth 좌표를 조회했다. 초기 검증에서는 live 수집을 실행하지 않았으며, 2026-10-01 실제 FES atlas 수집·독립 비교·adapter 확인을 완료했다. source age 또는 FES reference conformance가 확인되지 않으면 운영 적격으로 쓰지 않는다. P3-05의 실행 가능한 조석 historical 분포 수집·부분 scaler는 아래 추가 검증 기록에 따라 완료했다. 다른 공급원·geometry 의존 feature는 명시적으로 비활성이다.
 
@@ -98,13 +98,13 @@ P3-08 구현 근거: `.github/workflows/environment.yml`과 `ops/workflows/data-
 
 ## 7 P4 공개 대시보드와 cold start
 
-- [ ] P4-01 WITA 내일 기본 날짜, D+1–D+7 화면, 오늘 선택을 구현한다.
-- [ ] P4-02 조석 그래프·Site 비교표·모바일 카드를 구현한다. 단위·기준 수심·생성 시각을 노출한다.
-- [ ] P4-03 PCI null과 reason code를 근거 부족/자료 누락/오래된 자료/범위 밖 상태로 번역한다.
-- [ ] P4-04 anchor 환경이 없을 때 similarity를 생성하지 않는다. 복원 가능한 경우에도 미검증 유사성으로 표시한다.
-- [ ] P4-05 오전/오후 중앙값·가용 슬롯 비율·예측 곡선 최대의 의미를 구현한다.
-- [ ] P4-06 공개 관측·Site 상세·PCI 기준·방법론·status 페이지를 ko/en으로 만든다.
-- [ ] P4-07 release 파일 검증 후 latest manifest를 교체하고 CDN이 같은 release만 읽도록 한다.
+- [x] P4-01 WITA 내일 기본 날짜, D+1–D+7 화면, 오늘 선택을 구현한다.
+- [x] P4-02 조석 그래프·Site 비교표·모바일 카드를 구현한다. 단위·기준 수심·생성 시각을 노출한다.
+- [x] P4-03 PCI null과 reason code를 근거 부족/자료 누락/오래된 자료/범위 밖 상태로 번역한다.
+- [x] P4-04 anchor 환경이 없을 때 similarity를 생성하지 않는다. 복원 가능한 경우에도 미검증 유사성으로 표시한다.
+- [x] P4-05 오전/오후 중앙값·가용 슬롯 비율·예측 곡선 최대의 의미를 구현한다.
+- [x] P4-06 공개 관측·Site 상세·PCI 기준·방법론·status 페이지를 ko/en으로 만든다.
+- [x] P4-07 release 파일 검증 후 latest manifest를 교체하고 CDN이 같은 release만 읽도록 한다.
 
 완료 근거: PUB-01, DATA-01–02, MODEL-01, MODEL-03–04, I18N-01. 색으로 안전 판정을 하지 않고 모든 핵심 상태를 텍스트로 설명한다.
 
@@ -179,4 +179,19 @@ P3 추가 검증 (2026-10-01): FES2022b ocean_tide_20241025 실제 34개 성분 
 
 P3-05 근거: `fes_atlas.py`, `fes_research.py`, `fes_validation.py`, `docs/fes-atlas.ko.md`; 로컬 `.local/history-2026-09/manifest.json` SHA-256 `35e2f7dde21fbac3eff3e5b35ccc8e063539cc1b3065d386f3a21d6e5c67a575`. 실제 확보 cutoff `2026-10-01T12:44:19.124938Z`. 과거 cutoff 이전에 확보한 분포로 가장하지 않는다. phase 정의와 다른 공급원·geometry가 미확인인 feature는 null/disabled이며 PCI label을 만들지 않는다.
 
-P3 남은 운영 의존: 수심·벽/외해 방향·Zone geometry·허용 격자 거리의 현장 확인, Copernicus 공개 재배포 권한과 source age 확인. 실제 FES atlas/NetCDF smoke 및 참조 비교는 완료했지만 이를 다른 공급원 검증으로 대체하지 않는다. P3-08 template 원격 설치·protected environment Secrets·runner 참조 증거·scheduled run 연결은 P7에 남긴다. 로컬 `.env`는 등록 완료했으며 GitHub로 전달하지 않았다.
+P3 남은 운영 의존: 벽/외해 방향·Zone geometry·허용 격자 거리의 현장 확인, Copernicus 공개 재배포 권한과 source age 확인. 실제 FES atlas/NetCDF smoke 및 참조 비교는 완료했지만 이를 다른 공급원 검증으로 대체하지 않는다. P3-08 template 원격 설치·protected environment Secrets·runner 참조 증거·scheduled run 연결은 P7에 남긴다. 로컬 `.env`는 등록 완료했으며 GitHub로 전달하지 않았다.
+
+
+### P3/P4 추가 작업 (2026-10-03)
+
+- P3: 19 Site 대표 수심 18m 확인. 실제 관측 수심·9/19 anchor 수심은 변경하지 않았다. geometry 1.2의 부분 확인 상태는 전체 verified와 구분한다. `ea17320`.
+- Copernicus SDK 2.5.0의 갱신 시각은 dataset version의 선택 part에 있다. 실제 SDK 구조와 자료 수집으로 adapter 오류를 수정했다. `f41c670`.
+- FES: 변경된 geometry로 독립 비교·provenance 재생성. 19 Site × 30일, 27,341행, 비교 4,560건, 거부 0건, 최대 차이 0.000843149m. 현재 geometry와 코드 hash에서 19 Site의 provenance 확인. 현장 정확도 검증을 뜻하지 않는다. `.local/history-2026-09-depth18/manifest.json` SHA-256 `58ba7b3c2e555771af0e63d6051be44db7fe8ba2abc7a3efc7e5b07cf36139e3`, 실제 확보 cutoff `2026-10-02T23:35:08.822933Z`.
+- Copernicus currents/temperature/salinity와 Open-Meteo wind/wave 5개 자료 실제 수집. 모두 비공개 로컬 연구 산출물이며 운영 적격은 false다. 18m를 포함하는 실제 수심 격자와 wet mask를 확인했다. 대표 입수점의 최근접 후보는 2개 바다 셀, 거리 2.60–5.34km다. 허용 거리나 현장 대표성을 확정하지 않았다. `.local/providers-2026-09-depth18-v4/manifest.json` SHA-256 `ef40124e9b5aa6949f1455b0cae203b77266d77493d3a47422ed7081aa5c3588`, 실제 확보 시각 `2026-10-03T00:23:01Z`. bathymetry·mask와 검토표를 포함한 7개 파일 hash 및 Python 3.14.7/SDK 2.5.0을 보존하고 현재 코드 hash 일치 확인. `234f317`, `6c4bf83`.
+- P4-01–06: ko/en 공개 대시보드, 오늘/D+1–D+7, Site 필터·상세, 실제 조석 그래프와 수치 표, 오전/오후 집계, 공개 관측·PCI 기준·방법론·자료 상태 구현. 기본 내일과 WITA 고정 시각, 최소 44px 조작 영역, 부분 자료와 범위 밖 상태를 적용했다. anchor 환경 미복원이면 similarity=null이다. `e271aa1`.
+- P4-07: dashboard/latest schema, release 1.1, 허용 소스·현재 관측 전체 집합·snapshot 및 geometry 일치·압축 파일 hash 검증 후 원자적 non-force commit으로 latest를 교체한다. 응답 유실 후 같은 후보 재시도는 기존 성공을 확인한다. 웹은 동일 release의 Site metadata와 자료만 읽는다. source 생성 시각과 release 생성 시각을 구분한다. `2fbfbe7`, `5364c17`.
+- 실제 로컬 preview: 2026-10-04 시작 7일, 19 Site, 조석 6,555건, 예측 슬롯 2,128개, 숫자 PCI 0건. 6,581,551byte JSON을 134,684byte gzip으로 저장했다. 공개 Git 쓰기·배포·공식 D+1 발행은 실행하지 않았다.
+- 검증: 설치된 TypeScript 7 typecheck·ESLint·production build 통과. pnpm wrapper는 격리 환경의 registry signature fetch 실패로 실행되지 않아 동일 package script의 설치된 도구를 직접 실행했다. 360/375/1280px Chrome 렌더에서 가로 넘침 없음, native PCI 도움말 Enter 열기 확인. 실제 FES 자료 48개로 모바일 조석 그래프 렌더 확인. ko/en 공개 경로 12개 HTTP 200, 미등록 Site 404, 미설정 status는 unavailable. wheel/sdist 빌드와 저장소 밖 Python 3.14.7 설치 CLI 확인, archive에 비밀·NetCDF·pyc 없음. 이번 작업에서는 테스트를 추가하거나 테스트 suite를 실행하지 않았다. 기존 기대값과 SDK mock 형상만 수정했다.
+- 현재 공개 release는 experimental 전용이다. 공식 D+1 seal 적격 출력 연결, 원격 workflow 설치·Secrets·배포·실기기 acceptance는 P7에서 검증한다. 수집 후 release 발행은 하나의 trusted workflow chain에 연결했으나 원격 실행은 하지 않았다. `5893006`.
+
+검토 보류: 벽/외해 bearing, Zone geometry, Copernicus 후보 셀의 허용 거리·대표성, Copernicus 공개 재배포 권한, Open-Meteo source age·sea grid 대표성. 미확인 항목은 값이나 학습 적격을 생성하지 않는다. 실행·재시도 안내는 [공개 대시보드](docs/public-dashboard.ko.md), [환경 연구 수집](docs/provider-research.ko.md)에 기록한다. `docs/environment-sources.ko.md`는 수정하지 않았다.

@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.5\
+버전: 1.6\
 작성일: 2026-10-03\
 기준: [PRD.md](PRD.md) v1.4 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
@@ -85,7 +85,7 @@ CSRF 구현은 검증된 세션/CSRF 라이브러리의 signed double-submit 등
 
 ### 4.1 Site와 Zone
 
-Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측 입력의 등록 Site 목록과 stable ID는 `packages/contracts/data/sites.json`을 단일 원본으로 삼으며 새 관측·수정 폼은 목록에서 선택한다. 표시명은 각각의 stable ID로 저장하며 등록되지 않은 이름은 서버가 거부한다. 좌표·geometry는 확인되지 않았으므로 이 목록에서 만들지 않는다. Zone은 id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at을 가진다. 확인되지 않은 좌표·방향·수심은 null과 unverified로 남긴다.
+Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측 입력의 등록 Site 목록과 stable ID는 `packages/contracts/data/sites.json`을 단일 원본으로 삼으며 새 관측·수정 폼은 목록에서 선택한다. 표시명은 각각의 stable ID로 저장하며 등록되지 않은 이름은 서버가 거부한다. 사용자가 확인한 대표 입수 좌표와 예측 대표 수심만 목록에 반영한다. 미확정 방향·Zone geometry는 만들지 않는다. Zone은 id, site_id, name_ko/en, reference_depth_m, wall_bearing_deg, offshore_bearing_deg, geometry_group, geometry_version, verified_at을 가진다. 확인되지 않은 좌표·방향·수심은 null과 unverified로 남긴다.
 
 2026-10-03 사용자 결정: 모든 Site의 예측 대표 수심은 18m다. geometry schema 1.2의 `coordinates_depth_verified`는 대표 입수 좌표·기준 수심만 확인한 상태다. wall/offshore bearing·허용 격자 거리·Zone은 null로 유지하고 전체 verified 또는 Ocean 투영 적격으로 승격하지 않는다. 이전 coordinates_verified 형상은 계속 읽는다. 실제 관측 수심과 과거 anchor 수심을 18m로 덮어쓰지 않는다.
 
@@ -153,6 +153,12 @@ Prediction은 site_id, nullable zone_id, start_at, duration_minutes=60, referenc
 prediction_status는 insufficient/experimental/available이다. support는 insufficient/very_low/low/medium/high다. gate 실패 시 pci=null이며 빈 배열 대신 원인 reason_codes를 제공한다. low support를 안전한 환경으로 번역하지 않는다.
 
 Release manifest는 release_id, schema_version, generated_at, source_data_commit_sha, snapshot_ids, 파일 상대 경로·sha256, status를 갖는다. latest.json은 이 manifest를 가리키는 작은 pointer다. 웹은 latest를 한 번 해석한 후 모든 자산을 동일 immutable release에서 읽는다.
+
+P4 신규 웹 release는 schema 1.1과 `dashboard.json.gz` 하나를 사용한다. gzip은 mtime=0으로 생성하고 압축 바이트의 SHA-256을 manifest에 넣는다. latest schema 1.0은 release UUID와 manifest hash를 가진다. dashboard schema 1.0은 해당 release의 19 Site metadata·예측·조석·현재 관측 revision 전체·출처·anchor 상태를 연결한다. source_data_commit_sha의 현재 관측 집합과 저장된 snapshot이 일치해야 발행한다. 세 파일을 한 commit으로 쓰며 실패하면 latest를 먼저 바꾸지 않는다. timeout 후 같은 후보 파일로 재시도하면 이미 반영된 성공을 확인한다.
+
+압축 파일은 1,250,000byte, 해제된 JSON은 10,000,000byte 이하로 제한한다. 웹은 latest를 60초 재검증하고 immutable 자산을 공유 캐시한다. 해제 크기를 제한하고 pointer→manifest→gzip hash와 JSON Schema를 모두 검사한다. Site 표시도 같은 release metadata를 사용한다.
+
+release generated_at과 원본 snapshot의 source_generated_at을 구분한다. 새 포장으로 source age를 초기화하지 않는다. P4의 forecast_kind는 experimental이며 공식 D+1이라고 표시하지 않는다. 숫자 모델은 P5에서 구현할 때까지 publisher가 pci!=null을 거부한다. 공식 seal 선택과 운영 발행 연결은 P7 검수 대상이다.
 
 ## 5 HTTP API 계약
 

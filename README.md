@@ -30,7 +30,7 @@ pnpm test       # shared-schema contract tests in Node and Python
 pnpm build      # Next.js production build
 ```
 
-The public root redirects to `/ko`; `/en` serves English. The initial status API reports unavailable because no source snapshot is configured. `.env.example` contains server-only placeholders; no credentials are required for local contract validation.
+The public root redirects to `/ko`; `/en` serves English. The status API reports unavailable when no validated public release is configured. `.env.example` contains server-only placeholders; no credentials are required for local contract validation.
 
 ## Project layout
 
@@ -50,4 +50,11 @@ uv run --project engine --locked python -m unittest discover -s engine/tests
 uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
 ```
 
-Representative entry coordinates are confirmed; depth, bearings and grid-distance policy remain unverified. Missing sources produce diagnostic failure manifests and null PCI, not synthetic operational data. Remote data writes require explicit `--publish`; CLI collection requires a clean trusted checkout and its exact commit SHA.
+Representative entry coordinates and the 18 m reference depth are confirmed for all 19 sites; bearings, zones and the grid-distance policy remain unverified. Missing sources produce diagnostic failure manifests and null PCI, not synthetic operational data. Remote data writes require explicit `--publish`; CLI collection requires a clean trusted checkout and its exact commit SHA.
+
+
+## Public dashboard (P4)
+
+The dashboard defaults to tomorrow in WITA and supports today through D+7. Korean and English views include site comparison, tides, observations, PCI reference, methodology and source status. Numeric PCI remains null until the model gates are implemented and satisfied.
+
+[Public release runbook](docs/public-dashboard.ko.md) covers schema/hash validation, compressed artifacts, atomic publication and cache behavior. [Private provider research](docs/provider-research.ko.md) covers bounded historical collection and deferred field validation. Public reads use the server-side `GITHUB_OWNER` and `GITHUB_REPO`; they do not use the write token.

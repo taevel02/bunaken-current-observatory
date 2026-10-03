@@ -1,0 +1,56 @@
+# 공개 대시보드와 release 운영
+
+P4 화면은 ko/en, WITA 내일 기본값, 오늘부터 D+7, Site 비교·상세·조석·공개 관측·PCI 기준·방법론·자료 상태를 지원한다. Site 예측 기준 수심은 18m다. 현재 release는 experimental이며 공식 D+1 발행이 아니다. 숫자 PCI는 P5의 모델·검증 gate가 구현될 때까지 null이다.
+
+## 로컬 확인
+
+웹의 서버 환경변수 `GITHUB_OWNER`, `GITHUB_REPO`가 공개 data branch 읽기 대상을 정한다. 읽기에 PAT를 사용하지 않는다. 아직 release가 없으면 연결 전 상태와 빈 자료를 보여준다. release 파일이 잘못되면 실제 값을 만든 것처럼 표시하지 않는다.
+
+```sh
+pnpm dev
+```
+
+`/ko`, `/en`, `/{locale}/sites/{slug}`, `/{locale}/observations`, `/{locale}/pci`, `/{locale}/methodology`, `/{locale}/status`, `/api/public/status`를 제공한다. 언어 전환은 선택 Site와 날짜를 유지한다. 조석은 높이 m이며 현장 유속이 아니다. 곡선 아래 접이식 수치 표를 제공한다.
+
+로컬 수집은 clean trusted checkout과 실제 code SHA가 필요하다. 아래 명령은 기본값이 로컬 저장이며 공개 Git에 쓰지 않는다. 기존 output에 다른 바이트를 덮어쓰지 않는다.
+
+```sh
+CODE_COMMIT=$(git rev-parse HEAD)
+uv run --env-file .env --project engine --extra providers --locked \
+  python -m bunaken_engine collect --date 2026-10-04 \
+  --code-commit "$CODE_COMMIT" --output .local/dashboard-collection-next
+```
+
+geometry나 필수 자료가 부족하면 snapshot은 failed, PCI는 null이다. 확인된 좌표의 FES 조석은 별도로 수집할 수 있지만 전체 예측 적격을 대신하지 않는다. 로컬 snapshot과 공개 가능한 관측 배열로 release 파일을 생성할 수 있다.
+
+```sh
+uv run --project engine --locked python -m bunaken_engine.public_release \
+  --source-data-commit <40-character-data-head-sha> \
+  --snapshot .local/dashboard-collection-next/snapshots/<date>/<run-id>/manifest.json \
+  --observations <validated-public-observations.json> \
+  --output .local/dashboard-release-next
+```
+
+선택 인자 snapshot/observations를 생략하면 해당 자료는 빈 배열이다. 로컬 생성만으로 data branch 저장이나 홈페이지 반영이 완료되지는 않는다. data SHA는 입력 provenance이며 실제 원격 발행 때는 해당 head의 현재 관측·snapshot과 다시 대조한다. main code SHA로 data head를 대체하지 않는다.
+
+## 검증과 원자적 발행
+
+release 1.1은 `web/releases/{uuid}/manifest.json`, `dashboard.json.gz`, `web/latest.json` 세 파일이다. gzip의 압축 바이트 hash, JSON Schema, 19 Site metadata, 허용 소스·단위·재배포 조건, snapshot 일치, anchor 복원 상태를 검사한다. 원격 발행은 source head의 현재 observation revision 전체를 대조하며 일부 기록을 빠뜨리는 패키지를 거부한다.
+
+압축 파일은 1,250,000byte 이하, 해제 JSON은 10,000,000byte 이하로 제한한다. 최신 pointer를 먼저 바꾸지 않고 세 파일을 원자적 Git commit과 non-force ref 갱신으로 반영한다. head 경쟁·관측 변경이면 실패하며 이전 latest를 보존한다. 같은 후보의 응답 유실 재시도는 이미 저장된 바이트를 확인한다.
+
+P7 운영 연결 후 CLI의 `--publish`를 명시한 경우에만 공개 저장한다. `.env`를 읽는 발행 명령은 `uv run --env-file .env ...` 형태다. output 경로를 유지하고 같은 명령으로 재시도한다. 저장소/PAT 설정과 source_data_commit에 해당하는 원격 데이터가 필요하다. 이미 존재하는 local output의 publish는 그 후보를 재사용한다.
+
+trusted 환경 workflow는 collect→receipt/confirmation→web release를 한 chain에서 수행한다. 다음 workflow가 GITHUB_TOKEN commit으로 자동 실행될 것에 의존하지 않는다. template의 고정 code SHA·원격 설치·Secrets·실제 실행은 P7 검수 대상이다. 이 작업에서는 push·원격 실행·배포를 수행하지 않았다.
+
+## 캐시와 시각
+
+웹은 latest를 60초 재검증하고 hash로 연결된 immutable gzip 자산을 공유 캐시한다. 한 응답의 Site metadata와 수치는 같은 release를 사용한다. 압축 크기 제한은 Next fetch cache의 base64 저장 크기도 고려한다. status API는 CDN 60초, stale-while-revalidate 300초다.
+
+release 생성 시각과 source snapshot 생성 시각은 별개다. source age는 원본 시각으로 계산하며 새 release로 포장해도 초기화하지 않는다. 오래된 release는 오래된 상태를 명시한다. snapshot이 없는 cold-start release는 source 생성 시각을 null로 둔다.
+
+오전·오후는 각각 8개 30분 시작 슬롯 중 6개 이상 유효할 때 중앙값을 표시한다. 부분 자료의 최대와 전체 예측 곡선 최대를 구별한다. 각 슬롯은 60분 대표 PCI이고 순간 최대 유속이 아니다. 집계 Support는 가장 낮은 슬롯 수준, 최대값 Support는 해당 슬롯 수준을 표시한다.
+
+## 남은 운영 검수
+
+공식 D+1 seal의 cutoff 적격 출력 연결, GitHub protected environment·workflow 설치, Vercel 배포·WAF·캐시 반영 지연, 실제 iOS/Android 모바일 검수는 P7에 남아 있다. FES reference proof도 현재 geometry/code hash와 맞는 runner 근거를 설치해야 한다. 로컬 수치 비교를 원격 proof로 복사해 통과시켰다고 주장하지 않는다.

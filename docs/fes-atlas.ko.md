@@ -44,14 +44,14 @@ uv run --project engine --extra providers --locked \
   python -m bunaken_engine.fes_research --atlas .local/fes2022b-lon-lat \
   --start 2026-09-01T00:00:00+08:00 --days 30 \
   --reference-library /tmp/bunaken-libfes-build/src/libfes.dylib \
-  --output .local/history-2026-09
+  --output .local/history-2026-09-depth18-next
 ```
 
 1~31일의 종료된 구간만 허용한다. atlas 구성·각 성분 hash를 확인하고 19개 대표 입수 좌표에서 계산한다. PyFES의 undefined·extrapolated 값은 결측 처리한다. 3시간마다 시각별 새 LIBFES 세션으로 독립 C 참조와 비교하며, 하나라도 유효하지 않거나 차이가 0.001m를 넘으면 scaler 생성을 차단한다. [공식 알고리즘 차이 문서](https://www.aviso.altimetry.fr/fileadmin/documents/data/tools/Note_Pyfes_FES2022_Finite_Element_AVISO_20260320.pdf)에 명시된 LIBFES의 24시간 nodal cache를 비교 시 유지하지 않는다. 이 tolerance는 구현 간 수치 일치 기준이며 현장 예측 정확도 검증이 아니다.
 
 수집 성공 시 `rows.json`, `site-rows.json`, `scaler.json`, `conformance.json`, `manifest.json`을 만든다. Site별 row 범위, source·geometry·feature·코드 hash와 SDK 버전을 보존한다. 출력 디렉터리가 이미 존재하면 덮어쓰지 않는다. 실패한 비교 보고서는 새 출력 경로에 남고 다음 시도는 별도 경로를 사용한다.
 
-현재 연구 수집은 `tide_rate_m_per_hour`, `tide_excursion_m`의 부분 분포다. phase 정의, 수심·벽/외해 방향과 다른 공급원 조건이 확인되지 않은 feature는 null과 비활성 사유를 남긴다. 관측 label·PCI·운영 forecast를 생성하지 않는다. retrieval 시각을 cutoff로 사용하므로 이 자료를 과거에 이미 확보했던 것처럼 검증에 넣을 수 없다.
+현재 연구 수집은 `tide_rate_m_per_hour`, `tide_excursion_m`의 부분 분포다. phase 정의, 벽/외해 방향과 다른 공급원 조건이 확인되지 않은 feature는 null과 비활성 사유를 남긴다. 관측 label·PCI·운영 forecast를 생성하지 않는다. retrieval 시각을 cutoff로 사용하므로 이 자료를 과거에 이미 확보했던 것처럼 검증에 넣을 수 없다.
 
 ## 완료된 로컬 검증 (2026-10-01)
 
@@ -60,10 +60,16 @@ uv run --project engine --extra providers --locked \
 연구 성공 후 로컬 `.env`에 증거 manifest의 절대 경로를 등록한다.
 
 ```dotenv
-FES_VALIDATION_MANIFEST_PATH=/absolute/path/to/checkout/.local/history-2026-09/manifest.json
+FES_VALIDATION_MANIFEST_PATH=/absolute/path/to/checkout/.local/history-2026-09-depth18/manifest.json
 ```
 
 adapter는 동일 evaluator를 사용하며 atlas·코드·SDK·보고서 hash와 Site 좌표가 일치해야 검증 flag를 해제한다. 실제 adapter에서 19개 Site, 조석값 57개를 추가 확인했다. 좌표 확인만으로 FES 계산이 가능하지만 수심·방향·Zone geometry가 확인된 것으로 처리하지 않는다. 원본 atlas·분포·scaler·참조 binary와 `.env`는 공개 Git에 포함되지 않는다.
+
+## geometry 변경 후 재검증 (2026-10-03)
+
+19 Site의 대표 수심 18m와 geometry 1.2 반영 후 `.local/history-2026-09-depth18`에 새 결과를 생성했다. 이전 디렉터리는 보존했다. 비교 4,560건·거부 0건·최대 차이 0.000843149m를 다시 확인했고 현재 atlas·코드·geometry에서 19 Site의 provenance가 일치한다. manifest hash는 `58ba7b3c2e555771af0e63d6051be44db7fe8ba2abc7a3efc7e5b07cf36139e3`, 실제 확보 cutoff는 `2026-10-02T23:35:08.822933Z`다. 18m가 모든 Site에서 일정하므로 depth IQR이 0인 feature는 비활성이다.
+
+좌표·geometry·계산 코드가 바뀌면 새 output에서 참조 비교를 다시 수행하고 `.env`의 증거 경로를 갱신한다. 오래된 hash 증거를 그대로 재사용하지 않는다. 위 실행 예시의 `-next`는 재시도용 새 디렉터리이며 검증 성공 후에는 실제 생성한 경로를 등록한다.
 
 ## 운영 연결
 
