@@ -4,6 +4,8 @@ import contextlib
 import io
 import json
 import os
+import platform
+from importlib.metadata import version
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlencode
@@ -29,6 +31,7 @@ def inspect(output, start, days):
             credentials=dict(username=os.environ.get('COPERNICUSMARINE_SERVICE_USERNAME'),password=os.environ.get('COPERNICUSMARINE_SERVICE_PASSWORD'))
             if not all(credentials.values()):raise ValueError('provider_credentials_missing')
             bathy=cm.open_dataset(dataset_id='cmems_mod_glo_phy_anfc_0.083deg_static',dataset_version='202211',dataset_part='bathy',variables=['deptho','mask'],**bounds,**credentials).load()
+            bathy.to_netcdf(output/'copernicus-bathymetry.nc')
         cells=[]
         for lat in bathy.latitude.values:
             for lon in bathy.longitude.values:
@@ -70,7 +73,7 @@ def inspect(output, start, days):
             except Exception as error:
                 reports[key]=dict(status='failed',error_type=type(error).__name__,operational_eligible=False)
     else:reports['open-meteo']=dict(status='unconfigured',operational_eligible=False)
-    manifest=dict(kind='private_provider_inspection',retrieved_at=utc_now(),requested_start=first.isoformat(),requested_end=last.isoformat(),io_bounds=bounds,geometry_sha256=sha256(Path('config/geometry.json')),code_sha256=sha256(Path(__file__)),providers=reports,public_export=False)
+    manifest=dict(kind='private_provider_inspection',retrieved_at=utc_now(),requested_start=first.isoformat(),requested_end=last.isoformat(),io_bounds=bounds,geometry_sha256=sha256(Path('config/geometry.json')),source_registry_sha256=sha256(Path('config/source-registry.json')),code_sha256=sha256(Path(__file__)),code_hashes={name:sha256(Path(__file__).parent/(name+'.py')) for name in ('features','registry','sources','fes_atlas')},runtime_versions=dict(python=platform.python_version(),copernicusmarine=version('copernicusmarine')),static_source=dict(dataset='cmems_mod_glo_phy_anfc_0.083deg_static',version='202211',part='bathy',variables=['deptho','mask']),files={path.name:sha256(path) for path in output.iterdir() if path.is_file()},providers=reports,public_export=False)
     (output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     return reports
 
