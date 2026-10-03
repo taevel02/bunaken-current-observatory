@@ -1,6 +1,7 @@
+import { environmentSamples } from "@/src/public/environment-samples";
 import { Disclosure } from "@/src/ui/disclosure";
 import { messages } from "@/i18n/messages";
-import { witaDate, witaTime, type Dashboard, type EnvironmentSample, type Locale, type Moon } from "@/src/public/model";
+import { witaTime, type Dashboard, type Locale, type Moon } from "@/src/public/model";
 
 const metrics = [
  ["uo","copernicus-currents","m/s"], ["vo","copernicus-currents","m/s"],
@@ -10,10 +11,6 @@ const metrics = [
  ["wave_direction","open-meteo-wave","degree"], ["swell_wave_height","open-meteo-wave","m"],
  ["swell_wave_period","open-meteo-wave","s"], ["swell_wave_direction","open-meteo-wave","degree"],
 ] as const;
-const rejected = new Set(["geometry_unverified", "land_cell", "grid_distance_exceeded", "outside_depth_range", "outside_time_range", "unverified_geometry", "grid_too_far", "source_age_unknown", "source_time_in_future", "stale_required_source"]);
-function valid(row: EnvironmentSample) {
- return row.value !== null && Number.isFinite(row.value) && !row.quality_flags.some(flag=>rejected.has(flag));
-}
 function MoonDisk({moon,label}:{moon:NonNullable<Moon>;label:string}) {
  const radius=Math.abs(1-2*moon.illumination)*18;
  const sweep=moon.illumination<.5?0:1;
@@ -23,11 +20,8 @@ function MoonDisk({moon,label}:{moon:NonNullable<Moon>;label:string}) {
 export function EnvironmentOverview({data,day,siteId,depth,locale,moon,status}:{data:Dashboard;day:string;siteId:string;depth:number|null;locale:Locale;moon:Moon;status:string}) {
  const t=messages[locale].public.environment;
  const start=Date.parse(`${day}T00:00:00+08:00`);
- const samples=(data.environment_samples??[]).filter(row=>row.site_id===siteId&&(row.zone_id??null)===null&&witaDate(new Date(row.valid_time))===day);
  const groups=metrics.map(([variable,source,unit])=>{
-  const rows=samples.filter(row=>row.variable===variable&&row.source===source&&row.unit===unit&&(source.startsWith('copernicus-')?row.depth_m===depth:row.depth_m===null)).sort((a,b)=>Date.parse(a.valid_time)-Date.parse(b.valid_time));
-  const provider=data.sources.find(item=>item.id===source);
-  const values=provider?.public_export_allowed&&!provider.reason_codes.length?rows.filter(valid):[];
+  const {rows,values,provider}=environmentSamples(data,day,siteId,depth,variable,source,unit);
   const min=values.length?Math.min(...values.map(row=>row.value as number)):null;
   const max=values.length?Math.max(...values.map(row=>row.value as number)):null;
   const reasons=provider?.reason_codes??[];
