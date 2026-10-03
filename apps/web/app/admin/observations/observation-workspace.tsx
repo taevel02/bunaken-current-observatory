@@ -115,15 +115,25 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   const [pendingMutation, setPendingMutation] = useState<{ id: string; action: "correct" | "withdraw"; key: string; reason: string; pci: number; notes: string; etag: string; record: Row; public_summary_ko: unknown; public_summary_en: unknown } | null>(null);
   const [alias, setAlias] = useState(observerAlias);
 
+  function storageMessage(error: { code?: string } | undefined, fallback = t.saveError) {
+    const known: Record<string, string> = {
+      storage_branch_missing: c.errors.storageBranchMissing,
+      storage_configuration_invalid: c.errors.storageConfigurationInvalid,
+      storage_auth_failed: c.errors.storageAuthFailed,
+      storage_permission_denied: c.errors.storagePermissionDenied,
+    };
+    return error?.code ? known[error.code] ?? fallback : fallback;
+  }
+
   async function load(cursor: string | null = null, append = false) {
     try {
       const query = cursor ? `&cursor=${encodeURIComponent(cursor)}` : "";
       const r = await fetch(`/api/admin/observations?limit=50${query}`, { cache: "no-store" });
-      if (!r.ok) throw new Error(t.listError);
+      if (!r.ok) throw new Error(storageMessage((await r.json()).error, t.listError));
       const page = (await r.json()).data;
       setRows((current) => append ? [...current, ...page.items] : page.items);
       setNextCursor(page.next_cursor);
-    } catch { setMessage(t.listError); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : t.listError); }
   }
   useEffect(() => { void load(); }, []);
   useEffect(() => { void fetch("/api/admin/session", { cache: "no-store" }).then(async (response) => { if (response.ok) setAlias((await response.json()).data.observer_alias); }).catch(() => undefined); }, []);
@@ -211,7 +221,8 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy) return;
     if (consent && (!draftsLoaded || (restore.some((item) => item.id === "active") && !draftPayload))) { setMessage(t.restoreManual); return; }
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = pendingCreate?.id === id && pendingCreate.key === key ? pendingCreate.payload : buildPayload(form);
     if (payload.local_end && payload.local_end <= payload.local_start) { setMessage(t.endBeforeStart); return; }
     if ((payload.peak_events ?? []).some((event: Row) => event.pci !== null && event.pci < payload.overall_pci)) { setMessage(t.peakBelowOverall); return; }
@@ -242,9 +253,9 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
         }
         if (err.error.code === "revision_conflict") throw new Error(t.conflict);
         if (err.error.code === "idempotency_conflict") throw new Error(c.errors.idempotencyConflict);
-        throw new Error(err.error.message_key === "errors.storageUnavailable" ? t.saveError : t.invalid);
+        throw new Error(response.status >= 500 ? storageMessage(err.error) : t.invalid);
       }
-    setMessage(t.saved); setPendingCreate(null); await draft("delete", { id: "active" }).catch(() => undefined); setRestore([]); setDraftPayload(null); setId(uuid()); setKey(uuid()); setPeakId(uuid()); setFormEpoch((value) => value + 1); (event.currentTarget as HTMLFormElement).reset(); await load();
+    formElement.reset(); setMessage(t.saved); setPendingCreate(null); await draft("delete", { id: "active" }).catch(() => undefined); setRestore([]); setDraftPayload(null); setId(uuid()); setKey(uuid()); setPeakId(uuid()); setFormEpoch((value) => value + 1); await load();
     } catch (error) {
       if (error instanceof Error && error.message === "SESSION") {
         setSessionExpired(true);
@@ -323,7 +334,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
         setMessage(t.invalid);
         return;
       }
-      if (!response.ok) throw new Error(t.saveError);
+      if (!response.ok) throw new Error(storageMessage((await response.json()).error));
       setPendingMutation(null);
       await draft("delete", { id: "pending-mutation" }).catch(() => undefined);
       setMessage(action === "withdraw" ? t.withdrawn : t.corrected);

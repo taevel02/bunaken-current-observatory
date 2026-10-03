@@ -63,7 +63,7 @@ export class GitHubDataStore {
         ? Number(retryAfterHeader)
         : Number.isFinite(resetAt) && resetAt > 0 ? Math.max(0, resetAt - Math.floor(Date.now() / 1000)) : undefined;
       if (response.status === 401) throw new GitHubDataError("provider_auth_failed", 401);
-      if (response.status === 403 && (response.headers.get("x-ratelimit-remaining") === "0" || retryAfter !== undefined)) {
+      if (response.status === 403 && (response.headers.get("x-ratelimit-remaining") === "0" || (retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)))) {
         throw new GitHubDataError("provider_rate_limited", 429, true, retryAfter);
       }
       if (response.status === 403) throw new GitHubDataError("provider_permission_denied", 403);
@@ -79,8 +79,15 @@ export class GitHubDataStore {
   }
 
   async getHead() {
-    const ref = await this.request(`/git/ref/heads/${encodeURIComponent(this.config.branch)}`);
-    return ref.object.sha;
+    try {
+      const ref = await this.request(`/git/ref/heads/${encodeURIComponent(this.config.branch)}`);
+      return ref.object.sha;
+    } catch (error) {
+      if (error instanceof GitHubDataError && error.kind === "provider_not_found") {
+        throw new GitHubDataError("data_branch_missing", 503);
+      }
+      throw error;
+    }
   }
 
   async getFile(path, ref) {

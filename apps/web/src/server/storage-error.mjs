@@ -23,6 +23,12 @@ export function mapStorageError(error) {
     };
   }
   if (error instanceof GitHubDataError) {
+    if (error.kind === "data_branch_missing") {
+      return { status: 503, code: "storage_branch_missing", messageKey: "errors.storageBranchMissing", retryable: false };
+    }
+    if (error.kind === "configuration_invalid") {
+      return { status: 503, code: "storage_configuration_invalid", messageKey: "errors.storageConfigurationInvalid", retryable: false };
+    }
     if (error.kind === "provider_auth_failed") {
       return { status: 503, code: "storage_auth_failed", messageKey: "errors.storageUnavailable", retryable: false };
     }
