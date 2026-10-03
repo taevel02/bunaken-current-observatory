@@ -28,9 +28,10 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
     targets=geometries["sites"]+geometries["zones"]
     samples=[];failures={source_id:set() for source_id in registry};feature_rows=[];forecast=[]
     verified=[geometry for geometry in targets if geometry["status"]=="verified"]
-    if not verified:
+    collectable=[geometry for geometry in targets if geometry["status"] in {"verified","coordinates_verified","coordinates_depth_verified"}]
+    if not collectable:
         for reasons in failures.values(): reasons.add("unverified_geometry")
-    for geometry in verified:
+    for geometry in collectable:
         point_samples=[]
         for source_id,source in registry.items():
             if not export_allowed(source,list(source["variables"])):
@@ -54,6 +55,8 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
         usable_samples=[row for row in point_samples if row["source"] in usable]
         for source_id,state in readiness.items():
             failures[source_id].update(state["reason_codes"])
+        if geometry["status"] != "verified":
+            continue
         for day in range(days):
             for half_hour in range(16):
                 at=start+timedelta(days=day,hours=8,minutes=30*half_hour)
@@ -75,7 +78,7 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
                 at=start+timedelta(days=day,hours=8,minutes=30*half_hour)
                 forecast.append(dict(site_id=geometry["site_id"],zone_id=geometry.get("id"),start_at=at.isoformat().replace("+00:00","Z"),duration_minutes=60,reference_depth_m=geometry["reference_depth_m"],pci=None,prediction_status="insufficient",support="insufficient",n_eff=0,n_eff_days=0,distinct_days=0,same_site_days=0,same_zone_days=0,vertical_evidence=dict(status="insufficient"),feature_coverage={},reason_codes=reasons,model_version="cold-start-p3",source_snapshot_ids=[run_id]))
     now=utc_now()
-    manifest=dict(snapshot_id=run_id,schema_version="1.1",date_wita=target_date,run_id=run_id,created_at=now,source_issued_at=None,source_retrieved_at=max((row["retrieved_at"] for row in samples),default=None),valid_start=start_at,valid_end=end_at,dataset_versions={row["dataset"]:row["version"] for row in samples},geometry_version=digest(canonical(geometries)) if verified else None,scaler_version=None,code_commit=code_commit,samples=samples,status="succeeded" if success else "failed",kind=kind,feature_version="environment-v1",source_registry_hash=digest(canonical(read_json(root/"config/source-registry.json"))),geometry_hash=digest(canonical(geometries)),source_status=statuses,artifact_hashes={"features.json.gz":digest(gzip.compress(canonical(feature_rows),mtime=0)),"forecast.json.gz":digest(gzip.compress(canonical(forecast),mtime=0))})
+    manifest=dict(snapshot_id=run_id,schema_version="1.1",date_wita=target_date,run_id=run_id,created_at=now,source_issued_at=None,source_retrieved_at=max((row["retrieved_at"] for row in samples),default=None),valid_start=start_at,valid_end=end_at,dataset_versions={row["dataset"]:row["version"] for row in samples},geometry_version=digest(canonical(geometries)) if collectable else None,scaler_version=None,code_commit=code_commit,samples=samples,status="succeeded" if success else "failed",kind=kind,feature_version="environment-v1",source_registry_hash=digest(canonical(read_json(root/"config/source-registry.json"))),geometry_hash=digest(canonical(geometries)),source_status=statuses,artifact_hashes={"features.json.gz":digest(gzip.compress(canonical(feature_rows),mtime=0)),"forecast.json.gz":digest(gzip.compress(canonical(forecast),mtime=0))})
     return manifest,make_bundle(manifest,feature_rows,forecast,root=root,kind=kind)
 
 
