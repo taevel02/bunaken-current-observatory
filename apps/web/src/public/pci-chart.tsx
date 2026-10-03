@@ -1,32 +1,65 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { messages } from "@/i18n/messages";
 import { witaTime, type Locale, type Prediction } from "@/src/public/model";
+import { Disclosure } from "@/src/ui/disclosure";
 
-// Only existing model output is drawn. Missing slots break the line.
-export function PCIChart({rows,day,locale}:{rows:Prediction[];day:string;locale:Locale}) {
- const t=messages[locale].public;
- const start=Date.parse(`${day}T08:00:00+08:00`),end=start+8*3600000;
- const sorted=rows.filter(row=>Date.parse(row.start_at)>=start&&Date.parse(row.start_at)<end).sort((a,b)=>Date.parse(a.start_at)-Date.parse(b.start_at));
- const valid=sorted.filter(row=>sorted.filter(candidate=>Date.parse(candidate.start_at)===Date.parse(row.start_at)).length===1&&row.pci!==null&&Number.isFinite(row.pci)&&row.pci>=0&&row.prediction_status!=='insufficient');
- const ceiling=Math.max(1.2,...valid.map(row=>row.pci as number));
- const x=(at:string)=>48+(Date.parse(at)-start)/(end-start)*700;
- const y=(value:number)=>230-value/ceiling*190;
- const segments:string[]=[];let points:string[]=[];let previous:number|null=null;
- for(const row of sorted){
-  const at=Date.parse(row.start_at);
-  if(!valid.includes(row)||previous!==null&&at-previous!==1800000){if(points.length)segments.push(points.join(' '));points=[];}
-  if(valid.includes(row))points.push(`${x(row.start_at)},${y(row.pci as number)}`);
-  previous=at;
- }
- if(points.length)segments.push(points.join(' '));
- return <div>
-  <div className="relative"><svg viewBox="0 0 800 275" className="block min-h-44 w-full max-h-44" role="img" aria-label={`${t.pciCurve}: ${valid.length}/16`}>
-   {[0,.2,.4,.6,.8,1].filter(value=>value<=ceiling).map(value=><g key={value}><line x1="48" x2="748" y1={y(value)} y2={y(value)} stroke="#dce5e0" strokeDasharray={value===1?'4 4':undefined}/><text x="38" y={y(value)+5} textAnchor="end" fontSize="20" fill="#49625c">{value.toFixed(1)}</text></g>)}
-   {ceiling>1.2&&<text x="38" y="36" textAnchor="end" fontSize="20" fill="#49625c">{ceiling.toFixed(1)}</text>}
-   {[8,10,12,14,16].map(hour=><text key={hour} x={48+(hour-8)/8*700} y="258" textAnchor={hour===8?'start':hour===16?'end':'middle'} fontSize="20" fill="#49625c">{hour}:00</text>)}
-   {segments.map((points,i)=><polyline key={i} points={points} fill="none" stroke="#145f53" strokeWidth="3"/>)}
-   {valid.map(row=><circle key={row.start_at} cx={x(row.start_at)} cy={y(row.pci as number)} r="4" fill="#145f53"><title>{witaTime(row.start_at)} · PCI {row.pci?.toFixed(2)} · {t.support}: {t.supportLabels[row.support as keyof typeof t.supportLabels]??t.insufficient}</title></circle>)}
-  </svg>{valid.length===0&&<div className="absolute inset-x-8 top-1/4 grid gap-1 bg-white/95 px-2 py-1 text-center"><strong>{t.allNull}</strong><span className="text-sm text-[#49625c]">{t.pciCurvePending}</span></div>}</div>
-  <p className="m-0 text-sm text-[#49625c]">{t.curveHelp} · {t.coverage}: {valid.length}/16</p>
-  {valid.length>0&&<details className="mt-2"><summary className="min-h-11 cursor-pointer py-2 text-[#155f53]">{t.viewData}</summary><div className="max-h-52 overflow-auto"><table className="w-full text-left"><thead><tr><th>{t.time}</th><th className="text-right">PCI</th><th className="text-right">{t.support}</th></tr></thead><tbody>{sorted.map(row=><tr key={row.start_at} className="border-t border-[#c8d6d0]"><td className="py-2">{witaTime(row.start_at)}</td><td className="text-right tabular-nums">{valid.includes(row)?row.pci?.toFixed(2):t.noData}</td><td className="text-right">{t.supportLabels[row.support as keyof typeof t.supportLabels]??t.insufficient}</td></tr>)}</tbody></table></div></details>}
- </div>;
+export type PCISeries = { id: string; name: string; rows: Prediction[]; selected: boolean };
+
+// Each Site keeps its own slots: duplicate, missing and withheld values break its line.
+export function PCIChart({ rows, series, day, locale }: { rows: Prediction[]; series?: PCISeries[]; day: string; locale: Locale }) {
+  const t = messages[locale].public;
+  const container = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(1600);
+  useEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    const measure = () => setWidth(Math.max(280, Math.round(element.getBoundingClientRect().width)));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  const start = Date.parse(`${day}T08:00:00+08:00`), end = start + 8 * 3600000;
+  const groups = (series ?? [{ id: "site", name: "", rows, selected: true }]).map(site => {
+    const sorted = site.rows.filter(row => Date.parse(row.start_at) >= start && Date.parse(row.start_at) < end).sort((a, b) => Date.parse(a.start_at) - Date.parse(b.start_at));
+    const counts = new Map<number, number>();
+    for (const row of sorted) { const at = Date.parse(row.start_at); counts.set(at, (counts.get(at) ?? 0) + 1); }
+    const valid = new Set(sorted.filter(row => counts.get(Date.parse(row.start_at)) === 1 && row.pci !== null && Number.isFinite(row.pci) && row.pci >= 0 && row.prediction_status !== "insufficient"));
+    return { ...site, sorted, valid };
+  });
+  const validRows = groups.flatMap(site => [...site.valid]);
+  const ceiling = Math.max(1.2, ...validRows.map(row => row.pci as number));
+  const height = width < 640 ? 224 : 288;
+  const left = 44, right = width - 16, bottom = height - 34;
+  const x = (at: string) => left + (Date.parse(at) - start) / (end - start) * (right - left);
+  const y = (value: number) => bottom - value / ceiling * (bottom - 24);
+  const paths = groups.map(site => {
+    const segments: string[] = []; let points: string[] = []; let previous: number | null = null;
+    for (const row of site.sorted) {
+      const at = Date.parse(row.start_at);
+      if (!site.valid.has(row) || previous !== null && at - previous !== 1800000) { if (points.length) segments.push(points.join(" ")); points = []; }
+      if (site.valid.has(row)) points.push(`${x(row.start_at)},${y(row.pci as number)}`);
+      previous = at;
+    }
+    if (points.length) segments.push(points.join(" "));
+    return { ...site, segments };
+  }).sort((a, b) => Number(a.selected) - Number(b.selected));
+  const expected = groups.length * 16;
+
+  return <div ref={container} className="min-w-0">
+    <div className="relative"><svg viewBox={`0 0 ${width} ${height}`} className="block h-56 w-full sm:h-72" role="img" aria-label={`${t.pciCurve}: ${validRows.length}/${expected}`}>
+      {[0, .2, .4, .6, .8, 1].map(value => <g key={value}><line x1={left} x2={right} y1={y(value)} y2={y(value)} stroke="#dce5e0" strokeDasharray={value === 1 ? "4 4" : undefined} /><text x={left - 8} y={y(value) + 5} textAnchor="end" fontSize="14" fill="#49625c">{value.toFixed(1)}</text></g>)}
+      {ceiling > 1.2 && <text x={left - 8} y="24" textAnchor="end" fontSize="14" fill="#49625c">{ceiling.toFixed(1)}</text>}
+      {[8, 10, 12, 14, 16].map(hour => <text key={hour} x={left + (hour - 8) / 8 * (right - left)} y={height - 6} textAnchor={hour === 8 ? "start" : hour === 16 ? "end" : "middle"} fontSize="14" fill="#49625c">{hour}:00</text>)}
+      {paths.map(site => <g key={site.id} opacity={series && !site.selected ? .4 : 1}>
+        {site.segments.map((points, index) => <polyline key={index} points={points} fill="none" stroke="#145f53" strokeWidth={site.selected ? 3 : 1.5}><title>{site.name}</title></polyline>)}
+        {[...site.valid].map(row => <circle key={row.start_at} cx={x(row.start_at)} cy={y(row.pci as number)} r={site.selected ? 4 : 2.5} fill="#145f53"><title>{site.name} · {witaTime(row.start_at)} · PCI {row.pci?.toFixed(2)} · {t.support}: {t.supportLabels[row.support as keyof typeof t.supportLabels] ?? t.insufficient}</title></circle>)}
+      </g>)}
+    </svg>{validRows.length === 0 && <div className="absolute inset-x-8 top-1/3 grid gap-1 bg-white/95 px-2 py-1 text-center"><strong>{t.allNull}</strong><span className="text-sm text-[#49625c]">{t.pciCurvePending}</span></div>}</div>
+    <p className="m-0 text-sm text-[#49625c]">{t.curveHelp} · {t.coverage}: {validRows.length}/{expected}</p>
+    {validRows.length > 0 && <Disclosure summary={t.viewData}><div className="max-h-52 overflow-auto"><table className="w-full text-left"><thead><tr>{series && <th>{t.site}</th>}<th>{t.time}</th><th className="text-right">PCI</th><th className="text-right">{t.support}</th></tr></thead><tbody>{groups.flatMap(site => site.sorted.map(row => <tr key={`${site.id}:${row.start_at}`} className="border-t border-[#c8d6d0]">{series && <td className="pr-3">{site.name}</td>}<td className="py-2">{witaTime(row.start_at)}</td><td className="text-right tabular-nums">{site.valid.has(row) ? row.pci?.toFixed(2) : t.noData}</td><td className="text-right">{t.supportLabels[row.support as keyof typeof t.supportLabels] ?? t.insufficient}</td></tr>))}</tbody></table></div></Disclosure>}
+  </div>;
 }

@@ -1,3 +1,4 @@
+import { Disclosure } from "@/src/ui/disclosure";
 import { messages } from "@/i18n/messages";
 import { witaDate, witaTime, type Dashboard, type EnvironmentSample, type Locale, type Moon } from "@/src/public/model";
 
@@ -44,9 +45,9 @@ export function EnvironmentOverview({data,day,siteId,depth,locale,moon,status}:{
    </>}
   </dd></div>)}</dl>
 
-  <details><summary className="min-h-11 cursor-pointer py-2 text-sm text-[#155f53]">{t.details}</summary><p className="my-2 text-sm">{t.help}</p>{moon&&<p className="my-2 text-sm">{t.moonSource}: {witaTime(moon.at)} WITA · API {moon.apiVersion}</p>}
+  <Disclosure summary={t.details}><p className="my-2 text-sm">{t.help}</p>{moon&&<p className="my-2 text-sm">{t.moonSource}: {witaTime(moon.at)} WITA · API {moon.apiVersion}</p>}
    {groups.map(group=><div key={group.variable} className="mb-3 text-sm"><h4 className="my-1 font-semibold">{t.metrics[group.variable]} · {group.unit}</h4>{group.rows.length?<div className="max-h-52 overflow-auto"><table className="w-full text-left"><thead><tr><th>{messages[locale].public.time}</th><th>{t.value}</th><th>{t.provenance}</th></tr></thead><tbody>{group.rows.map((row,i)=><tr key={i} className="border-t border-[#e2e9e5]"><td className="py-1 pr-3">{witaTime(row.valid_time)}</td><td className="py-1 pr-3 tabular-nums">{group.values.includes(row)?row.value:t.invalidSamples}</td><td className="py-1"><span className="block break-words">{row.dataset} · {row.native_resolution??t.unknownResolution}</span><span className="block break-words">{row.issued_at?`${t.issueTime}: ${row.issued_at}`:t.quality.issued_time_unavailable} · {t.retrieved}: {row.retrieved_at}<br/>{row.source_updated_at?`${t.updated}: ${row.source_updated_at}`:t.ageUnknown}<br/>{row.quality_flags.map(flag=>t.quality[flag as keyof typeof t.quality]??t.qualityUnavailable).join(' · ')}</span></td></tr>)}</tbody></table></div>:<p className="my-1">{group.unavailable}</p>}</div>)}
-  </details>
+  </Disclosure>
  </section>;
 }
 
