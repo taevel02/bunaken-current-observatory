@@ -58,3 +58,13 @@ release 생성 시각과 source snapshot 생성 시각은 별개다. source age�
 ## 남은 운영 검수
 
 공식 D+1 seal의 cutoff 적격 출력 연결, GitHub protected environment·workflow 설치, Vercel 배포·WAF·캐시 반영 지연, 실제 iOS/Android 모바일 검수는 P7에 남아 있다. FES reference proof도 현재 geometry/code hash와 맞는 runner 근거를 설치해야 한다. 로컬 수치 비교를 원격 proof로 복사해 통과시켰다고 주장하지 않는다.
+
+## 환경 종합
+
+상단에서 날짜·Site와 달의 위상·밝은 면 비율을 함께 확인한다. 달은 USNO의 해당 날짜 WITA 정오 천문 자료이며, 모양은 위상 도식이다. PCI 학습 입력이나 immutable forecast snapshot과 별도다. API 장애 시 달만 미제공으로 표시한다.
+
+조석 아래 환경 표는 광역 조류의 동향/북향 성분, 모델 수온·염분, 10m 바람·방향, 파고·주기·방향과 너울 높이·주기·방향을 제공한다. 수심이 있는 자료는 Site 대표 수심과 일치해야 한다. 점의 가로축은 공통 00–24 WITA이며 자료 없는 구간을 연결하거나 보간하지 않는다. 숫자 범위는 제공 시각만 대상으로 한다. 방향은 최소·최대 대신 점과 펼친 시각별 값을 확인한다.
+
+`환경 값·출처·품질 상세`에서 원해상도, 발행·조회·공급 갱신 시각과 품질 상태를 확인한다. 공개 권한, 격자·geometry, freshness가 미확인인 자료는 사유를 표시한다. 오래되거나 실패한 공급자료는 정상 수치로 표시하지 않는다. 조석 높이, 광역 모델 유속, 체감 PCI는 다른 지표다.
+
+신규 dashboard 1.1의 환경 배열과 출처 실패 사유는 같은 snapshot에서 발행·검증한다. 구버전 dashboard 1.0은 환경 자료 대기로 표시한다. 실제 raw NetCDF나 비공개 연구 파일을 웹에 연결하지 않는다.
