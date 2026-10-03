@@ -3,17 +3,17 @@ import { messages } from "@/i18n/messages";
 import type { Locale } from "@/src/public/model";
 import type { ReactNode } from "react";
 
-export const shellClass = "mx-auto box-border w-full max-w-6xl px-4 py-6 font-[system-ui] text-base leading-6 text-[#18302d] sm:px-6";
-export const sectionClass = "min-w-0 border-t border-[#c8d6d0] py-6";
-export const headingClass = "m-0 mb-4 text-xl font-semibold";
+export const shellClass = "mx-auto box-border w-full max-w-[1800px] px-4 py-2 font-[system-ui] text-base leading-6 text-[#18302d] lg:px-6";
+export const sectionClass = "min-w-0 border-t border-[#c8d6d0] py-4";
+export const headingClass = "m-0 mb-3 text-lg font-semibold";
 export function PublicShell({ locale, title, query = "", path = "", children }: {locale: Locale; title: string; query?: string; path?: string; children: ReactNode}) {
  const t=messages[locale].public;
  return <main lang={locale} className={shellClass}>
-   <header className="mb-6 grid gap-4 border-b border-[#c8d6d0] pb-4">
-    <div className="flex flex-wrap items-center justify-between gap-3"><Link className="text-sm font-semibold text-[#155f53]" href={`/${locale}${query}`}>{messages[locale].title}</Link>
-      <nav aria-label={messages[locale].language} className="flex gap-4"><Link className="inline-flex min-h-11 items-center" href={`/ko${path}${query}`} lang="ko" aria-current={locale === "ko" ? "page" : undefined}>한국어</Link><Link className="inline-flex min-h-11 items-center" href={`/en${path}${query}`} lang="en" aria-current={locale === "en" ? "page" : undefined}>English</Link></nav></div>
-    <h1 className="m-0 text-3xl font-semibold tracking-tight">{title}</h1>
-    <nav className="flex flex-wrap gap-x-5 gap-y-1" aria-label={t.dashboard}>{([['',t.dashboard],['/observations',t.observations],['/pci',t.pci],['/methodology',t.methodology],['/status',t.status]] as const).map(([href,label])=><Link className="inline-flex min-h-11 items-center text-[#155f53] underline underline-offset-4" key={href} href={`/${locale}${href}${query}`}>{label}</Link>)}</nav>
-   </header>{children}
+   <a className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:z-10 focus:bg-white focus:p-3" href="#public-content">{t.skipToData}</a>
+   <header className="mb-2 flex flex-wrap items-center gap-x-6 gap-y-1 border-b border-[#c8d6d0] pb-0">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-4"><Link className="inline-flex min-h-11 items-center text-sm font-semibold text-[#155f53]" href={`/${locale}${query}`}>{messages[locale].title}</Link><h1 className="m-0 text-xl font-semibold">{title}</h1></div>
+    <nav className="flex flex-wrap gap-x-4 lg:ml-auto" aria-label={t.dashboard}>{([['',t.dashboard],['/observations',t.observations],['/pci',t.pci],['/methodology',t.methodology],['/status',t.status]] as const).map(([href,label])=><Link className="inline-flex min-h-11 items-center text-sm text-[#155f53] underline-offset-4 hover:underline active:translate-y-px" key={href} href={`/${locale}${href}${query}`}>{label}</Link>)}</nav>
+    <nav aria-label={messages[locale].language} className="flex gap-3"><Link className="inline-flex min-h-11 items-center text-sm text-[#155f53]" href={`/ko${path}${query}`} lang="ko" aria-current={locale === "ko" ? "page" : undefined}>한국어</Link><Link className="inline-flex min-h-11 items-center text-sm text-[#155f53]" href={`/en${path}${query}`} lang="en" aria-current={locale === "en" ? "page" : undefined}>English</Link></nav>
+   </header><div id="public-content">{children}</div>
  </main>;
 }

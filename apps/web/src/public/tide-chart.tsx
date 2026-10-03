@@ -20,7 +20,7 @@ export function TideChart({ rows, locale }: {rows: Tide[]; locale: Locale}) {
    previous=at;
  }
  if(points.length) segments.push(points.join(' '));
- return <div className="min-w-0"><svg viewBox="0 0 620 225" className="block w-full" role="img" aria-label={t.tide}>
+ return <div className="min-w-0"><svg viewBox="0 0 620 225" className="block w-full max-h-48" role="img" aria-label={t.tide}>
   <line x1="50" x2="570" y1="180" y2="180" stroke="#9aafa7"/>
   <text x="4" y="45" fill="#49625c" fontSize="16">{max.toFixed(2)}</text><text x="4" y="185" fill="#49625c" fontSize="16">{min.toFixed(2)}</text>
   {segments.map((points,i)=><polyline key={i} points={points} fill="none" stroke="#145f53" strokeWidth="3"/>)}
