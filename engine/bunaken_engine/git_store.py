@@ -50,6 +50,14 @@ class GitDataStore:
     def read(self,path,ref):
         if not allowed_data_path(path):
             raise StorageError("path_forbidden")
+        return self._read_content(path,ref)
+
+    def read_observation_revision(self,path,ref):
+        if not re.fullmatch(r'observations/[0-9a-f-]{36}/revisions/[0-9]{6}\.json',path):
+            raise StorageError('path_forbidden')
+        return self._read_content(path,ref)
+
+    def _read_content(self,path,ref):
         result=self.request("GET",f"/contents/{quote(path,safe='/')}?ref={quote(ref,safe='')}")
         if result is None:
             return None

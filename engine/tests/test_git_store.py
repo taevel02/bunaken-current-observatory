@@ -111,3 +111,13 @@ class GitStoreTest(unittest.TestCase):
         with patch("bunaken_engine.pipeline.utc_now",side_effect=["2026-09-30T11:59:59Z","2026-09-30T12:00:05Z"]):
             receipt=publish_bundle(store,manifest,files)
         self.assertEqual(verified_receipt(store,receipt,store.head())["persisted_at"],"2026-09-30T12:00:05Z")
+
+    def test_revision_history_read_does_not_widen_write_allowlist(self):
+        content=b'{"revision":1}'
+        requester=lambda method,path,body: dict(encoding='base64',content=base64.b64encode(content).decode())
+        store=GitDataStore('synthetic','synthetic','synthetic',requester=requester)
+        path='observations/11111111-1111-4111-8111-111111111111/revisions/000001.json'
+        self.assertEqual(store.read_observation_revision(path,'a'*40),content)
+        for bad in ('observations/../.env','observations/11111111-1111-4111-8111-111111111111/current.json'):
+            with self.assertRaises(StorageError):store.read_observation_revision(bad,'a'*40)
+        with self.assertRaises(StorageError):store.insert({path:content})
