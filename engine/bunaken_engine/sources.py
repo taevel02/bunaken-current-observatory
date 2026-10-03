@@ -150,7 +150,8 @@ def collect_copernicus(source: dict, geometry: dict, start: str, end: str, depth
         catalogue = sdk.describe(dataset_id=source["dataset"], show_all_versions=True, disable_progress_bar=True, raise_on_error=True)
         dataset_metadata = next(ds for product in catalogue.products for ds in product.datasets if ds.dataset_id == source["dataset"])
         selected_version = next(item for item in dataset_metadata.versions if item.label == source["dataset_version"])
-        updated = selected_version.arco_updated_date
+        selected_part = selected_version.get_part(None)
+        updated = selected_part.arco_updated_date
         if isinstance(updated, datetime):
             updated = updated.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
         source = {**source, "last_updated_at": updated}
@@ -165,7 +166,7 @@ def collect_copernicus(source: dict, geometry: dict, start: str, end: str, depth
             cell = sea_cell(cells,geometry,depth_m)
         if not cell:
             raise SourceError("no_valid_sea_cell")
-        with sdk.open_dataset(dataset_id=source["dataset"],dataset_version=source["dataset_version"],variables=list(source["variables"]),start_datetime=start,end_datetime=end,**bounds) as dataset:
+        with sdk.open_dataset(dataset_id=source["dataset"],dataset_version=source["dataset_version"],dataset_part=selected_part.name,variables=list(source["variables"]),start_datetime=start,end_datetime=end,**bounds) as dataset:
             # Exact match only: never move from the verified sea cell to an unchecked one.
             point = dataset.sel(latitude=cell["lat"],longitude=cell["lon"])
             depths = [float(value) for value in point.depth.values]

@@ -28,7 +28,7 @@ class SDKBackedTest(unittest.TestCase):
         class SDK:
             @staticmethod
             def describe(**params):
-                dataset=SimpleNamespace(dataset_id=params["dataset_id"],versions=[SimpleNamespace(label="202406",arco_updated_date="2026-01-01T00:00:00Z")])
+                dataset=SimpleNamespace(dataset_id=params["dataset_id"],versions=[SimpleNamespace(label="202406",get_part=lambda _: SimpleNamespace(name="default",arco_updated_date="2026-01-01T00:00:00Z"))])
                 return SimpleNamespace(products=[SimpleNamespace(datasets=[dataset])])
             @staticmethod
             def open_dataset(**params):
