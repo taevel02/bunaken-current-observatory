@@ -90,8 +90,12 @@ def validate_payload(payload, *, root=ROOT):
         if not payload['source_generated_at'] or not payload['valid_start'] or not payload['valid_end'] or instant(payload['valid_start'])>=instant(payload['valid_end']):
             raise SnapshotError('public_source_time_missing')
     for row in payload['predictions']:
-        if row['site_id'] not in expected or row['pci'] is not None:
-            raise SnapshotError('numeric_model_not_implemented')
+        if row['site_id'] not in expected:
+            raise SnapshotError('public_site_identity_invalid')
+        if row['pci'] is not None and (row['prediction_status'] == 'insufficient' or row['support'] == 'insufficient' or
+            row['distinct_days'] < 3 or row['n_eff'] < 2 or row['same_site_days'] < 1 or
+            row['feature_coverage'].get('total',0)+1e-12 < .8 or row['reason_codes']):
+            raise SnapshotError('public_numeric_gate_invalid')
     observation_ids=[row['id'] for row in payload['observations']]
     if len(observation_ids)!=len(set(observation_ids)) or any(row['site_id'] not in expected for row in payload['observations']):
         raise SnapshotError('public_site_identity_invalid')

@@ -25,7 +25,11 @@
       "type": "string"
     },
     "schema_version": {
-      "type": "string"
+      "enum": [
+        "1.0",
+        "1.1",
+        "1.2"
+      ]
     },
     "date_wita": {
       "type": "string",
@@ -153,6 +157,13 @@
           }
         }
       }
+    },
+    "model_context": {
+      "$ref": "model-context.schema.json"
+    },
+    "model_context_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   },
   "allOf": [
@@ -160,7 +171,10 @@
       "if": {
         "properties": {
           "schema_version": {
-            "const": "1.1"
+            "enum": [
+              "1.1",
+              "1.2"
+            ]
           }
         },
         "required": [
@@ -189,6 +203,25 @@
           "geometry_hash": {},
           "artifact_hashes": {},
           "source_status": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.2"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "model_context",
+          "model_context_sha256"
+        ],
+        "properties": {
+          "model_context": {},
+          "model_context_sha256": {}
         }
       }
     }

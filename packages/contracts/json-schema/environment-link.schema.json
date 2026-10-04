@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/environment-link.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observation_id",
+    "observation_revision",
+    "observation_sha256",
+    "snapshot_sha256",
+    "feature_sha256",
+    "geometry_version",
+    "interval_kind",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "observation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "observation_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observation_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "snapshot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "feature_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "geometry_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "interval_kind": {
+      "enum": [
+        "proxy_60m",
+        "dive_interval"
+      ]
+    },
+    "provenance": {
+      "enum": [
+        "snapshot",
+        "backfill"
+      ]
+    }
+  }
+}

@@ -15,7 +15,13 @@ class SnapshotTest(unittest.TestCase):
         return dict(kind="snapshot",status="succeeded",storage_verified=True,persisted_at=at,valid_start="2026-09-30T16:00Z",valid_end="2026-10-02T16:00Z",run_id=RUN,storage_commit=CODE,manifest_sha256="b"*64,**updates)
 
     def test_unverified_sites_produce_null_forecast_not_synthetic_environment(self):
-        manifest,files=collect_run("2026-10-01",CODE,days=1,run_id=RUN,collector=lambda *args:self.fail("no geometry, no query"))
+        from bunaken_engine.registry import load_geometry
+        geometry=copy.deepcopy(load_geometry())
+        for site in geometry['sites']:
+            site['status']='unverified'
+            for key in ('lat','lon','reference_depth_m','wall_bearing_deg','offshore_bearing_deg','max_grid_distance_km'): site[key]=None
+        with patch('bunaken_engine.pipeline.load_geometry',return_value=geometry):
+            manifest,files=collect_run("2026-10-01",CODE,days=1,run_id=RUN,collector=lambda *args:self.fail("no geometry, no query"))
         self.assertEqual(manifest["status"],"failed")
         self.assertEqual(manifest["samples"],[])
         self.assertIsNone(manifest["source_retrieved_at"])

@@ -48,6 +48,25 @@ def parser():
     collect.add_argument("--code-commit",required=True,help="40-character trusted code commit SHA")
     collect.add_argument("--output",type=Path,required=True,help="local diagnostic/output directory")
     collect.add_argument("--publish",action="store_true",help="commit the verified public bundle to data branch")
+    collect.add_argument("--model",type=Path,help="immutable model context built by the model command")
+    collect.add_argument('--model-from-data',action='store_true',help='read revision history and Git-confirmed snapshots at one data head')
+    collect.add_argument('--observer',help='one public observer alias for numeric training')
+    collect.add_argument('--rubric',help='one compatible rubric version for numeric training')
+    model=commands.add_parser('model',help='build reproducible public model inputs; no remote write')
+    model.add_argument('--observations',type=Path,required=True)
+    model.add_argument('--snapshot',type=Path,action='append',default=[])
+    model.add_argument('--observer',required=True)
+    model.add_argument('--rubric',required=True)
+    model.add_argument('--cutoff',required=True)
+    model.add_argument('--output',type=Path,required=True)
+    evaluation=commands.add_parser('validate-model',help='forward or diagnostic day validation; no remote write')
+    evaluation.add_argument('--observations',type=Path,required=True)
+    evaluation.add_argument('--snapshot',type=Path,action='append',default=[])
+    evaluation.add_argument('--observer',required=True)
+    evaluation.add_argument('--rubric',required=True)
+    evaluation.add_argument('--mode',choices=['forward','leave_one_day_out'],default='forward')
+    evaluation.add_argument('--operational',action='store_true',help='requires Git-verified actual storage evidence; never backfill performance')
+    evaluation.add_argument('--output',type=Path,required=True)
     scaler=commands.add_parser("scaler",help="fit median/IQR to environment-only rows available at cutoff")
     scaler.add_argument("--input",type=Path,required=True)
     scaler.add_argument("--cutoff",required=True)
@@ -84,10 +103,42 @@ def main(argv=None):
                         raise SnapshotError("incomplete_snapshot_bundle")
                     files=make_bundle(manifest,json.loads(gzip.decompress(feature_bytes)),json.loads(gzip.decompress(forecast_bytes)),root=root,kind=args.kind)
             if manifest is None:
-                manifest,files=collect_run(args.date,args.code_commit,days=args.days,run_id=run_id,kind=args.kind,root=root)
+                model=read_json(args.model) if args.model else None
+                if args.model_from_data:
+                    if args.model or not args.observer or not args.rubric: raise ValueError('model_observer_rubric_required')
+                    from bunaken_engine.model_input import data_inputs
+                    from bunaken_engine.model_data import model_context
+                    cutoff=utc_now()
+                    _, observations, bundles=data_inputs(store or store_from_env(),cutoff,root=root)
+                    model=model_context(observations,bundles,args.observer,args.rubric,cutoff,root=root)
+                manifest,files=collect_run(args.date,args.code_commit,days=args.days,run_id=run_id,kind=args.kind,root=root,
+                                          model=model)
             write_files(args.output,files)
             receipt=publish_bundle(store,manifest,files,root=root) if store else None
             result=dict(run_id=run_id,status=manifest["status"],samples=len(manifest["samples"]),source_status=manifest["source_status"],saved_to_public_repository=receipt is not None,storage_commit=receipt["storage_commit"] if receipt else None)
+        elif args.command in {'model','validate-model'}:
+            from bunaken_engine.model_data import read_bundle, model_context, prepare_model
+            observations=read_json(args.observations)
+            bundles=[read_bundle(path, root=root) for path in args.snapshot]
+            if args.command == 'model':
+                context=model_context(observations,bundles,args.observer,args.rubric,args.cutoff,root=root)
+                candidates,scaler,excluded=prepare_model(observations,bundles,args.observer,args.rubric,args.cutoff,root=root)
+                write_files(args.output.parent,{args.output.name:canonical(context)})
+                result=dict(model_context_sha256=digest(canonical(context)),eligible_records=len(candidates),excluded_records=len(excluded),scaler_rows=scaler['row_count'])
+            else:
+                from bunaken_engine.validation import evaluate
+                if args.operational:
+                    store=store_from_env(); head=store.head()
+                    for bundle in bundles:
+                        run=bundle['manifest']['run_id']
+                        raw=store.read(f'snapshot-receipts/{run}.json',head)
+                        if raw is None: continue
+                        receipt=verified_receipt(store,json.loads(raw),head,root=root)
+                        if receipt['storage_verified']:
+                            bundle['storage_evidence']={key:receipt[key] for key in ('storage_verified','persisted_at','manifest_sha256','storage_commit')}
+                report=evaluate(observations,bundles,args.observer,args.rubric,mode=args.mode,operational=args.operational,root=root)
+                write_files(args.output.parent,{args.output.name:canonical(report)})
+                result=dict(mode=report['mode'],operational_forecast=report['operational_forecast'],**report['metrics'])
         elif args.command=="scaler":
             data=read_json(args.input)
             if isinstance(data,dict):

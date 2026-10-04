@@ -3,6 +3,7 @@ import gzip
 import hashlib
 import json
 import re
+from functools import lru_cache
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -27,11 +28,18 @@ def digest(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def validate(name: str, document, root=ROOT):
-    schemas=[read_json(path) for path in (root/"packages/contracts/json-schema").glob("*.schema.json")]
+@lru_cache(maxsize=128)
+def schema_validator(name, fingerprint):
+    schemas=[read_json(path) for path, _, _ in fingerprint]
     registry=Registry().with_resources((schema["$id"],Resource.from_contents(schema)) for schema in schemas)
     schema=next(item for item in schemas if item["$id"].endswith(f"/{name}.schema.json"))
-    Draft202012Validator(schema,registry=registry,format_checker=FormatChecker()).validate(document)
+    return Draft202012Validator(schema,registry=registry,format_checker=FormatChecker())
+
+
+def validate(name: str, document, root=ROOT):
+    paths=sorted((root/"packages/contracts/json-schema").glob("*.schema.json"))
+    fingerprint=tuple((path,path.stat().st_mtime_ns,path.stat().st_size) for path in paths)
+    schema_validator(name,fingerprint).validate(document)
 
 
 def bundle_path(date_wita: str, run_id: str, kind: str="snapshot") -> str:
@@ -74,6 +82,22 @@ def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT
 
 def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot") -> dict[str,bytes]:
     """Validate every public field before constructing any Git blob."""
+    context=manifest.get('model_context')
+    if context is not None:
+        from bunaken_engine.model_data import trusted_configuration, current_configuration, replay_root
+        validate('model-context',context,root)
+        configuration=trusted_configuration(context,root)
+        current_sources=load_sources(root)
+        embedded=[row for bundle in context['training_bundles'] for row in bundle['manifest']['samples']]
+        if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']],[row['variable']]) for row in embedded):
+            raise SnapshotError('training_source_export_forbidden')
+        if configuration != current_configuration(root):
+            # Current licence decisions still apply to previously licensed source contracts.
+            current_sources=load_sources(root)
+            if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']],[row['variable']]) for row in manifest['samples']):
+                raise SnapshotError('source_export_forbidden')
+            with replay_root(context,root) as replay:
+                return make_bundle(manifest,features,forecast,root=replay,kind=kind)
     registry=load_sources(root)
     if manifest.get("kind") != kind:
         raise SnapshotError("run_kind_mismatch")
@@ -98,9 +122,16 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
             raise SnapshotError("required_window_coverage_missing")
     for row in forecast:
         validate("prediction",row,root)
-        # P3 has no trained model. Fail closed if a caller attempts a numeric forecast.
-        if row["pci"] is not None or row["prediction_status"]!="insufficient":
+        if manifest.get('model_context') is None and (row["pci"] is not None or row["prediction_status"]!="insufficient"):
             raise SnapshotError("numeric_model_not_implemented")
+    if manifest.get('model_context') is not None:
+        from bunaken_engine.model_data import forecast_context
+        validate('model-context', manifest['model_context'], root)
+        if manifest.get('schema_version') != '1.2' or manifest.get('model_context_sha256') != digest(canonical(manifest['model_context'])):
+            raise SnapshotError('model_context_hash_mismatch')
+        reproduced, scaler_hash = forecast_context(manifest['model_context'], features, manifest, root=root)
+        if reproduced != forecast or scaler_hash != manifest['scaler_version']:
+            raise SnapshotError('model_forecast_reproduction_mismatch')
     encoded_features=gzip.compress(canonical(features),mtime=0)
     encoded_forecast=gzip.compress(canonical(forecast),mtime=0)
     if manifest.get("artifact_hashes")!={"features.json.gz":digest(encoded_features),"forecast.json.gz":digest(encoded_forecast)}:

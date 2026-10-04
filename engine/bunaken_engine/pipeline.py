@@ -15,7 +15,7 @@ WITA=ZoneInfo("Asia/Makassar")
 REQUIRED=["fes-height","copernicus-currents"]
 
 
-def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind="snapshot", root=ROOT, collector=None) -> tuple[dict,dict[str,bytes]]:
+def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind="snapshot", root=ROOT, collector=None, model=None) -> tuple[dict,dict[str,bytes]]:
     target=date.fromisoformat(target_date)
     if not 1<=days<=14:
         raise SnapshotError("invalid_collection_horizon")
@@ -79,6 +79,11 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
                 forecast.append(dict(site_id=geometry["site_id"],zone_id=geometry.get("id"),start_at=at.isoformat().replace("+00:00","Z"),duration_minutes=60,reference_depth_m=geometry["reference_depth_m"],pci=None,prediction_status="insufficient",support="insufficient",n_eff=0,n_eff_days=0,distinct_days=0,same_site_days=0,same_zone_days=0,vertical_evidence=dict(status="insufficient"),feature_coverage={},reason_codes=reasons,model_version="cold-start-p3",source_snapshot_ids=[run_id]))
     now=utc_now()
     manifest=dict(snapshot_id=run_id,schema_version="1.1",date_wita=target_date,run_id=run_id,created_at=now,source_issued_at=None,source_retrieved_at=max((row["retrieved_at"] for row in samples),default=None),valid_start=start_at,valid_end=end_at,dataset_versions={row["dataset"]:row["version"] for row in samples},geometry_version=digest(canonical(geometries)) if collectable else None,scaler_version=None,code_commit=code_commit,samples=samples,status="succeeded" if success else "failed",kind=kind,feature_version="environment-v1",source_registry_hash=digest(canonical(read_json(root/"config/source-registry.json"))),geometry_hash=digest(canonical(geometries)),source_status=statuses,artifact_hashes={"features.json.gz":digest(gzip.compress(canonical(feature_rows),mtime=0)),"forecast.json.gz":digest(gzip.compress(canonical(forecast),mtime=0))})
+    if model is not None:
+        from bunaken_engine.model_data import forecast_context
+        manifest.update(schema_version='1.2', model_context=model, model_context_sha256=digest(canonical(model)))
+        forecast, manifest['scaler_version'] = forecast_context(model, feature_rows, manifest, root=root)
+        manifest['artifact_hashes']['forecast.json.gz'] = digest(gzip.compress(canonical(forecast), mtime=0))
     return manifest,make_bundle(manifest,feature_rows,forecast,root=root,kind=kind)
 
 
@@ -94,6 +99,9 @@ def publish_bundle(store, manifest, files, *, root=ROOT) -> dict:
             raise SnapshotError("immutable_run_conflict")
         confirm_receipt(store,receipt,root=root)
         return receipt
+    if manifest.get('model_context') is not None:
+        from bunaken_engine.model_input import verify_context_storage
+        verify_context_storage(store,manifest['model_context'],store.head(),root=root)
     storage_commit=store.insert(files)
     receipt=dict(schema_version="1.0",run_id=manifest["run_id"],kind=manifest["kind"],status=manifest["status"],manifest_path=manifest_path,manifest_sha256=manifest_hash,storage_commit=storage_commit,persisted_at=utc_now(),valid_start=manifest["valid_start"],valid_end=manifest["valid_end"])
     validate("snapshot-receipt",receipt,root)
