@@ -6,7 +6,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from bunaken_engine.features import extract_window, instant, finite
-from bunaken_engine.registry import ROOT, read_json, load_sources, load_geometry, export_allowed
+from bunaken_engine.registry import ROOT, read_json, load_sources, load_geometry, export_allowed, usable_geometry, COORDINATE_STATUSES
 from bunaken_engine.sources import collect_fes, collect_copernicus, collect_open_meteo, SourceError, utc_now
 from bunaken_engine.git_store import StorageError
 from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, bundle_path, assess_sources, select_seal, SnapshotError
@@ -27,8 +27,8 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
     registry=load_sources(root);geometries=load_geometry(root)
     targets=geometries["sites"]+geometries["zones"]
     samples=[];failures={source_id:set() for source_id in registry};feature_rows=[];forecast=[]
-    verified=[geometry for geometry in targets if geometry["status"]=="verified"]
-    collectable=[geometry for geometry in targets if geometry["status"] in {"verified","coordinates_verified","coordinates_depth_verified"}]
+    usable_targets=[geometry for geometry in targets if usable_geometry(geometry)]
+    collectable=[geometry for geometry in targets if geometry["status"] in COORDINATE_STATUSES]
     if not collectable:
         for reasons in failures.values(): reasons.add("unverified_geometry")
     for geometry in collectable:
@@ -55,7 +55,7 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
         usable_samples=[row for row in point_samples if row["source"] in usable]
         for source_id,state in readiness.items():
             failures[source_id].update(state["reason_codes"])
-        if geometry["status"] != "verified":
+        if not usable_geometry(geometry):
             continue
         for day in range(days):
             for half_hour in range(16):
@@ -68,10 +68,10 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
                         failures[source_id].add("required_window_coverage_missing")
                 feature_rows.append(dict(site_id=geometry["site_id"],zone_id=geometry.get("id"),**window))
     statuses={source_id:dict(status="failed" if reasons else "succeeded",reason_codes=sorted(reasons)) for source_id,reasons in failures.items()}
-    success=bool(verified) and all(statuses[source_id]["status"]=="succeeded" for source_id in REQUIRED)
+    success=bool(usable_targets) and all(statuses[source_id]["status"]=="succeeded" for source_id in REQUIRED)
     for geometry in targets:
         reasons=["insufficient_numeric_labels"]
-        if geometry["status"]!="verified": reasons.append("unverified_geometry")
+        if not usable_geometry(geometry): reasons.append("unverified_geometry")
         if not success: reasons.append("missing_required_features")
         for day in range(days):
             for half_hour in range(16):

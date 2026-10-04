@@ -4,6 +4,12 @@ import math
 from pathlib import Path
 
 ROOT = Path.cwd()
+COORDINATE_STATUSES = {"verified", "reference_geometry", "coordinates_verified", "coordinates_depth_verified"}
+
+
+def usable_geometry(entry: dict) -> bool:
+    """User-approved reference axes support experimental research, not measured geometry."""
+    return entry["status"] in {"verified", "reference_geometry"}
 
 
 def read_json(path: Path):
@@ -56,13 +62,18 @@ def validate_geometry(entry: dict) -> None:
         if any(value is not None for value in values):
             raise ValueError("unverified geometry cannot supply numeric values")
         return
-    if entry["status"] != "verified" or any(value is None for value in values):
+    if not usable_geometry(entry) or any(value is None for value in values):
         raise ValueError("verified geometry requires all numeric fields")
     lat, lon, depth, wall, offshore, distance = values
     if not (-90 <= lat <= 90 and -180 <= lon <= 180 and 0 <= depth <= 200 and distance > 0):
         raise ValueError("invalid geometry range")
     if not (0 <= wall < 360 and 0 <= offshore < 360):
         raise ValueError("bearing must be clockwise from true north")
+    if entry["status"] == "reference_geometry":
+        reference=entry.get("direction_reference", {})
+        if reference.get("kind") != "user_map_arrows" or not reference.get("accepted_at") or not entry.get("evidence") or not entry.get("version"):
+            raise ValueError("reference geometry requires user acceptance and provenance")
+        return
     if not math.isclose(abs((offshore - wall + 180) % 360 - 180), 90, abs_tol=1):
         raise ValueError("wall/offshore bearings must be orthogonal")
     if not entry.get("verified_at") or not entry.get("evidence") or not entry.get("version"):

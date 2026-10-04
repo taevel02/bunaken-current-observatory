@@ -10,8 +10,10 @@ GEOMETRY=dict(site_id="mandolin",status="verified",lat=1,lon=124,reference_depth
 
 class SourcesTest(unittest.TestCase):
     def test_unverified_geometry_never_queries_provider(self):
+        unverified={**resolve_geometry("mandolin"),"status":"unverified"}
+        for key in ("lat","lon","reference_depth_m","wall_bearing_deg","offshore_bearing_deg","max_grid_distance_km"):unverified[key]=None
         with self.assertRaises(SourceError) as error:
-            collect_open_meteo(load_sources()["open-meteo-wind"],resolve_geometry("mandolin"),"2026-01-01T00:00Z","2026-01-01T01:00Z",fetcher=lambda url: self.fail("must not fetch"))
+            collect_open_meteo(load_sources()["open-meteo-wind"],unverified,"2026-01-01T00:00Z","2026-01-01T01:00Z",fetcher=lambda url: self.fail("must not fetch"))
         self.assertEqual(error.exception.code,"unverified_geometry")
 
     def test_open_meteo_units_times_native_resolution_and_missing(self):

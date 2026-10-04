@@ -56,4 +56,4 @@ snapshot 1.2는 model context와 SHA-256, scaler SHA-256을 추가한다. contex
 
 ## 남은 현장·운영 조건
 
-입수 좌표와 Site 대표 수심 18m는 확인되었다. 허용 격자 거리, 벽/외해 방향, Zone geometry는 현장 검토가 필요하다. 실제 관측의 대표 수심과 관측일별 numeric label·환경 연결도 필요하다. source freshness·FES conformance가 확인되지 않으면 숫자를 발행하지 않는다. 실제 예측력·Medium/High 기준은 아직 검증되지 않았다. 배포, workflow 설치·예약 및 공개 발행은 P7에서 별도 확인한다.
+입수 좌표와 Site 대표 수심 18m, 허용 격자 거리 6km를 사용한다. 지도 화살표 기본값은 `reference_geometry`로 저장하며 독립된 진행/외해 축에 투영한다. target 또는 선택 analog가 근사 geometry이면 `experimental / very_low`로 제한한다. 실측 벽 방향 검증과 Zone 위치 특정은 추후 진행한다. 실제 관측의 대표 수심과 관측일별 numeric label·환경 연결도 필요하다. source freshness·FES conformance가 확인되지 않으면 숫자를 발행하지 않는다. 실제 예측력·Medium/High 기준은 아직 검증되지 않았다. 배포, workflow 설치·예약 및 공개 발행은 P7에서 별도 확인한다.

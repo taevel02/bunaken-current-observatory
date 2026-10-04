@@ -7,7 +7,7 @@ from bunaken_engine.analog import predict
 from bunaken_engine.features import finite, instant, extract_window
 from bunaken_engine.model_data import checked_bundles, eligible_candidates, environment_rows, latest_revisions
 from bunaken_engine.features import build_scaler
-from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry
+from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry, usable_geometry
 from bunaken_engine.time import wita_date
 
 WITA = ZoneInfo('Asia/Makassar')
@@ -41,7 +41,7 @@ def validation_target(observation, bundles, cutoff, *, operational, root=ROOT):
     start = instant(observation['start_at']); end = start + timedelta(hours=1)
     try: geometry = resolve_geometry(observation['site_id'], observation['zone_id'], root)
     except ValueError: return None
-    if geometry['status'] != 'verified' or not finite(observation['representative_depth_m']): return None
+    if not usable_geometry(geometry) or not finite(observation['representative_depth_m']): return None
     available = []
     for bundle in bundles:
         manifest = bundle['manifest']
@@ -67,7 +67,7 @@ def validation_target(observation, bundles, cutoff, *, operational, root=ROOT):
     if not available: return None
     _, snapshot_id, window = (max if operational else min)(available, key=lambda row:(instant(row[0]),row[1]))
     return dict(**window, site_id=observation['site_id'], zone_id=observation['zone_id'],
-                geometry_verified=True, sources_ready=True, source_snapshot_ids=[snapshot_id])
+                geometry_verified=True, reference_geometry=geometry['status']=='reference_geometry', sources_ready=True, source_snapshot_ids=[snapshot_id])
 
 
 def evaluate(observations, bundles, observer, rubric, *, mode='forward', operational=True, root=ROOT):

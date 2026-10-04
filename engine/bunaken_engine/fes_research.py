@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile
 
 from bunaken_engine.features import build_scaler, finite, instant, interpolate
 from bunaken_engine.fes_atlas import WAVES, sha256
-from bunaken_engine.registry import load_geometry, read_json
+from bunaken_engine.registry import COORDINATE_STATUSES, load_geometry, read_json
 
 
 def verify_atlas(directory):
@@ -121,7 +121,7 @@ def history(directory, root, start, days, library, output):
     input_hashes = {name:sha256(path) for name,path in input_paths.items()}
     atlas = verify_atlas(directory)
     sites = load_geometry(root)['sites']
-    if any(site['status'] not in {'coordinates_verified','coordinates_depth_verified','verified'} for site in sites):
+    if any(site['status'] not in COORDINATE_STATUSES for site in sites):
         raise ValueError('history_coordinates_unverified')
     # Two-hour support around 60-minute windows, computed at native evaluation interval.
     times = [first+timedelta(minutes=30*i)-timedelta(hours=1) for i in range(days*48+5)]

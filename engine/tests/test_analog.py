@@ -30,6 +30,16 @@ class AnalogTest(unittest.TestCase):
         self.assertEqual(result['support'], 'low')
         self.assertEqual(effective_size([0, 0]), 0)
 
+    def test_reference_target_or_training_geometry_caps_numeric_support(self):
+        target,candidates,scaler=setup()
+        result=predict({**target,'reference_geometry':True},candidates,scaler)
+        self.assertIsNotNone(result['pci'])
+        self.assertEqual((result['prediction_status'],result['support']),('experimental','very_low'))
+        candidates[0]['reference_geometry']=True
+        result=predict(target,candidates,scaler)
+        self.assertEqual((result['prediction_status'],result['support']),('experimental','very_low'))
+        self.assertIsNone(predict({**target,'reference_geometry':True,'sources_ready':False},candidates,scaler)['pci'])
+
     def test_days_gate_and_unknown_site_gate(self):
         target, candidates, scaler = setup()
         for row in candidates: row['day'] = '2026-09-01'

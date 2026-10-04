@@ -65,6 +65,8 @@ Anchor 환경을 복원하지 못하면 similarity도 제공하지 않는다. �
 
 FES는 조석 정보이며 높이 또는 변화율을 현장 조류로 표시하지 않는다. Copernicus의 제품명만 보고 모든 depth/variable의 해상도를 동일하게 가정하지 않는다. u/v는 동향/북향 속도이며 벽과 외해의 확인된 bearing으로 투영한다. 수평 유속의 수심 차이는 수직 속도가 아니다.
 
+사용자가 승인한 지도 근사값은 `reference_geometry`로 보존한다. 빨간 진행축은 실측 벽 방향이 아니며 파란 외해축과 독립 투영한다. 이 상태는 실측 `verified`로 승격하지 않는다. target 또는 선택 analog가 근사 geometry이면 numeric gate 통과 후에도 `experimental / very_low`로 제한한다. Zone 위치 근거가 없으면 Site 수준으로 계산하고 가상의 Zone·geometry 그룹을 만들지 않는다.
+
 시간·수심 보간은 유효한 두 지점 사이에서만 한다. 범위 밖은 null이고 원해상도를 metadata에 남긴다. 육지 셀·격자 거리·수심 범위를 검사한다. modelled temperature와 observed temperature를 분리한다. 30분 보간으로 30분 원자료가 생겼다고 표현하지 않는다.
 
 Snapshot은 immutable이다. source issued/retrieved/valid time, 실제 저장 시각, dataset/version, geometry, scaler, code hash를 보존한다. D+1 공식 snapshot은 전날 WITA 20:00 이전 실제 저장된 성공 run만 선택한다. 늦은 재실행이나 analysis backfill로 과거 forecast를 덮어쓰지 않는다.

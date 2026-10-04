@@ -280,7 +280,7 @@ Git ref 반영 이후에만 저장 성공이다. timeout으로 결과가 불명�
 
 Tide는 구간 중심 전후 60분의 rate, 조차와 위상 sin/cos를 포함한다. Ocean은 along/cross current, 기준 depth current, 수평 유속의 깊이 차이, Thermal은 모델 수온·ΔT·가능한 성층 proxy, Weather는 바람·파랑·너울, Depth는 관측과 목표 수심 차이를 포함한다. feature 이름·단위·필요 source·aggregation·정규화 규칙은 versioned feature registry로 고정한다.
 
-각도 bearing b에 대해 `projection=u*sin(b)+v*cos(b)`이며 계산 시 radian으로 변환한다. u는 eastward, v는 northward다. cross의 양수는 검증된 offshore 방향이다. unknown geometry에 임의 bearing=0을 넣지 않는다.
+각도 bearing b에 대해 `projection=u*sin(b)+v*cos(b)`이며 계산 시 radian으로 변환한다. u는 eastward, v는 northward다. cross의 양수는 설정된 offshore 방향이다. 2026-10-04 승인된 `reference_geometry`는 사용자 지도 화살표를 15° 간격으로 반올림한 근사 진행축·외해축이다. 두 축은 독립 투영이며 직각 보정하거나 직교 벡터의 성분으로 재구성하지 않는다. 해당 target 또는 선택 analog가 reference geometry이면 numeric gate 통과 후에도 `experimental / very_low`로 제한한다. 측정 검증 상태 `verified`의 직교 조건은 유지한다. unknown geometry에 임의 bearing=0을 넣지 않는다.
 
 두 유효 수심/시각 사이에서만 선형 보간한다. 한 점과 정확히 일치하면 그 값을 사용한다. 깊이 범위 밖·해저 아래·소스 시간 범위 밖은 null이다. 방향 각도는 359°와 1°를 산술 평균하지 않고 벡터 성분으로 처리한다. 선택 grid와 Site 거리, 육지 mask, source native resolution을 보존한다.
 

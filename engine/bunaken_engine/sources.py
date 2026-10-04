@@ -12,7 +12,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from bunaken_engine.features import finite, instant, distance_km, sea_cell, profile_value
-from bunaken_engine.registry import validate_geometry
+from bunaken_engine.registry import validate_geometry, usable_geometry, COORDINATE_STATUSES
 from bunaken_engine.fes_validation import provenance as fes_provenance
 
 
@@ -28,7 +28,7 @@ def utc_now() -> str:
 
 def require_geometry(geometry: dict):
     validate_geometry(geometry)
-    if geometry["status"] != "verified":
+    if not usable_geometry(geometry):
         raise SourceError("unverified_geometry")
 
 
@@ -74,7 +74,7 @@ def fetch_json(url: str, opener=urlopen, sleep=time.sleep) -> dict:
 def sample(source: dict, geometry: dict, variable: str, value, valid_time: str, retrieved_at: str, *, selected_lat=None, selected_lon=None, depth=None, issued_at=None, flags=None, version=None, depths=None) -> dict:
     lat = geometry["lat"] if selected_lat is None else selected_lat
     lon = geometry["lon"] if selected_lon is None else selected_lon
-    return dict(schema_version="1.1",geometry_version=geometry.get("version"),source=source["id"], product=source["product"], dataset=source["dataset"], variable=variable, version=version or source["dataset_version"] or source["dataset"], lat=geometry["lat"], lon=geometry["lon"], site_id=geometry["site_id"], zone_id=geometry.get("id"), selected_grid=f"{lat:.6f},{lon:.6f}", selected_lat=lat, selected_lon=lon, grid_distance_km=distance_km(geometry["lat"],geometry["lon"],lat,lon), depth_m=depth, valid_time=valid_time, issued_at=issued_at, source_updated_at=source.get("last_updated_at"), retrieved_at=retrieved_at, value=float(value) if finite(value) else None, unit=source["variables"][variable], native_resolution=json.dumps(source["native_resolution"],sort_keys=True), native_depths_m=depths, interpolation_method="none" if depth is None else "bounded_depth_linear", quality_flags=flags or [])
+    return dict(schema_version="1.1",geometry_version=geometry.get("version"),source=source["id"], product=source["product"], dataset=source["dataset"], variable=variable, version=version or source["dataset_version"] or source["dataset"], lat=geometry["lat"], lon=geometry["lon"], site_id=geometry["site_id"], zone_id=geometry.get("id"), selected_grid=f"{lat:.6f},{lon:.6f}", selected_lat=lat, selected_lon=lon, grid_distance_km=distance_km(geometry["lat"],geometry["lon"],lat,lon), depth_m=depth, valid_time=valid_time, issued_at=issued_at, source_updated_at=source.get("last_updated_at"), retrieved_at=retrieved_at, value=float(value) if finite(value) else None, unit=source["variables"][variable], native_resolution=json.dumps(source["native_resolution"],sort_keys=True), native_depths_m=depths, interpolation_method="none" if depth is None else "bounded_depth_linear", quality_flags=(flags or []) + (["reference_geometry"] if geometry["status"] == "reference_geometry" else []))
 
 
 def collect_open_meteo(source: dict, geometry: dict, start: str, end: str, *, fetcher=fetch_json, usage_mode: str | None = None, api_key: str | None = None) -> list[dict]:
@@ -199,7 +199,7 @@ def collect_copernicus(source: dict, geometry: dict, start: str, end: str, depth
 
 def collect_fes(source: dict, geometry: dict, start: str, end: str, *, config_path: str | None = None, atlas_unit: str | None = None, validation_path: str | None = None, evaluator=None) -> list[dict]:
     validate_geometry(geometry)
-    if geometry['status'] not in {'verified','coordinates_verified','coordinates_depth_verified'}:
+    if geometry['status'] not in COORDINATE_STATUSES:
         raise SourceError("unverified_geometry")
     config_path = config_path or os.environ.get("FES_CONFIG_PATH")
     atlas_unit = atlas_unit or os.environ.get("FES_ATLAS_UNIT")

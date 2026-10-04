@@ -14,6 +14,7 @@ from bunaken_engine.pipeline import collect_run
 from bunaken_engine.snapshots import canonical, digest, make_bundle, SnapshotError
 from bunaken_engine.validation import evaluate
 from bunaken_engine.analog import predict
+from bunaken_engine.registry import ROOT, read_json
 
 
 def observation(**updates):
@@ -47,7 +48,7 @@ class ModelDataTest(unittest.TestCase):
             self.assertEqual(excluded[row['id']], reason)
         candidates, excluded=eligible_candidates([observation(train_eligible=True)], [], 'synthetic-observer', 'synthetic-rubric', '2026-10-01T00:00:00Z')
         self.assertEqual(candidates, [])
-        self.assertEqual(excluded[observation()['id']], 'unverified_geometry')
+        self.assertEqual(excluded[observation()['id']], 'environment_link_unavailable')
 
     def test_context_reproducibility_empty_model_and_tamper_rejection(self):
         context=model_context([], [], 'synthetic-observer', 'synthetic-rubric', '2026-09-30T00:00:00Z')
@@ -59,10 +60,10 @@ class ModelDataTest(unittest.TestCase):
         forecast=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('forecast.json.gz'))))
         self.assertEqual(manifest['schema_version'], '1.2')
         self.assertEqual(len(forecast), 304)
-        self.assertTrue(all(row['pci'] is None and row['model_version']=='weighted-analog-v1' for row in forecast))
+        self.assertTrue(all(row['pci'] is None and row['model_version']==read_json(ROOT/'config/model.json')['version'] for row in forecast))
         changed=copy.deepcopy(forecast); changed[0].update(pci=.5, prediction_status='available', support='low')
         with self.assertRaisesRegex(SnapshotError, 'model_forecast_reproduction_mismatch'):
-            make_bundle(manifest, [], changed)
+            make_bundle(manifest, json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('features.json.gz')))), changed)
         with tempfile.TemporaryDirectory() as folder:
             for path,raw in files.items():
                 target=Path(folder)/path; target.parent.mkdir(parents=True, exist_ok=True); target.write_bytes(raw)

@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import timedelta
 
 from bunaken_engine.features import extract_window, finite, instant, build_scaler
-from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry, load_sources
+from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry, load_sources, usable_geometry
 from bunaken_engine.snapshots import canonical, digest, validate, make_bundle
 from bunaken_engine.time import wita_date
 
@@ -108,7 +108,7 @@ def eligible_candidates(observations, bundles, observer, rubric, cutoff, *, root
         except ValueError:
             excluded[observation['id']]='unknown_site_or_zone'
             continue
-        if geometry['status'] != 'verified':
+        if not usable_geometry(geometry):
             excluded[observation['id']] = 'unverified_geometry'
             continue
         start = instant(observation['start_at'])
@@ -167,7 +167,7 @@ def eligible_candidates(observations, bundles, observer, rubric, cutoff, *, root
             start_at=observation['start_at'], end_at=end.isoformat(), site_id=observation['site_id'], zone_id=observation['zone_id'],
             pci=observation['overall_pci'] if numeric_scope else None, vertical=observation['vertical']['direction'], vertical_events=vertical_events,
             values=window['values'], quality_weight=quality, provenance_weight=config['provenance'][manifest['kind']],
-            snapshot_id=manifest['snapshot_id'], environment_link=link))
+            snapshot_id=manifest['snapshot_id'], reference_geometry=geometry['status']=='reference_geometry', environment_link=link))
     return candidates, excluded
 
 
@@ -261,9 +261,10 @@ def predict_context(context, feature_rows, source_ready, snapshot_id, *, root=RO
     for feature in feature_rows:
         geometry = resolve_geometry(feature['site_id'], feature['zone_id'], root)
         if instant(context['cutoff']) > instant(feature['start_at']): raise ValueError('model_cutoff_after_target')
-        target = dict(**feature, geometry_verified=geometry['status'] == 'verified', sources_ready=source_ready,
+        target = dict(**feature, geometry_verified=usable_geometry(geometry), reference_geometry=geometry['status']=='reference_geometry', sources_ready=source_ready,
                       source_snapshot_ids=[snapshot_id])
-        predictions.append(predict(target, candidates, scaler, evidence=evidence, root=root))
+        prediction=predict(target, candidates, scaler, evidence=evidence, root=root)
+        predictions.append(prediction)
     return predictions, digest(canonical(scaler))
 
 
@@ -296,7 +297,7 @@ def _forecast_context(context, features, manifest, *, root):
                 at = start + timedelta(days=day, hours=8, minutes=30*slot)
                 window = dict(start_at=at.isoformat().replace('+00:00','Z'), end_at=(at+timedelta(hours=1)).isoformat(),
                               values={'reference_depth_m':point['reference_depth_m']}, geometry_version=point['version'], feature_version='environment-v1', disabled_reasons={})
-                if point['status'] == 'verified':
+                if usable_geometry(point):
                     window = extract_window(usable, point, at.isoformat(), (at+timedelta(hours=1)).isoformat())
                     row = dict(site_id=point['site_id'], zone_id=point.get('id'), **window)
                     if lookup.get((point['site_id'], point.get('id'), at)) != row:

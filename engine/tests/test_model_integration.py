@@ -31,7 +31,7 @@ class ModelIntegrationTest(unittest.TestCase):
         for point in geometry['sites']:
             if point['site_id']=='mandolin':
                 point.update(status='verified',wall_bearing_deg=0,offshore_bearing_deg=90,max_grid_distance_km=10,
-                             evidence=['synthetic fixture only'],version='synthetic-geometry')
+                             evidence=['synthetic fixture only'],version='synthetic-geometry',verified_at='2026-09-01')
             else:
                 point['status']='unverified'
                 for key in ('lat','lon','reference_depth_m','wall_bearing_deg','offshore_bearing_deg','max_grid_distance_km'): point[key]=None
@@ -112,6 +112,28 @@ class ModelIntegrationTest(unittest.TestCase):
         source_config['sources'][1]['redistribution']['derived_allowed']=False
         (self.root/'config/source-registry.json').write_bytes(canonical(source_config))
         with self.assertRaisesRegex(SnapshotError,'source_export_forbidden'):make_bundle(manifest,features,forecast,root=self.root)
+
+    def test_reference_axes_collect_replay_and_preserve_experimental_numeric_support(self):
+        geometry=read_json(self.root/'config/geometry.json')
+        point=next(row for row in geometry['sites'] if row['site_id']=='mandolin')
+        point.update(status='reference_geometry',wall_bearing_deg=0,offshore_bearing_deg=45,verified_at=None,version='synthetic-reference')
+        (self.root/'config/geometry.json').write_bytes(canonical(geometry))
+        bundles=[]
+        for day in (1,2,3):
+            created=f'2026-09-{day:02d}T02:00:00Z'
+            with patch('bunaken_engine.pipeline.utc_now',return_value=created):
+                manifest,files=collect_run(f'2026-09-{day:02d}','a'*40,days=1,root=self.root,collector=self.collector(day,created))
+            self.assertEqual(manifest['status'],'succeeded')
+            self.assertTrue(all('reference_geometry' in row['quality_flags'] for row in manifest['samples']))
+            bundles.append(dict(manifest=manifest,features=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('features.json.gz')))),
+                                forecast=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('forecast.json.gz'))))))
+        context=model_context(self.observations,bundles,'synthetic-observer','synthetic-rubric','2026-09-04T02:00:00Z',root=self.root)
+        with patch('bunaken_engine.pipeline.utc_now',return_value='2026-09-04T03:00:00Z'):
+            manifest,files=collect_run('2026-09-05','a'*40,days=1,root=self.root,collector=self.collector(2,'2026-09-04T03:00:00Z'),model=context)
+        forecasts=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('forecast.json.gz'))))
+        numeric=[row for row in forecasts if row['pci'] is not None]
+        self.assertTrue(numeric)
+        self.assertTrue(all(row['prediction_status']=='experimental' and row['support']=='very_low' for row in numeric))
 
     def test_storage_availability_and_revision_date_change(self):
         bundles=copy.deepcopy(self.bundles)

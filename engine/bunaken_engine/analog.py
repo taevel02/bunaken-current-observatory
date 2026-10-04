@@ -172,9 +172,11 @@ def predict(target, candidates, scaler, *, config=None, feature_config=None, evi
     support = 'insufficient' if reasons else support_level(n_eff, len(daily), len(same_site), len(same_zone), target['site_id'], evidence, config)
     vertical = vertical_evidence(vertical_selected) if not any(reason in reasons for reason in
         ('unverified_geometry', 'missing_required_sources', 'missing_required_features', 'insufficient_feature_coverage', 'scaler_cutoff_after_target')) else dict(status='insufficient')
+    reference = target.get('reference_geometry') or any(row['candidate'].get('reference_geometry') for row in selected)
+    if pci is not None and reference: support='very_low'
     return dict(site_id=target['site_id'], zone_id=target.get('zone_id'), start_at=target['start_at'], duration_minutes=60,
                 reference_depth_m=target['values'].get('reference_depth_m'), pci=pci,
-                prediction_status='insufficient' if reasons else ('experimental' if n_eff < 3 else 'available'),
+                prediction_status='insufficient' if reasons else ('experimental' if reference or n_eff < 3 else 'available'),
                 support=support, n_eff=n_eff, n_eff_days=effective_size(list(daily.values())),
                 distinct_days=len(daily), same_site_days=len(same_site), same_zone_days=len(same_zone),
                 vertical_evidence=vertical, feature_coverage=coverage, reason_codes=reasons,

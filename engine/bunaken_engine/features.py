@@ -1,4 +1,5 @@
 """Pure bounded environmental transforms; no PCI labels or extrapolation."""
+from bunaken_engine.registry import usable_geometry
 import math
 from bisect import bisect_left
 from datetime import datetime, timezone
@@ -68,7 +69,7 @@ def distance_km(lat1, lon1, lat2, lon2) -> float:
 
 
 def sea_cell(cells: list[dict], geometry: dict, depth_m: float) -> dict | None:
-    if geometry["status"] != "verified":
+    if not usable_geometry(geometry):
         return None
     limit = geometry["max_grid_distance_km"]
     if not finite(limit) or limit <= 0 or not finite(depth_m) or depth_m < 0:
@@ -147,7 +148,7 @@ def extract_window(samples: list[dict], geometry: dict, start: str, end: str) ->
     """Summarize a dive window at its declared depth; never substitute observed labels."""
     from datetime import timedelta
     depth = geometry.get("reference_depth_m")
-    if geometry.get("status") != "verified" or not finite(depth):
+    if not usable_geometry(geometry) or not finite(depth):
         raise ValueError("verified geometry/depth required")
     def series(variable, at_depth=None):
         return [(item["valid_time"],item["value"]) for item in samples if item["variable"]==variable and (at_depth is None or item["depth_m"]==at_depth)]

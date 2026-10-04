@@ -1,5 +1,5 @@
 {
-  "version": "weighted-analog-v1",
+  "version": "weighted-analog-v1.1",
   "sigma": 1.0,
   "minimum_similarity": 0.2,
   "maximum_neighbors": 20,

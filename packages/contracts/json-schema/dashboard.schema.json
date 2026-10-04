@@ -91,6 +91,7 @@
               "unverified",
               "coordinates_verified",
               "coordinates_depth_verified",
+              "reference_geometry",
               "verified"
             ]
           },
