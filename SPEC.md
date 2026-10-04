@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.6\
-작성일: 2026-10-03\
-기준: [PRD.md](PRD.md) v1.4 · [AGENTS.md](AGENTS.md)\
+버전: 1.7\
+작성일: 2026-10-04\
+기준: [PRD.md](PRD.md) v1.5 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -97,7 +97,7 @@ Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측
 |---|---|---|
 | id | 예 | 클라이언트 UUID, 재시도에 동일 값 |
 | local_start | 예 | 오프셋 없는 `YYYY-MM-DDTHH:mm`, WITA로 해석 |
-| local_end | 아니오 | 같은 형식, 시작 이후. null이면 feature 구간 60분 proxy |
+| local_end | 예 | 시작 이후 출수 시각. 날짜 1회 선택, 기본 입수 +50분 제안, 사용자 변경 가능. 다음 날 출수는 명시적으로 선택 |
 | timezone | 예 | Asia/Makassar만 허용 |
 | time_precision | 예 | reported_minute 또는 approximate |
 | site_id | 예 | 등록된 Site |
@@ -116,7 +116,7 @@ Site는 id, slug, name_ko, name_en, 좌표, geometry_status를 가진다. 관측
 
 현장 입력 기본 화면의 필수값은 WITA 입수 시각, 등록 Site, Overall PCI다. 나머지는 선택 항목으로 표시하고 접힌 상세 그룹에 둔다. 모든 날짜·시각은 중복된 date/time 컨트롤 대신 `YYYY-MM-DDTHH:mm`의 WITA `datetime-local` 입력 하나로 받는다. Peak 사건의 지속 설명은 반복 양상 등 지속 방식의 원문이고 `context_description`은 당시 조류·지형 등 상황 원문이다. PCI·시각이 없어도 당시 상황이나 지속 설명은 원문으로 남길 수 있지만, 내용이 전혀 없는 Peak 사건은 저장하지 않는다. 관측 일반 메모 `notes_public`과 사건 상황 설명을 합치지 않는다. 저장 전에 공개되는 정보임을 표시한다.
 
-`time_samples`는 Overall 학습 label과 예측 입력에 쓰이지 않으므로 새 UI와 신규 schema 1.3 revision에 저장하지 않는다. create 요청 validator는 구버전 기기 초안의 미완료 멱등 요청을 마칠 수 있도록 legacy 필드를 선택적으로 검증하지만 서버는 신규 revision 작성 전에 제거한다. 기존 1.0–1.2 기록은 읽을 수 있다. 그 기록을 정정할 때 schema 1.3 revision에도 기존 표본을 변경 없이 보존한다. 구버전 정정 초안 재시도는 요청 hash가 유지되도록 검증된 기존 표본을 요청에 다시 포함할 수 있으며 서버는 제출값을 무시하고 기존 저장값만 보존한다.
+`time_samples`는 Overall 학습 label과 예측 입력에 쓰이지 않으므로 새 UI와 신규 schema 1.3 이상 revision에 저장하지 않는다. create 요청 validator는 구버전 기기 초안의 미완료 멱등 요청을 마칠 수 있도록 legacy 필드를 선택적으로 검증하지만 서버는 신규 revision 작성 전에 제거한다. 기존 1.0–1.2 기록은 읽을 수 있다. 그 기록을 정정할 때 schema 1.3 revision에도 기존 표본을 변경 없이 보존한다. 구버전 정정 초안 재시도는 요청 hash가 유지되도록 검증된 기존 표본을 요청에 다시 포함할 수 있으며 서버는 제출값을 무시하고 기존 저장값만 보존한다.
 
 추가 프로퍼티는 거부한다. client가 observer_id, revision, train_eligible, label_scope, created_at, storage path를 설정하지 못하게 한다. 신규 입력의 label_scope는 서버가 dive_overall로 지정한다. 과거 이관 경로는 별도 관리자 도구에서 legacy_unspecified 및 null numeric을 허용한다. 일반 폼의 validation을 느슨하게 해서 과거 자료를 우회 입력하지 않는다.
 
@@ -130,7 +130,7 @@ TimeSample은 다이빙 중 특정 시점의 부가 관측이다. `perceived_pci
 
 ### 4.3 저장된 관측
 
-저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. 신규 기록과 일반 수정의 현재 schema_version은 `1.3`이며 시작 수심을 저장하지 않고 PeakEvent에 context_description을 보존한다. `1.0`–`1.2` revision은 기존 형상 그대로 읽을 수 있고, 그 기록의 `time_samples`는 schema 1.3 정정 revision에도 변경 없이 보존한다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
+저장 revision은 요청의 승인된 필드에 schema_version, observer_id, rubric_version, revision, start_at/end_at UTC, 원래 local 시각, label_scope, record_status, created_at/updated_at, 수정 이유를 추가한다. 신규 기록과 일반 수정의 현재 schema_version은 `1.4`이며 시작 수심을 저장하지 않고 PeakEvent에 context_description을 보존한다. `1.0`–`1.3` revision은 기존 형상 그대로 읽을 수 있고, 그 기록의 `time_samples`는 schema 1.3 이상 정정 revision에도 변경 없이 보존한다. record_status는 active/corrected/withdrawn이다. 공개 여부 enum은 없다.
 
 관측 원본과 EnvironmentLink를 분리한다. train_eligible의 정본은 observation_revision에 연결된 검증 결과다. 공개 관측 API가 이를 표시할 때 원본과 link를 합성한다. 요청 직후 아직 link가 없으면 false와 `pending_enrichment`로 표시한다. 환경 재처리만으로 관측 원문 revision을 늘리거나 label을 바꾸지 않는다.
 
@@ -424,3 +424,9 @@ publish 요청은 네 원고의 존재, 번역 상태, hash/version 일치, 참�
 선택 Site·WITA 날짜의 PCI, 조석과 u/v, 모델 수온, 염분, 10m 바람·방향, 파고·주기·방향, 너울 높이·주기·방향을 함께 표시한다. 환경 값은 예측 PCI와 단위를 섞지 않는다. 일 범위는 제공 시각의 min/max이며 하루 전체 coverage를 주장하지 않는다. 방향은 circular min/max 대신 시각별 점·값을 표시한다. 수치가 없는 경우 공개 권한·geometry·freshness·결측 사유를 보존한다. source 실패 또는 나이 미확인 자료를 유효 환경값으로 표시하지 않는다.
 
 달은 USNO Complete Sun and Moon Data for One Day API의 해당 날짜 WITA 정오 위상·밝은 면 비율을 사용한다. 고정 HTTPS endpoint, 4초 timeout, 16KB 응답 제한, 24시간 cache, 좌표·날짜·위상·비율 검증을 적용한다. API 실패는 달만 미제공으로 처리한다. 달 모양은 위상 도식이며 관측 사진·현지 하늘 방향을 뜻하지 않는다. 천문 metadata는 forecast snapshot 밖의 별도 표시 자료로 구분하며 PCI feature나 weight를 추가하지 않는다. 가입·API key·신규 환경변수는 필요 없다.
+
+### 2026-10-04 관측 입력 결정
+
+WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 출수 +50분을 제안한다. 출수 수동 변경 후 입수 변경은 사용자가 정한 출수를 유지하며 시간 순서를 다시 검사한다. 출수는 신규·정정 저장의 필수값이며 시작보다 늦어야 한다. 자정 통과는 다음 날 선택으로 명시한다. schema 1.4의 local_end/end_at은 null을 허용하지 않는다. 기존 1.0–1.3 기록과 이미 성공한 멱등 요청은 그대로 읽거나 복구한다. 과거 출수를 자동 보충하지 않는다.
+
+관리자 목록은 입수 시각 내림차순, 동률은 생성 시각·ID 순이다. 페이지 cursor는 같은 Git head와 정렬 방식을 고정한다. 불러오는 동안 상태를 표시하고 완료 전 빈 목록으로 안내하지 않는다. 신규 Zone·경로·Peak 입력은 제거하고 기존 값은 보존한다. Peak가 없는 상세·정정 화면은 사건 섹션을 표시하지 않는다. 대표 관측 수심은 실제 입력만 저장하며 Site 18m 기본값으로 채우지 않는다.

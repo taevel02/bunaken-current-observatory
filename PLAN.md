@@ -1,9 +1,9 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.1\
-작성일: 2026-10-03\
-기준: [PRD.md](PRD.md) v1.4 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.6\
-상태: P0–P4 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
+버전: 1.2\
+작성일: 2026-10-04\
+기준: [PRD.md](PRD.md) v1.5 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.7\
+상태: P0–P5 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
 
@@ -197,3 +197,10 @@ P3 남은 운영 의존: 벽/외해 방향·Zone geometry·허용 격자 거리�
 - 현재 공개 release는 experimental 전용이다. 공식 D+1 seal 적격 출력 연결, 원격 workflow 설치·Secrets·배포·실기기 acceptance는 P7에서 검증한다. 수집 후 release 발행은 하나의 trusted workflow chain에 연결했으나 원격 실행은 하지 않았다. `5893006`.
 
 검토 보류: 벽/외해 bearing, Zone geometry, Copernicus 후보 셀의 허용 거리·대표성, Copernicus 공개 재배포 권한, Open-Meteo source age·sea grid 대표성. 미확인 항목은 값이나 학습 적격을 생성하지 않는다. 실행·재시도 안내는 [공개 대시보드](docs/public-dashboard.ko.md), [환경 연구 수집](docs/provider-research.ko.md)에 기록한다. `docs/environment-sources.ko.md`는 수정하지 않았다.
+
+### 2026-10-04 후속 반영
+
+- geometry: `7d62a04`, `0c16f71`, `3d4c650`. 사용자 승인 6km·대표 수심 18m·지도 진행/외해 기본축을 적용했다. Site 입수점과 실제 공급 셀은 다른 좌표로 설명한다. Zone은 추후 식별 근거 확보 시 확장한다. 기준축은 실측 검증과 구분하며 numeric 결과는 experimental/very_low로 제한한다. 기존 실데이터 격자·수심 검사 19 Site 통과, 최신 SDK 실시간 재수집은 시간 초과로 검증 미완료다.
+- 관측 UX: 최신 입수순 고정 head 페이지 정렬, 로딩 힌트, WITA 오늘 날짜, 날짜 한 번 선택, 출수 필수·50분 제안·직접 수정·명시적 다음 날 출수를 적용했다. schema 1.4를 도입하고 과거 nullable 출수·이미 성공한 멱등 요청을 보존한다. 빈 Peak 섹션은 숨기며 복원된 기존 사건·Zone·경로는 삭제하지 않는다.
+- 남은 연결: 공급자 요청 제한/지연 복구·공유 셀 요청 최적화, 실제 관측 구간 자동 환경 결합, 최신 trusted code를 사용하는 원격 수집→모델 갱신→검증→release chain, 실제 저장 cutoff/seal·홈페이지 반영 검증. 현장 정답은 자동 생성하지 않으며 관측 축적 전 숫자 예측 gate는 유지한다.
+- 검증: 독립 worktree의 typecheck·lint·production build 통과. 웹 단위/계약/HTTP 47개, 엔진 74개, 실제 Chrome 브라우저 회귀 1개(13개 항목) 통과. 최신순 테스트 2개는 수정 전 코드에서 실패를 재현했다. 실제 GitHub 관측 저장·배포는 수행하지 않았다.

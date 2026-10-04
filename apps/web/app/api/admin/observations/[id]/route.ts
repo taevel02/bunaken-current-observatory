@@ -116,7 +116,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const now = new Date().toISOString();
     const startAt = toUtc(body.local_start as string) as string;
     const endAt = toUtc(body.local_end as string | null);
-    if (endAt && endAt <= startAt) throw new ObservationStorageError("request_invalid", false, 422);
+    if (!endAt || endAt <= startAt) throw new ObservationStorageError("request_invalid", false, 422);
     const isWithinDive = (at: string) => Date.parse(at) >= Date.parse(startAt) && (endAt === null || Date.parse(at) <= Date.parse(endAt));
     const peakEvents = (body.peak_events as Array<{ local_at?: string | null; at?: string | null; depth_m?: number | null; zone_id?: string | null; duration_description?: string | null; context_description?: string | null }>).map((event) => {
       const at = event.local_at ? toUtc(event.local_at) : event.at ?? null;
@@ -139,7 +139,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     delete revisionFields.time_samples;
     const document = {
       ...revisionFields,
-      schema_version: "1.3",
+      schema_version: "1.4",
       observer_id: current.revision.observer_id,
       rubric_version: current.revision.rubric_version,
       revision: expectedRevision + 1,

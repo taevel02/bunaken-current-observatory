@@ -57,6 +57,9 @@ test("public observation exporter rejects unknown request fields and validates s
   const newRevision = { ...revision, schema_version: "1.3" };
   delete newRevision.time_samples;
   assert.equal(validateObservationRevision(newRevision).valid, true);
+  assert.equal(validateObservationRevision({ ...newRevision, schema_version: "1.4" }).valid, true);
+  assert.equal(validateObservationRevision({ ...newRevision, schema_version: "1.4", local_end: null, end_at: null }).valid, false);
+  assert.equal(validateObservationRevision({ ...newRevision, local_end: null, end_at: null }).valid, true);
   const correctedLegacyRevision = { ...revision, schema_version: "1.3", revision: 2, record_status: "corrected", correction_reason: "Preserve legacy samples", updated_at: "2026-09-27T03:02:00.000Z" };
   assert.equal(validateObservationRevision(correctedLegacyRevision).valid, true);
   const contextOnlyPeak = { ...revision, peak_events: [{ id: request.peak_events[0].id, local_at: null, at: null, depth_m: null, zone_id: null, pci: null, duration_description: null, context_description: "Current changed near the entrance.", vertical_direction: "unknown", vertical_intensity: null }] };

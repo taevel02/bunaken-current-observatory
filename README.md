@@ -62,3 +62,15 @@ The dashboard defaults to tomorrow in WITA and supports today through D+7. Korea
 ## Weighted Analog engine (P5)
 
 [Model execution and validation](docs/analog-engine.ko.md) covers revision eligibility, fixed feature masks, numeric gates, vertical evidence, forward and diagnostic validation, and immutable replay. [Copernicus licence evidence](docs/copernicus-license.ko.md) records the derived-data export policy. `collect --model-from-data --observer ... --rubric ...` reads public revision history and confirmed environmental bundles at one data head. Workflow model training uses the `MODEL_OBSERVER_ID` and `MODEL_RUBRIC_VERSION` repository variables. Numeric PCI remains null when actual field or source evidence is insufficient.
+
+### 관측 폼 브라우저 회귀 검증
+
+Playwright는 선택 검증 도구이며 서비스 런타임 의존성이 아니다. 별도 임시 디렉터리에 설치한 Playwright 모듈과 브라우저를 지정한다. 테스트는 합성 관리자·독립 Next.js 복사본을 사용하며 GitHub 자격증명을 비우고 모든 관측 저장 요청을 가로챈다. 실제 관측을 저장하지 않는다.
+
+```bash
+BUNAKEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs \
+BUNAKEN_BROWSER_EXECUTABLE=/absolute/path/to/browser \
+node --conditions=react-server --test apps/web/test/observation-browser.integration.mjs
+```
+
+1920×1080·360px, WITA 오늘 날짜, 50분 출수 제안·수동 변경, 시간 역전·다음 날 출수, 목록 로딩·기록 재선택, 빈 Peak 숨김, 저장 실패 시 입력 유지, 기존 초안 복원과 메타데이터 보존을 검사한다. 브라우저 모듈 미지정 시 이 선택 테스트는 명시적으로 skip한다. 스크린샷 위치는 `BUNAKEN_UI_ARTIFACT_DIR`로 지정하거나 시스템 임시 디렉터리를 사용한다.

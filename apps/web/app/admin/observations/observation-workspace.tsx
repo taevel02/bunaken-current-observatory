@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { messages } from "@/i18n/messages";
+import { DiveTimeFields } from "@/src/ui/dive-time-fields";
+import { combineDiveTimes, initialDiveTimes, todayWita } from "@/src/ui/dive-time.mjs";
 import { PCIReference } from "@/src/ui/pci-reference";
 import { SelectControl } from "@/src/ui/select-control";
 import { controlClass, fieldStyles, primaryButtonClass } from "@/src/ui/form-styles";
@@ -89,13 +91,17 @@ async function draft(action: "put" | "all" | "delete" | "clear", value?: Row) {
   });
 }
 
-export function ObservationWorkspace({ locale: initialLocale, observerAlias }: { locale: Locale; observerAlias: string | null }) {
+export function ObservationWorkspace({ locale: initialLocale, observerAlias, today }: { locale: Locale; observerAlias: string | null; today: string }) {
   const [locale, setLocale] = useState(initialLocale);
   const c = messages[locale];
   const t = c.observations as Record<string, string>;
   const [rows, setRows] = useState<Row[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listFailed, setListFailed] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [selected, setSelected] = useState<Row | null>(null);
+  const [correctionEpoch, setCorrectionEpoch] = useState(0);
   const [correctionDraft, setCorrectionDraft] = useState<Row | null>(null);
   const [id, setId] = useState(uuid());
   const [key, setKey] = useState(uuid());
@@ -106,7 +112,6 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   const [restore, setRestore] = useState<Row[]>([]);
   const [draftPayload, setDraftPayload] = useState<Row | null>(null);
   const [formEpoch, setFormEpoch] = useState(0);
-  const [peakId, setPeakId] = useState(uuid());
   const [correctionPCI, setCorrectionPCI] = useState(0);
   const [correctionNotes, setCorrectionNotes] = useState("");
   const [conflictPair, setConflictPair] = useState<{ old: Row; latest: Row } | null>(null);
@@ -126,6 +131,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   }
 
   async function load(cursor: string | null = null, append = false) {
+    setListLoading(true); setListFailed(false);
     try {
       const query = cursor ? `&cursor=${encodeURIComponent(cursor)}` : "";
       const r = await fetch(`/api/admin/observations?limit=50${query}`, { cache: "no-store" });
@@ -133,7 +139,8 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
       const page = (await r.json()).data;
       setRows((current) => append ? [...current, ...page.items] : page.items);
       setNextCursor(page.next_cursor);
-    } catch (error) { setMessage(error instanceof Error ? error.message : t.listError); }
+    } catch (error) { setListFailed(true); setMessage(error instanceof Error ? error.message : t.listError); }
+    finally { setListLoading(false); }
   }
   useEffect(() => { void load(); }, []);
   useEffect(() => { void fetch("/api/admin/session", { cache: "no-store" }).then(async (response) => { if (response.ok) setAlias((await response.json()).data.observer_alias); }).catch(() => undefined); }, []);
@@ -168,20 +175,16 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   function buildPayload(form: FormData): Row {
     const value = (name: string) => String(form.get(name) ?? "").trim();
     const num = (name: string) => value(name) === "" ? null : Number(value(name));
-    const local = (name: string) => value(name) || null;
-    const verticalOnsetTime = local("vertical_onset_at");
+    const verticalOnsetTime = combineDiveTimes(value("create_date"), "", value("vertical_onset_at"), Number(form.get("vertical_onset_day") ?? 0)).local_end;
     const verticalOnsetDepth = num("vertical_onset_depth");
     const verticalOnset = verticalOnsetTime || verticalOnsetDepth !== null
       ? { local_at: verticalOnsetTime, at: null, depth_m: verticalOnsetDepth }
       : null;
     return {
-      id, local_start: local("local_start"), local_end: local("local_end"), timezone: "Asia/Makassar", time_precision: String(form.get("time_precision")),
-      site_id: value("site_id"), zone_id: value("zone_id") || null, route_description: value("route_description"), representative_depth_m: num("representative_depth_m"),
+      id, ...combineDiveTimes(value("create_date"), value("create_start_time"), value("create_end_time"), Number(form.get("create_end_day") ?? 0)), timezone: "Asia/Makassar", time_precision: String(form.get("time_precision")),
+      site_id: value("site_id"), zone_id: draftPayload?.zone_id ?? null, route_description: draftPayload?.route_description ?? "", representative_depth_m: num("representative_depth_m"),
       overall_pci: num("overall_pci"), vertical: { direction: String(form.get("direction")), intensity: num("intensity") }, vertical_onset: verticalOnset,
-      confidence: String(form.get("confidence")), peak_events: (() => {
-        const event = { id: peakId, local_at: local("peak_at"), at: null, depth_m: num("peak_depth"), zone_id: value("peak_zone") || null, pci: num("peak_pci"), duration_description: value("peak_duration") || null, context_description: value("peak_context") || null, vertical_direction: String(form.get("peak_direction")), vertical_intensity: num("peak_intensity") };
-        return hasPeakDetails(event) ? [event] : [];
-      })(),
+      confidence: String(form.get("confidence")), peak_events: draftPayload?.peak_events ?? [],
       observed_temperature: value("temperature") === "" ? null : { celsius: num("temperature"), depth_m: null, at: null },
       notes_public: value("notes_public"), use_for_model: form.get("use_for_model") === "on",
     };
@@ -190,6 +193,14 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   function preserveDraft(form: HTMLFormElement, explicitConsent = false) {
     if ((!consent && !explicitConsent) || !draftsLoaded || (restore.some((item) => item.id === "active") && !draftPayload)) return;
     void draft("put", { id: "active", payload: buildPayload(new FormData(form)), key, savedAt: Date.now() }).catch(() => setMessage(t.draftUnavailable));
+  }
+
+  function changeRestoredPeaks(events: Row[], form: HTMLFormElement | null) {
+    setDraftPayload((current) => current ? { ...current, peak_events: events } : current);
+    if (consent && draftsLoaded && form) {
+      const payload = { ...buildPayload(new FormData(form)), peak_events: events };
+      void draft("put", { id: "active", payload, key, savedAt: Date.now() }).catch(() => setMessage(t.draftUnavailable));
+    }
   }
 
   function updateCorrection(field: string, value: unknown) {
@@ -224,7 +235,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const payload = pendingCreate?.id === id && pendingCreate.key === key ? pendingCreate.payload : buildPayload(form);
-    if (payload.local_end && payload.local_end <= payload.local_start) { setMessage(t.endBeforeStart); return; }
+    if (!pendingCreate && (!payload.local_end || payload.local_end <= payload.local_start)) { setMessage(t.endBeforeStart); return; }
     if ((payload.peak_events ?? []).some((event: Row) => event.pci !== null && event.pci < payload.overall_pci)) { setMessage(t.peakBelowOverall); return; }
     setBusy(true); setMessage(t.saving);
     setPendingCreate({ id, key, payload });
@@ -255,7 +266,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
         if (err.error.code === "idempotency_conflict") throw new Error(c.errors.idempotencyConflict);
         throw new Error(response.status >= 500 ? storageMessage(err.error) : t.invalid);
       }
-    formElement.reset(); setMessage(t.saved); setPendingCreate(null); await draft("delete", { id: "active" }).catch(() => undefined); setRestore([]); setDraftPayload(null); setId(uuid()); setKey(uuid()); setPeakId(uuid()); setFormEpoch((value) => value + 1); await load();
+    formElement.reset(); setMessage(t.saved); setPendingCreate(null); await draft("delete", { id: "active" }).catch(() => undefined); setRestore([]); setDraftPayload(null); setId(uuid()); setKey(uuid()); setFormEpoch((value) => value + 1); await load();
     } catch (error) {
       if (error instanceof Error && error.message === "SESSION") {
         setSessionExpired(true);
@@ -265,15 +276,20 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
   }
 
   async function openRow(row: Row) {
-    const response = await fetch(`/api/admin/observations/${row.id}`, { cache: "no-store" });
-    if (response.ok) { const data = { ...(await response.json()).data, etag: response.headers.get("etag") }; setSelected(data); setCorrectionDraft(data); setCorrectionPCI(data.overall_pci); setCorrectionNotes(data.notes_public ?? ""); setConflictPair(null); }
-    else setMessage(t.listError);
+    setDetailLoading(true);
+    try {
+      const response = await fetch(`/api/admin/observations/${row.id}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(t.listError);
+      const data = { ...(await response.json()).data, etag: response.headers.get("etag") };
+      setCorrectionEpoch((value) => value + 1); setSelected(data); setCorrectionDraft(data); setCorrectionPCI(data.overall_pci); setCorrectionNotes(data.notes_public ?? ""); setConflictPair(null);
+    } catch { setMessage(t.listError); }
+    finally { setDetailLoading(false); }
   }
 
   async function mutateSelected(action: "correct" | "withdraw") {
     if (!selected || !correctionDraft) return;
     if (action === "correct" && (correctionDraft.peak_events ?? []).some((event: Row) => !hasPeakDetails(event))) { setMessage(t.peakDetailsRequired); return; }
-    if (action === "correct" && correctionDraft.local_end && correctionDraft.local_end <= correctionDraft.local_start) { setMessage(t.endBeforeStart); return; }
+    if (action === "correct" && !(pendingMutation?.id === selected.id && pendingMutation?.action === action) && (!correctionDraft.local_end || correctionDraft.local_end <= correctionDraft.local_start)) { setMessage(t.endBeforeStart); return; }
     if (action === "correct" && (correctionDraft.peak_events ?? []).some((event: Row) => event.pci !== null && event.pci !== "" && Number(event.pci) < correctionPCI)) { setMessage(t.peakBelowOverall); return; }
     let pending = pendingMutation;
     if (!pending || pending.id !== selected.id || pending.action !== action) {
@@ -322,7 +338,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
       if (response.status === 401) throw new Error("SESSION");
       if (response.status === 409) {
         const latest = await fetch(`/api/admin/observations/${selected.id}`, { cache: "no-store" });
-        if (latest.ok) { const data = { ...(await latest.json()).data, etag: latest.headers.get("etag") }; setConflictPair({ old: selected, latest: data }); setSelected(data); setCorrectionDraft(data); }
+        if (latest.ok) { const data = { ...(await latest.json()).data, etag: latest.headers.get("etag") }; setConflictPair({ old: selected, latest: data }); setCorrectionEpoch((value) => value + 1); setSelected(data); setCorrectionDraft(data); }
         setPendingMutation(null);
         await draft("delete", { id: "pending-mutation" }).catch(() => undefined);
         setMessage(t.conflict);
@@ -346,38 +362,35 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
     }
   }
 
+  const onsetDay = initialDiveTimes(draftPayload?.local_start, draftPayload?.vertical_onset?.local_at, today).endDay;
   const draftVertical = draftPayload?.vertical as Row | undefined;
-  const draftPeaks = draftPayload?.peak_events as Row[] | undefined;
-  const showDiveDetails = Boolean(draftPayload?.local_end || draftPayload?.zone_id || draftPayload?.route_description || draftPayload?.representative_depth_m != null || draftPayload?.time_precision === "approximate");
+  const showDiveDetails = draftPayload?.time_precision === "approximate";
   const showVerticalDetails = Boolean((draftVertical?.direction && draftVertical.direction !== "unknown") || draftVertical?.intensity != null || draftPayload?.vertical_onset || draftPayload?.confidence === "high" || draftPayload?.confidence === "low");
-  const showPeakDetails = Boolean(draftPeaks?.length || draftPayload?.notes_public || (draftPayload?.observed_temperature as Row | null | undefined)?.celsius != null);
+  const showPeakDetails = Boolean(draftPayload?.notes_public || (draftPayload?.observed_temperature as Row | null | undefined)?.celsius != null);
 
   return <main className={ui.shell} lang={locale}>
     <header className={ui.header}><div className="grid min-w-0 gap-2"><p className={ui.eyebrow}>BUNAKEN · {alias ?? "ADMIN"}</p><h1 className={ui.title}>{t.title}</h1><p className="m-0">{t.publicWarning}</p></div><button className={ui.logout} onClick={async () => { await draft("clear").catch(() => undefined); try { const response = await fetch("/api/auth/csrf", { cache: "no-store" }); if (!response.ok) { window.location.assign(`/${locale}/admin/login`); return; } const csrf = (await response.json()).data.csrf_token; const result = await fetch("/api/auth/logout", { method: "POST", headers: { "x-csrf-token": csrf } }); if (result.ok) window.location.assign(`/${locale}/admin/login`); else setMessage(t.logoutError); } catch { setMessage(t.logoutError); } }}>{t.logout}</button></header>
     <nav className={ui.lang}><a className={ui.langLink} href="/ko/admin" aria-current={locale === "ko" ? "page" : undefined} onClick={(event) => { event.preventDefault(); switchLocale("ko"); }}>한국어</a><a className={ui.langLink} href="/en/admin" aria-current={locale === "en" ? "page" : undefined} onClick={(event) => { event.preventDefault(); switchLocale("en"); }}>English</a></nav>
     <section className={ui.layout}>
-      <form className={ui.form} key={formEpoch} onSubmit={save} onChange={(event) => { if ((event.nativeEvent.target as HTMLInputElement).name !== "draft_consent") preserveDraft(event.currentTarget); }}>
+      <form className={ui.form} key={formEpoch} onSubmit={save} onChange={(event) => { const form = event.currentTarget; if ((event.nativeEvent.target as HTMLInputElement).name !== "draft_consent" && !(event.target as HTMLElement).closest("[data-restored-peak]")) setTimeout(() => preserveDraft(form), 0); }}>
         <h2 className={ui.sectionTitle}>{t.newRecord}</h2>
         <fieldset disabled={busy || Boolean(pendingCreate)} className={ui.fields}>
         <section className={ui.requiredSection} aria-labelledby="required-heading">
           <div className="grid gap-2"><h3 className={ui.sectionHeading} id="required-heading">{t.requiredFieldsHeading}</h3>
           <p className={ui.help}>{t.requiredFieldsHelp}</p></div>
-          <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.dateTime}<b className={ui.requiredTag}>{t.required}</b></span><input name="local_start" type="datetime-local" defaultValue={(draftPayload?.local_start as string | undefined) ?? ""} required /></label>
+          <DiveTimeFields prefix="create" today={formEpoch === 0 ? today : todayWita()} initialStart={draftPayload?.local_start} initialEnd={draftPayload?.local_end} text={t} />
           <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.site}<b className={ui.requiredTag}>{t.required}</b></span><SelectControl name="site_id" required defaultValue={resolveSiteId(draftPayload?.site_id) ?? ""}><option value="" disabled>{t.sitePlaceholder}</option>{sites.map((site) => <option key={site.id} value={site.id}>{locale === "ko" ? site.name_ko : site.name_en}</option>)}</SelectControl></label>
           <label className={ui.fieldLabel}><span className="flex flex-wrap items-center gap-2">{t.pci}<b className={ui.requiredTag}>{t.required}</b></span><input name="overall_pci" type="number" inputMode="decimal" min="0" step="0.01" required defaultValue={draftPayload?.overall_pci as number | undefined} /></label>
           <small>{t.pciHelp}</small>
           <PCIReference locale={locale} />
+          <label className={ui.fieldLabel}><span>{t.representativeDepth} <span className={ui.optionalTag}>{t.optional}</span></span><input name="representative_depth_m" type="number" inputMode="decimal" min="0" max="200" step="0.1" defaultValue={draftPayload?.representative_depth_m ?? ""} /></label>
+          <small>{t.representativeDepthHelp}</small>
         </section>
         <details className={ui.optionalGroup} open={showDiveDetails}>
           <summary className={ui.summary}>{t.optionalDiveDetails}<span className={ui.optionalTag}>{t.optional}</span></summary>
           <div className={ui.optionalContent}>
-            <label className={ui.fieldLabel}>{t.endTime}<input name="local_end" type="datetime-local" defaultValue={(draftPayload?.local_end as string | null | undefined) ?? ""} /></label>
             <small>{t.wita}</small>
             <label className={ui.fieldLabel}>{t.timePrecision}<SelectControl name="time_precision" defaultValue={(draftPayload?.time_precision as string | undefined) ?? "reported_minute"}><option value="reported_minute">{t.minuteExact}</option><option value="approximate">{t.approximate}</option></SelectControl></label>
-            <label className={ui.fieldLabel}>{t.zone}<input name="zone_id" autoComplete="off" placeholder={t.unknown} defaultValue={draftPayload?.zone_id ?? ""} /></label>
-            <label className={ui.fieldLabel}>{t.routeDescription}<input name="route_description" maxLength={300} placeholder={t.routePlaceholder} defaultValue={draftPayload?.route_description ?? ""} /></label>
-            <label className={ui.fieldLabel}>{t.representativeDepth}<input name="representative_depth_m" type="number" inputMode="decimal" min="0" max="200" step="0.1" defaultValue={draftPayload?.representative_depth_m ?? ""} /></label>
-            <small>{t.representativeDepthHelp}</small>
           </div>
         </details>
         <details className={ui.optionalGroup} open={showVerticalDetails}>
@@ -388,7 +401,8 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
               <label className={ui.fieldLabel}>{t.intensity}<input name="intensity" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={(draftPayload?.vertical as Row | undefined)?.intensity ?? ""} /></label>
               <label className={ui.fieldLabel}>{t.confidence}<SelectControl name="confidence" defaultValue={draftPayload?.confidence as string ?? "normal"}><option value="high">{t.high}</option><option value="normal">{t.normal}</option><option value="low">{t.low}</option></SelectControl></label>
             </div>
-            <label className={ui.fieldLabel}>{t.verticalOnset}<input name="vertical_onset_at" type="datetime-local" defaultValue={(draftPayload?.vertical_onset as Row | null | undefined)?.local_at ?? ""} /></label>
+            <label className={ui.fieldLabel}>{t.verticalOnset}<input name="vertical_onset_at" type="time" defaultValue={(draftPayload?.vertical_onset as Row | null | undefined)?.local_at?.slice(11, 16) ?? ""} /></label>
+            <label className={ui.fieldLabel}>{t.onsetDay}<SelectControl name="vertical_onset_day" defaultValue={onsetDay}><option value="0">{t.sameDay}</option><option value="1">{t.nextDayOnset}</option>{onsetDay !== 0 && onsetDay !== 1 && <option value={onsetDay}>{draftPayload?.vertical_onset?.local_at?.slice(0, 10)}</option>}</SelectControl></label>
             <label className={ui.fieldLabel}>{t.onsetDepth}<input name="vertical_onset_depth" type="number" inputMode="decimal" min="0" max="200" step="0.1" defaultValue={(draftPayload?.vertical_onset as Row | null | undefined)?.depth_m ?? ""} /></label>
             <small>{t.verticalOnsetHelp}</small>
           </div>
@@ -396,55 +410,47 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
         <details className={ui.optionalGroup} open={showPeakDetails}>
           <summary className={ui.summary}>{t.peakAndNotes}<span className={ui.optionalTag}>{t.optional}</span></summary>
           <div className={ui.optionalContent}>
-            <p className={ui.help}>{t.peakHelp}</p>
-            <div className={ui.timePair}>
-              <label className={ui.fieldLabel}>{t.peakTime}<input name="peak_at" type="datetime-local" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.local_at as string | undefined) ?? ""} /></label>
-              <label className={ui.fieldLabel}>{t.peakPCI}<input name="peak_pci" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.pci ?? "") as number | string} /></label>
-              <label className={ui.fieldLabel}>{t.peakDepth}<input name="peak_depth" type="number" inputMode="decimal" min="0" max="200" step="0.1" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.depth_m ?? "") as number | string} /></label>
-              <label className={ui.fieldLabel}>{t.peakZone}<input name="peak_zone" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.zone_id ?? "") as string} /></label>
-            </div>
-            <label className={ui.fieldLabel}>{t.peakDuration}<input name="peak_duration" maxLength={300} placeholder={t.peakDurationPlaceholder} defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.duration_description ?? "") as string} /></label>
-            <label className={ui.fieldLabel}>{t.peakSituation}<textarea name="peak_context" maxLength={1000} rows={3} defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.context_description ?? "") as string} /></label>
-            <small>{t.peakSituationHelp}</small>
-            <div className={ui.timePair}>
-              <label className={ui.fieldLabel}>{t.peakDirection}<SelectControl name="peak_direction" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.vertical_direction as string) ?? "unknown"}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></SelectControl></label>
-              <label className={ui.fieldLabel}>{t.peakIntensity}<input name="peak_intensity" type="number" inputMode="decimal" min="0" step="0.01" defaultValue={((draftPayload?.peak_events as Row[] | undefined)?.[0]?.vertical_intensity ?? "") as number | string} /></label>
-              <label className={ui.fieldLabel}>{t.temperature}<input name="temperature" type="number" inputMode="decimal" min="-3" max="45" step="0.1" defaultValue={(draftPayload?.observed_temperature as Row | null | undefined)?.celsius ?? ""} /></label>
-            </div>
+            <label className={ui.fieldLabel}>{t.temperature}<input name="temperature" type="number" inputMode="decimal" min="-3" max="45" step="0.1" defaultValue={(draftPayload?.observed_temperature as Row | null | undefined)?.celsius ?? ""} /></label>
             <label className={ui.fieldLabel}>{t.notes}<textarea name="notes_public" maxLength={5000} rows={4} defaultValue={draftPayload?.notes_public as string | undefined} /></label>
             <small>{t.publicMemoHelp}</small>
           </div>
         </details>
+        {(draftPayload?.peak_events ?? []).length > 0 && <details className={ui.optionalGroup}>
+          <summary className={ui.summary}>{t.existingPeak}</summary><div className={ui.optionalContent}>
+          {(draftPayload?.peak_events ?? []).map((event: Row, index: number) => <fieldset data-restored-peak className={ui.sample} key={event.id}>
+            <legend>{t.peak} {index + 1}</legend><p className={ui.help}>{event.local_at ?? event.at ?? event.context_description}</p>
+            <label>{t.peakPCI}<input type="number" min="0" step="0.01" value={event.pci ?? ""} onChange={(input) => changeRestoredPeaks((draftPayload?.peak_events ?? []).map((item: Row, i: number) => i === index ? { ...item, pci: input.target.value === "" ? null : Number(input.target.value) } : item), input.currentTarget.closest("form"))} /></label>
+            <button type="button" className={ui.button} onClick={(event) => changeRestoredPeaks((draftPayload?.peak_events ?? []).filter((_: Row, i: number) => i !== index), event.currentTarget.closest("form"))}>{t.removePeak}</button>
+          </fieldset>)}</div></details>}
         <label className={ui.check}><input name="use_for_model" type="checkbox" defaultChecked={draftPayload?.use_for_model !== false} /><span>{t.modelUse}<b className={ui.optionalTag}>{t.optional}</b></span></label>
-        <label className={ui.check}><input name="draft_consent" type="checkbox" checked={consent} onChange={(event) => { const enabled = event.target.checked; setConsent(enabled); if (enabled) { setDraftsLoaded(false); setRestore([]); } else { setRestore([]); setDraftPayload(null); setDraftsLoaded(false); void draft("clear").catch(() => setMessage(t.draftUnavailable)); } }} /><span>{t.draftConsent}<b className={ui.optionalTag}>{t.optional}</b></span></label>
-        {restore.some((x) => x.id === "active") && <button type="button" className={ui.button} onClick={() => { const item = restore.find((x) => x.id === "active"); if (!item) return; setDraftPayload(item.payload); setId(item.payload.id); setKey(item.key); if (item.pendingCreate) setPendingCreate({ id: item.payload.id, key: item.key, payload: item.payload }); const peak = (item.payload.peak_events as Row[] | undefined)?.[0]; setPeakId((peak?.id as string) ?? uuid()); setFormEpoch((value) => value + 1); setMessage(t.restoreManual); }}>{t.restoreDraft}</button>}
-        {restore.some((x) => x.id === "pending-mutation") && <button type="button" className={ui.button} onClick={() => { const item = restore.find((x) => x.id === "pending-mutation"); if (!item?.pendingMutation) return; const pending = item.pendingMutation; setPendingMutation(pending); void fetch(`/api/admin/observations/${pending.id}`, { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error(); const data = { ...(await response.json()).data, etag: pending.etag }; setSelected(data); setCorrectionDraft(pending.record); setCorrectionPCI(pending.pci); setCorrectionNotes(pending.notes); }).catch(() => setMessage(t.listError)); }}>{t.retryMutation}</button>}
+        <label className={ui.check}><input name="draft_consent" type="checkbox" checked={consent} onChange={(event) => { const enabled = event.target.checked; setConsent(enabled); if (enabled) { setDraftsLoaded(false); setRestore([]); } else { setRestore([]); setDraftsLoaded(false); void draft("clear").catch(() => setMessage(t.draftUnavailable)); } }} /><span>{t.draftConsent}<b className={ui.optionalTag}>{t.optional}</b></span></label>
+        {restore.some((x) => x.id === "active") && <button type="button" className={ui.button} onClick={() => { const item = restore.find((x) => x.id === "active"); if (!item) return; setDraftPayload(item.payload); setId(item.payload.id); setKey(item.key); if (item.pendingCreate) setPendingCreate({ id: item.payload.id, key: item.key, payload: item.payload }); setFormEpoch((value) => value + 1); setMessage(t.restoreManual); }}>{t.restoreDraft}</button>}
+        {restore.some((x) => x.id === "pending-mutation") && <button type="button" className={ui.button} onClick={() => { const item = restore.find((x) => x.id === "pending-mutation"); if (!item?.pendingMutation) return; const pending = item.pendingMutation; setPendingMutation(pending); void fetch(`/api/admin/observations/${pending.id}`, { cache: "no-store" }).then(async (response) => { if (!response.ok) throw new Error(); const data = { ...(await response.json()).data, etag: pending.etag }; setCorrectionEpoch((value) => value + 1); setSelected(data); setCorrectionDraft(pending.record); setCorrectionPCI(pending.pci); setCorrectionNotes(pending.notes); }).catch(() => setMessage(t.listError)); }}>{t.retryMutation}</button>}
         </fieldset>
         <p className={ui.notice}>{t.publicWarning}</p>
         <div className={ui.formActions}><button className={ui.primary} disabled={busy}>{busy ? t.saving : pendingCreate ? t.retryMutation : t.save}</button>{sessionExpired && <p><a target="_blank" rel="noreferrer" href={`/${locale}/admin/login?returnTo=${encodeURIComponent(`/${locale}/admin`)}&recover_draft=1`}>{t.relogin}</a></p>}<p role="status" aria-live="polite">{message}</p></div>
       </form>
-      <section className={ui.records}><h2 className={ui.sectionTitle}>{t.records}</h2>{rows.length === 0 ? <p>{t.empty}</p> : rows.map((row) => <button className={ui.record} key={row.id} disabled={Boolean(pendingMutation)} onClick={() => void openRow(row)}><strong>{siteLabel(row.site_id, locale)}</strong><span>{row.local_start}</span><span>PCI {row.overall_pci} · rev {row.revision}</span></button>)}{nextCursor && <button className={`${ui.button} mt-4`} onClick={() => void load(nextCursor, true)}>{t.moreRecords}</button>}
+      <section className={ui.records} aria-busy={listLoading || detailLoading}><h2 className={ui.sectionTitle}>{t.records}<span className="ml-3 text-sm font-normal text-[#55716a]">{t.newestFirst}</span></h2>{(listLoading || detailLoading) && <p role="status" aria-live="polite">{t.loadingRecords}</p>}{rows.length === 0 ? (!listLoading && !listFailed ? <p>{t.empty}</p> : null) : rows.map((row) => <button className={ui.record} key={row.id} disabled={Boolean(pendingMutation) || detailLoading} onClick={() => void openRow(row)}><strong>{siteLabel(row.site_id, locale)}</strong><span>{row.local_start}</span><span>PCI {row.overall_pci} · rev {row.revision}</span></button>)}{nextCursor && <button className={`${ui.button} mt-4`} disabled={listLoading} onClick={() => void load(nextCursor, true)}>{t.moreRecords}</button>}
         {selected && <article className={ui.detail}>
           <button className={ui.close} disabled={Boolean(pendingMutation)} onClick={() => setSelected(null)}>{t.close}</button>
           <h3>{siteLabel(selected.site_id, locale)}</h3>
           <p>{selected.local_start} · PCI {selected.overall_pci} · rev {selected.revision}</p>
           <fieldset className={ui.fields} disabled={Boolean(pendingMutation)}>
             <details className={ui.optionalGroup}><summary className={ui.summary}>{t.correctFields}</summary><div className={ui.optionalContent}>
-              <label>{t.dateTime}<input type="datetime-local" value={correctionDraft?.local_start ?? ""} onChange={(event) => updateCorrection("local_start", event.target.value)} /></label>
+              <DiveTimeFields key={`${selected.id}:${selected.revision}:${correctionEpoch}`} prefix="correct" today={today} initialStart={correctionDraft?.local_start} initialEnd={correctionDraft?.local_end} text={t} onChange={(times) => setCorrectionDraft((current) => current ? { ...current, ...times } : current)} />
               <label>{t.timePrecision}<SelectControl value={correctionDraft?.time_precision ?? ""} onChange={(event) => updateCorrection("time_precision", event.target.value)}><option value="reported_minute">{t.minuteExact}</option><option value="approximate">{t.approximate}</option></SelectControl></label>
               <label>{t.site}<SelectControl value={resolveSiteId(correctionDraft?.site_id) ?? ""} onChange={(event) => updateCorrection("site_id", event.target.value)}><option value="" disabled>{t.sitePlaceholder}</option>{sites.map((site) => <option key={site.id} value={site.id}>{locale === "ko" ? site.name_ko : site.name_en}</option>)}</SelectControl></label>
-              <label>{t.zone}<input value={correctionDraft?.zone_id ?? ""} onChange={(event) => updateCorrection("zone_id", event.target.value)} /></label>
-              <label>{t.endTime}<input type="datetime-local" value={correctionDraft?.local_end ?? ""} onChange={(event) => updateCorrection("local_end", event.target.value || null)} /></label>
-              <label>{t.routeDescription}<input maxLength={300} value={correctionDraft?.route_description ?? ""} onChange={(event) => updateCorrection("route_description", event.target.value)} /></label>
+              {correctionDraft?.zone_id && <label>{t.zone}<input value={correctionDraft.zone_id} onChange={(event) => updateCorrection("zone_id", event.target.value)} /></label>}
+              {correctionDraft?.route_description && <label>{t.routeDescription}<input maxLength={300} value={correctionDraft.route_description} onChange={(event) => updateCorrection("route_description", event.target.value)} /></label>}
               <label>{t.representativeDepth}<input type="number" inputMode="decimal" min="0" max="200" step="0.1" value={correctionDraft?.representative_depth_m ?? ""} onChange={(event) => updateCorrection("representative_depth_m", event.target.value)} /></label>
               <label>{t.vertical}<SelectControl value={correctionDraft?.vertical?.direction ?? "unknown"} onChange={(event) => updateCorrectionVertical("direction", event.target.value)}><option value="unknown">{t.unknown}</option><option value="none">{t.none}</option><option value="down">{t.down}</option><option value="up">{t.up}</option><option value="mixed">{t.mixed}</option></SelectControl></label>
               <label>{t.intensity}<input type="number" inputMode="decimal" min="0" step="0.01" value={correctionDraft?.vertical?.intensity ?? ""} onChange={(event) => updateCorrectionVertical("intensity", event.target.value)} /></label>
               <label>{t.confidence}<SelectControl value={correctionDraft?.confidence ?? "normal"} onChange={(event) => updateCorrection("confidence", event.target.value)}><option value="high">{t.high}</option><option value="normal">{t.normal}</option><option value="low">{t.low}</option></SelectControl></label>
               <label>{t.temperature}<input type="number" inputMode="decimal" min="-3" max="45" step="0.1" value={correctionDraft?.observed_temperature?.celsius ?? ""} onChange={(event) => updateCorrectionTemperature(event.target.value)} /></label>
-              <fieldset className={ui.sample}><legend>{t.verticalOnset}</legend>
+              {correctionDraft?.vertical_onset && <fieldset className={ui.sample}><legend>{t.verticalOnset}</legend>
                 <label>{t.onsetTime}<input type="datetime-local" value={correctionDraft?.vertical_onset?.local_at ?? ""} onChange={(event) => setCorrectionDraft((current) => current ? { ...current, vertical_onset: event.target.value ? { ...(current.vertical_onset ?? { at: null, depth_m: null }), local_at: event.target.value } : null } : current)} /></label>
                 <label>{t.onsetDepth}<input type="number" inputMode="decimal" min="0" max="200" step="0.1" value={correctionDraft?.vertical_onset?.depth_m ?? ""} onChange={(event) => setCorrectionDraft((current) => current ? { ...current, vertical_onset: { ...(current.vertical_onset ?? { local_at: null, at: null }), depth_m: event.target.value === "" ? null : Number(event.target.value) } } : current)} /></label>
-              </fieldset>
+              </fieldset>}
               {(correctionDraft?.peak_events ?? []).map((event: Row, index: number) => <fieldset className={ui.sample} key={event.id ?? index}><legend>{t.peak} {index + 1}</legend>
                 <label>{t.peakTime}<input type="datetime-local" value={event.local_at ?? (event.at ? utcToWitaLocal(event.at) : "")} onChange={(input) => updateCorrectionPeak(index, "local_at", input.target.value || null)} /></label>
                 <label>{t.peakPCI}<input type="number" inputMode="decimal" min="0" step="0.01" value={event.pci ?? ""} onChange={(input) => updateCorrectionPeak(index, "pci", input.target.value)} /></label>
@@ -456,7 +462,7 @@ export function ObservationWorkspace({ locale: initialLocale, observerAlias }: {
                 <label>{t.peakSituation}<textarea maxLength={1000} rows={3} value={event.context_description ?? ""} onChange={(input) => updateCorrectionPeak(index, "context_description", input.target.value)} /></label>
                 <button type="button" className={ui.button} onClick={() => setCorrectionDraft((current) => current ? { ...current, peak_events: (current.peak_events ?? []).filter((_: Row, i: number) => i !== index) } : current)}>{t.removePeak}</button>
               </fieldset>)}
-              <button type="button" className={ui.button} disabled={(correctionDraft?.peak_events ?? []).length >= 20} onClick={() => setCorrectionDraft((current) => current ? { ...current, peak_events: [...(current.peak_events ?? []), { id: uuid(), local_at: null, at: null, pci: null, depth_m: null, zone_id: null, vertical_direction: "unknown", vertical_intensity: null, duration_description: null, context_description: null }] } : current)}>{t.addPeak}</button>
+
             </div></details>
             <label>{t.correctedPCI}<input type="number" inputMode="decimal" min="0" step="0.01" value={correctionPCI} onChange={(event) => setCorrectionPCI(Number(event.target.value))} /></label>
             <label>{t.notes}<textarea maxLength={5000} rows={4} value={correctionNotes} onChange={(event) => setCorrectionNotes(event.target.value)} /></label>

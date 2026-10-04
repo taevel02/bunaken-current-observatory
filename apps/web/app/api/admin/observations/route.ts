@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const startAt = localTimeToUtc(requestBody.local_start);
     const endAt = requestBody.local_end === null ? null : localTimeToUtc(requestBody.local_end);
-    if (endAt && endAt <= startAt) throw new ObservationStorageError("request_invalid", false, 422);
+    if (!endAt || endAt <= startAt) throw new ObservationStorageError("request_invalid", false, 422);
     if (requestBody.peak_events.some((event: { pci: number | null }) => event.pci !== null && event.pci < requestBody.overall_pci)) {
       throw new ObservationStorageError("request_invalid", false, 422);
     }
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     const revisionDocument: Record<string, unknown> = {
       ...requestFields,
-      schema_version: "1.3",
+      schema_version: "1.4",
       observer_id: observerId,
       rubric_version: "pci-overall-v1",
       revision: 1,
