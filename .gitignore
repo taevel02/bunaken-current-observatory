@@ -3,6 +3,7 @@
 !.env.example
 .next/
 node_modules/
+.pnpm-store/
 engine/.venv/
 __pycache__/
 *.py[cod]
