@@ -36,7 +36,7 @@ function decodeCursor(cursor) {
   if (typeof cursor !== "string" || cursor.length > 512) throw new ObservationStorageError("request_invalid", false, 400);
   try {
     const decoded = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
-    if (!SHA.test(decoded.head) || !Number.isSafeInteger(decoded.offset) || decoded.offset < 1) throw new Error("invalid_cursor");
+    if (!SHA.test(decoded.head) || !Number.isSafeInteger(decoded.offset) || decoded.offset < 1 || decoded.order !== "dive_start_desc_v1") throw new Error("invalid_cursor");
     return decoded;
   } catch {
     throw new ObservationStorageError("request_invalid", false, 400);
@@ -61,15 +61,18 @@ export async function listObservations(store, { limit = 20, cursor = null } = {}
   const head = page?.head ?? await store.getHead();
   const offset = page?.offset ?? 0;
   const ids = [...new Set(await store.listDirectory("observations", head))].filter((id) => UUID.test(id)).sort();
-  const pageIds = ids.slice(offset, offset + limit);
-  const observations = (await mapLimit(pageIds, 8, async (id) => {
+  const observations = (await mapLimit(ids, 8, async (id) => {
     const result = await readObservation(store, id, head);
     return result?.revision ?? null;
   })).filter(Boolean);
-  const items = observations;
-  const nextOffset = offset + pageIds.length;
-  const nextCursor = nextOffset < ids.length
-    ? Buffer.from(JSON.stringify({ head, offset: nextOffset })).toString("base64url")
+  observations.sort((a, b) => {
+    const newest = (row) => row.start_at ?? row.local_start ?? row.created_at ?? row.updated_at ?? "";
+    return newest(b).localeCompare(newest(a)) || (b.created_at ?? "").localeCompare(a.created_at ?? "") || a.id.localeCompare(b.id);
+  });
+  const items = observations.slice(offset, offset + limit);
+  const nextOffset = offset + items.length;
+  const nextCursor = nextOffset < observations.length
+    ? Buffer.from(JSON.stringify({ head, offset: nextOffset, order: "dive_start_desc_v1" })).toString("base64url")
     : null;
   return { items, next_cursor: nextCursor, data_commit_sha: head };
 }

@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { GitHubDataError } from "../src/server/github-data-store.mjs";
@@ -22,7 +23,8 @@ function fakeStore() {
     files,
     reads,
     async getHead() { return head; },
-    async getFile(path) {
+    async getFile(path, requestedHead) {
+      assert.equal(requestedHead, head);
       reads.push(path);
       if (!files.has(path)) throw new GitHubDataError("file_not_found", 404);
       return files.get(path);
@@ -32,14 +34,15 @@ function fakeStore() {
   };
 }
 
-test("lists observations in stable ID order and reads only the requested page", async () => {
+test("lists newest dives first with stable head pagination", async () => {
   const store = fakeStore();
   const firstPage = await listObservations(store, { limit: 1 });
-  assert.equal(firstPage.items[0].id, firstId);
-  assert.deepEqual(store.reads, [`observations/${firstId}/current.json`, `observations/${firstId}/revisions/000001.json`]);
+  assert.equal(firstPage.items[0].id, secondId);
+  assert.equal(store.reads.length, 4);
+  assert.equal(JSON.parse(Buffer.from(firstPage.next_cursor, "base64url")).order, "dive_start_desc_v1");
   assert.ok(firstPage.next_cursor);
   const secondPage = await listObservations(store, { limit: 1, cursor: firstPage.next_cursor });
-  assert.equal(secondPage.items[0].id, secondId);
+  assert.equal(secondPage.items[0].id, firstId);
   assert.equal(secondPage.next_cursor, null);
 });
 
@@ -61,4 +64,18 @@ test("resolves a stored idempotency result and distinguishes an absent key", asy
   });
   assert.deepEqual(await readRequestStatus(store, "3".repeat(64)), { found: false });
   await assert.rejects(readRequestStatus(store, "1".repeat(64), "4".repeat(64)), (error) => error instanceof ObservationStorageError && error.code === "idempotency_conflict");
+});
+
+test("dive chronology wins over revision update and rejects obsolete cursor order", async () => {
+  const store = fakeStore();
+  for (const [id, revision, start] of [[firstId,1,"2026-09-28T03:00:00.000Z"],[secondId,2,"2026-09-27T03:00:00.000Z"]]) {
+    const path = `observations/${id}/revisions/${String(revision).padStart(6,"0")}.json`;
+    store.files.set(path, JSON.stringify({...JSON.parse(store.files.get(path)),start_at:start}));
+  }
+  assert.equal((await listObservations(store)).items[0].id, firstId);
+  const firstPage = await listObservations(store, {limit:1});
+  store.getHead = async () => { throw new Error("cursor must retain original head"); };
+  assert.equal((await listObservations(store,{limit:1,cursor:firstPage.next_cursor})).items[0].id, secondId);
+  const old = Buffer.from(JSON.stringify({head,offset:1})).toString("base64url");
+  await assert.rejects(listObservations(store,{cursor:old}), error => error.code === "request_invalid");
 });
