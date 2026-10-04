@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import process from "node:process";
 import { createServer } from "node:net";
 import { spawn } from "node:child_process";
@@ -59,6 +59,8 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   const temporaryRoot = await mkdtemp(join(tmpdir(), "bunaken-auth-http-"));
   const isolatedApp = join(temporaryRoot, "apps", "web");
   await cp(appDirectory, isolatedApp, { recursive: true, filter: (source) => !source.includes("/node_modules") && !source.includes("/.next") && !source.split("/").at(-1).startsWith(".env") });
+  await mkdir(join(temporaryRoot, "config"), { recursive: true });
+  await cp(resolve(appDirectory, "../../config/source-registry.json"), join(temporaryRoot, "config", "source-registry.json"));
   await symlink(join(appDirectory, "node_modules"), join(isolatedApp, "node_modules"), "dir");
   const port = await availablePort();
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -221,10 +223,10 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   const providerFailureBody = await providerFailure.json();
   const retryFailure = await saveWithMissingProvider();
   assert.equal(providerFailure.status, 503);
-  assert.equal(providerFailureBody.error.code, "storage_unavailable");
+  assert.equal(providerFailureBody.error.code, "storage_configuration_invalid");
   assert.equal(providerFailureBody.error.retryable, false);
   assert.equal(retryFailure.status, 503);
-  assert.equal((await retryFailure.json()).error.code, "storage_unavailable");
+  assert.equal((await retryFailure.json()).error.code, "storage_configuration_invalid");
   assert.equal(providerFailure.headers.get("cache-control"), "private, no-store");
   const adminPage = await globalThis.fetch(`${baseUrl}/admin`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(adminPage.status, 200);
