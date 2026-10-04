@@ -88,7 +88,7 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 완료 근거: MODEL-03, MODEL-05, SNAP-01–02, OPS-01. 실제 dataset ID와 좌표의 검증 evidence를 운영 문서에 남긴다.
 
-P3-01/02 코드 완료 근거: `config/source-registry.json`, `config/geometry.json`, `engine/bunaken_engine/registry.py`, `docs/environment-sources.ko.md`. Python 3.14.7/uv에서 10개 테스트 통과. 초기에는 19개 Site를 null/unverified로 등록했다. 이후 사용자 확인 대표 입수 좌표를 반영했고, 2026-10-03에는 모든 Site의 대표 수심 18m를 coordinates_depth_verified로 반영했다. 방향·격자 거리와 Zone은 미확정이다. Copernicus 라이선스 원문 접근 실패로 공개 export를 차단했다. 전체 geometry와 일부 공급원의 metadata·공개 재배포 조건은 운영 연결 의존이다. 관련 기준: MODEL-03, MODEL-05.
+P3-01/02 코드 완료 근거: `config/source-registry.json`, `config/geometry.json`, `engine/bunaken_engine/registry.py`, `docs/environment-sources.ko.md`. Python 3.14.7/uv에서 10개 테스트 통과. 초기에는 19개 Site를 null/unverified로 등록했다. 이후 사용자 확인 대표 입수 좌표를 반영했고, 2026-10-03에는 모든 Site의 대표 수심 18m를 coordinates_depth_verified로 반영했다. 방향·격자 거리와 Zone은 미확정이다. 초기에는 Copernicus 라이선스 원문 접근 실패로 공개 export를 차단했다. 2026-10-04 사용자 제공 원문 PDF §2.2/2.4/2.6을 확인하여 파생 샘플 공개를 허용했다(`docs/copernicus-license.ko.md`). 전체 geometry와 일부 공급원의 metadata·공개 재배포 조건은 운영 연결 의존이다. 관련 기준: MODEL-03, MODEL-05.
 
 P3-03/04 구현 근거: `sources.py`의 공식 SDK/고정 모델 adapter와 `features.py`의 바다 셀·해저 수심·벡터·보간·구간 요약. core 20개/provider SDK-backed mock 2개 검증 통과. 실제 Copernicus catalogue에서 dataset version 202406과 50개 depth 좌표를 조회했다. 초기 검증에서는 live 수집을 실행하지 않았으며, 2026-10-01 실제 FES atlas 수집·독립 비교·adapter 확인을 완료했다. source age 또는 FES reference conformance가 확인되지 않으면 운영 적격으로 쓰지 않는다. P3-05의 실행 가능한 조석 historical 분포 수집·부분 scaler는 아래 추가 검증 기록에 따라 완료했다. 다른 공급원·geometry 의존 feature는 명시적으로 비활성이다.
 
@@ -110,16 +110,18 @@ P3-08 구현 근거: `.github/workflows/environment.yml`과 `ops/workflows/data-
 
 ## 8 P5 Analog와 검증
 
-- [ ] P5-01 overall/peak/legacy label scope, observer/rubric, use_for_model, 최신 유효 revision의 적격 필터를 구현한다.
-- [ ] P5-02 같은 목표 mask, 환경 거리, Site·quality·provenance 가중치와 결정적인 이웃 정렬을 구현한다.
-- [ ] P5-03 numeric gate와 N_eff/N_eff_days, 같은 Site/Zone 날짜 수를 계산한다.
-- [ ] P5-04 support 단계는 표본 조건과 검증 조건을 함께 검사한다. 검증 기준 미설정 시 Medium/High를 승격하지 않는다.
-- [ ] P5-05 별도 적격 수직 관측 집합에서 evidence를 계산한다. unknown 제외와 none 구분을 검증한다.
-- [ ] P5-06 날짜별 전진 검증과 진단용 LODO를 분리한다. scaler·bias·튜닝을 training 범위 안에 둔다.
-- [ ] P5-07 전체/Site median baseline, MAE·큰 오차·제공률·abstention을 같은 test 조건에서 보고한다.
-- [ ] P5-08 모델·scaler·feature·geometry·dataset manifest를 고정하여 재현 가능한 실행을 만든다.
+- [x] P5-01 overall/peak/legacy label scope, observer/rubric, use_for_model, 최신 유효 revision의 적격 필터를 구현한다.
+- [x] P5-02 같은 목표 mask, 환경 거리, Site·quality·provenance 가중치와 결정적인 이웃 정렬을 구현한다.
+- [x] P5-03 numeric gate와 N_eff/N_eff_days, 같은 Site/Zone 날짜 수를 계산한다.
+- [x] P5-04 support 단계는 표본 조건과 검증 조건을 함께 검사한다. 검증 기준 미설정 시 Medium/High를 승격하지 않는다.
+- [x] P5-05 별도 적격 수직 관측 집합에서 evidence를 계산한다. unknown 제외와 none 구분을 검증한다.
+- [x] P5-06 날짜별 전진 검증과 진단용 LODO를 분리한다. scaler·bias·튜닝을 training 범위 안에 둔다.
+- [x] P5-07 전체/Site median baseline, MAE·큰 오차·제공률·abstention을 같은 test 조건에서 보고한다.
+- [x] P5-08 모델·scaler·feature·geometry·dataset manifest를 고정하여 재현 가능한 실행을 만든다.
 
 완료 근거: MODEL-01–05, VAL-01, SNAP-01–02. 합성 데이터에서 알고리즘이 정상 동작하는 것과 실제 예측력이 입증된 것은 구분한다. 초기 label이 부족하면 실제 공개 출력은 계속 null이어야 한다.
+
+P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_input.py`, `validation.py`, snapshot/model-context 계약과 `docs/analog-engine.ko.md`. 최신 revision·실제 저장 cutoff·같은 WITA 날짜/관측 ID 분리, 고정 mask·이웃/ESS·수직 근거, baseline·abstention, trusted 역사 설정으로 원자료부터 재현하여 변조를 거부하는 경계를 구현했다. 합성 integration에서 numeric PCI와 공개 release 생성·버전 변경 후 replay를 검증한다. 실제 data branch는 4개 revision을 읽었으며 현재 적격 label 0개(관측 대표 수심 미입력), 확인된 학습 환경 bundle 0개다. 실제 Copernicus 19개 Site/18m 파생 샘플 456개가 유효하나 격자 거리·방향의 현장 대표성은 미확정이며 실제 예측력 검증 완료를 뜻하지 않는다. 큰 오차·High 기준은 null로 유지하고 Medium/High를 승격하지 않는다.
 
 ## 9 P6 연구 발행
 

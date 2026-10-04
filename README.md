@@ -55,6 +55,10 @@ Representative entry coordinates and the 18 m reference depth are confirmed for 
 
 ## Public dashboard (P4)
 
-The dashboard defaults to tomorrow in WITA and supports today through D+7. Korean and English views include site comparison, tides, observations, PCI reference, methodology and source status. Numeric PCI remains null until the model gates are implemented and satisfied.
+The dashboard defaults to tomorrow in WITA and supports today through D+7. Korean and English views include site comparison, tides, observations, PCI reference, methodology and source status. Numeric PCI remains null until the model gates are satisfied.
 
 [Public release runbook](docs/public-dashboard.ko.md) covers schema/hash validation, compressed artifacts, atomic publication and cache behavior. [Private provider research](docs/provider-research.ko.md) covers bounded historical collection and deferred field validation. Public reads use the server-side `GITHUB_OWNER` and `GITHUB_REPO`; they do not use the write token.
+
+## Weighted Analog engine (P5)
+
+[Model execution and validation](docs/analog-engine.ko.md) covers revision eligibility, fixed feature masks, numeric gates, vertical evidence, forward and diagnostic validation, and immutable replay. [Copernicus licence evidence](docs/copernicus-license.ko.md) records the derived-data export policy. `collect --model-from-data --observer ... --rubric ...` reads public revision history and confirmed environmental bundles at one data head. Workflow model training uses the `MODEL_OBSERVER_ID` and `MODEL_RUBRIC_VERSION` repository variables. Numeric PCI remains null when actual field or source evidence is insufficient.
