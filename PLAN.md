@@ -121,7 +121,7 @@ P3-08 구현 근거: `.github/workflows/environment.yml`과 `ops/workflows/data-
 
 완료 근거: MODEL-01–05, VAL-01, SNAP-01–02. 합성 데이터에서 알고리즘이 정상 동작하는 것과 실제 예측력이 입증된 것은 구분한다. 초기 label이 부족하면 실제 공개 출력은 계속 null이어야 한다.
 
-P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_input.py`, `validation.py`, snapshot/model-context 계약과 `docs/analog-engine.ko.md`. 최신 revision·실제 저장 cutoff·같은 WITA 날짜/관측 ID 분리, 고정 mask·이웃/ESS·수직 근거, baseline·abstention, trusted 역사 설정으로 원자료부터 재현하여 변조를 거부하는 경계를 구현했다. 합성 integration에서 numeric PCI와 공개 release 생성·버전 변경 후 replay를 검증한다. 실제 data branch는 4개 revision을 읽었으며 현재 적격 label 0개(관측 대표 수심 미입력), 확인된 학습 환경 bundle 0개다. 실제 Copernicus 19개 Site/18m 파생 샘플 456개가 유효하나 격자 거리·방향의 현장 대표성은 미확정이며 실제 예측력 검증 완료를 뜻하지 않는다. 큰 오차·High 기준은 null로 유지하고 Medium/High를 승격하지 않는다.
+P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_input.py`, `validation.py`, snapshot/model-context 계약과 `docs/analog-engine.ko.md`. 최신 revision·실제 저장 cutoff·같은 WITA 날짜/관측 ID 분리, 고정 mask·이웃/ESS·수직 근거, baseline·abstention, trusted 역사 설정으로 원자료부터 재현하여 변조를 거부하는 경계를 구현했다. 합성 integration에서 numeric PCI와 공개 release 생성·버전 변경 후 replay를 검증한다. 실제 data branch는 4개 revision을 읽었으며 현재 적격 label 0개(관측 대표 수심 미입력), 확인된 학습 환경 bundle 0개다. 실제 Copernicus 19개 Site/18m 파생 샘플 456개가 유효하다. 2026-10-04 사용자 승인에 따라 허용 거리 6km·지도 진행/외해 근사축을 reference_geometry로 등록했다. target 또는 선택 analog가 이 기준이면 experimental/very_low로 제한하며 실제 예측력 검증 완료를 뜻하지 않는다. Zone은 위치 근거 확보 전 미등록이다. 큰 오차·High 기준은 null로 유지하고 Medium/High를 승격하지 않는다.
 
 ## 9 P6 연구 발행
 
