@@ -8,7 +8,7 @@
 
 ## 지도 방향 기본값
 
-2026-10-04 사용자 지도에서 빨간 화살표는 진행 방향, 파란 화살표는 외해 방향이다. 지도 위쪽이 북쪽이라는 가정으로 화살표 몸통의 시작·끝 픽셀을 읽어 `atan2(dx, -dy)`를 계산하고 15° 단위로 반올림했다. 손그림의 정확도를 정밀 방위각으로 가장하지 않는다. 이미지 SHA-256·픽셀·해석·승인 날짜는 각 Site의 direction_reference에 보존한다.
+2026-10-04 사용자 지도에서 빨간 화살표는 진행 방향, 파란 화살표는 외해 방향이다. 지도 위쪽이 북쪽이라는 가정으로 화살표 몸통의 시작·끝 픽셀을 읽어 `atan2(dx, -dy)`를 계산하고 15° 단위로 반올림했다. 손그림의 정확도를 정밀 방위각으로 가장하지 않는다. 원 이미지(2286×1750)와 판독 프레임(1797×1376)의 크기를 구분한다. 화살표 픽셀은 판독 프레임 기준이다. 이미지 SHA-256·픽셀·해석·승인 날짜는 각 Site의 direction_reference에 보존한다.
 
 schema_version 1.3의 `reference_geometry`는 사용자가 승인한 근사 기준이며 실측 검증 상태 `verified`와 다르다. `wall_bearing_deg`는 이 상태에서 빨간 진행축의 기본값이다. 실제 벽의 접선이나 늘 일정한 다이빙 진행 방향을 뜻하지 않는다. 각 축에 `u*sin(b)+v*cos(b)`로 독립 투영한다. 두 축을 직각으로 강제 수정하지 않고 직교 벡터 성분으로 재구성하지 않는다. 기존 `verified`의 직교 검증은 유지한다.
 
@@ -68,7 +68,7 @@ schema_version 1.3의 `reference_geometry`는 사용자가 승인한 근사 기�
 
 Zone은 현재 위치를 특정할 자료가 없어 등록하지 않는다(`zones: []`). 가상의 Zone 좌표나 그룹을 생성하지 않는다. Site 수준 관측과 예측은 계속 가능하다. GPS가 가능한 장비나 구간을 식별할 근거가 생긴 뒤 별도 geometry version으로 추가한다. GPS 장비 구입은 Site 수준 운영의 필수 조건이 아니다.
 
-남은 기술 연결은 관측 실제 구간의 환경 자동 보충·결합, GitHub 예약 workflow와 data entrypoint의 최신 trusted commit 연결, 실제 Git 보존 cutoff/seal 및 홈페이지 반영 검증이다. 로컬 .env는 GitHub Actions에 자동 전달되지 않는다. secrets/variables·FES 비공개 atlas 실행 환경을 별도로 연결해야 한다. 기본값 변경 전 snapshot은 덮어쓰지 않고 frozen 설정으로 replay한다.
+남은 기술 연결은 공급자별 요청 시간 제한·지연 복구·공유 셀 중복 요청 축소, 관측 실제 구간의 환경 자동 보충·결합, GitHub 예약 workflow와 data entrypoint의 최신 trusted commit 연결, 실제 Git 보존 cutoff/seal 및 홈페이지 반영 검증이다. 로컬 .env는 GitHub Actions에 자동 전달되지 않는다. secrets/variables·FES 비공개 atlas 실행 환경을 별도로 연결해야 한다. 기본값 변경 전 snapshot은 덮어쓰지 않고 frozen 설정으로 replay한다.
 
 초기 numeric 예측에는 실제 관측 대표 수심, 같은 observer/rubric의 3개 이상 label·서로 다른 3일·같은 Site 자료 등 기존 gate가 필요하다. 환경 snapshot만으로 PCI 정답을 자동 생성하지 않는다. 실제 예측력 검증 후 기본 방향·허용 거리·weight를 조정한다.
 

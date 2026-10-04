@@ -14,6 +14,18 @@ class RegistryTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             resolve_geometry("mandolin", "made-up-zone")
 
+    def test_map_pixel_provenance_uses_the_recorded_digitization_frame(self):
+        import math
+        for entry in load_geometry()['sites']:
+            reference=entry['direction_reference']
+            self.assertEqual(reference['image_size_px'],[2286,1750])
+            width,height=reference['digitization_frame_size_px']
+            for key,bearing in [('red_tail_tip_px','wall_bearing_deg'),('blue_tail_tip_px','offshore_bearing_deg')]:
+                x0,y0,x1,y1=reference[key]
+                self.assertTrue(0 <= x0 < width and 0 <= x1 < width and 0 <= y0 < height and 0 <= y1 < height)
+                angle=math.degrees(math.atan2(x1-x0,y0-y1))%360
+                self.assertEqual(entry[bearing],(round(angle/15)*15)%360)
+
     def test_verified_geometry_requires_real_evidence(self):
         entry = copy.deepcopy(resolve_geometry("mandolin"))
         entry["lat"] = 91
