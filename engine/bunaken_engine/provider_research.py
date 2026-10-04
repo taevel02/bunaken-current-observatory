@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from bunaken_engine.features import distance_km, finite, instant
-from bunaken_engine.registry import load_geometry, load_sources
+from bunaken_engine.registry import load_geometry, load_sources, export_allowed
 from bunaken_engine.fes_atlas import sha256
 from bunaken_engine.sources import fetch_json, utc_now
 
@@ -55,7 +55,9 @@ def inspect(output, start, days):
                     part=versions[0].get_part(None)
                     ds=cm.open_dataset(dataset_id=source['dataset'],dataset_version=source['dataset_version'],dataset_part=part.name,variables=list(source['variables']),start_datetime=first.isoformat(),end_datetime=last.isoformat(),minimum_depth=10,maximum_depth=30,**bounds,**credentials).load()
                     ds.to_netcdf(output/(key+'.nc'))
-                reports[key]=dict(status='retrieved',dataset=source['dataset'],version=source['dataset_version'],source_updated_at=str(part.arco_updated_date) if part.arco_updated_date else None,native_depths_m=[float(x) for x in ds.depth.values],time_count=len(ds.time),valid_start=str(ds.time.values[0]),valid_end=str(ds.time.values[-1]),units={name:ds[name].attrs.get('units') for name in source['variables']},sha256=sha256(output/(key+'.nc')),operational_eligible=False,reason_codes=['grid_distance_and_bearings_unverified','source_redistribution_unverified'])
+                reasons=['grid_distance_and_bearings_unverified']
+                if not export_allowed(source,list(source['variables'])): reasons.append('source_redistribution_unverified')
+                reports[key]=dict(status='retrieved',dataset=source['dataset'],version=source['dataset_version'],source_updated_at=str(part.arco_updated_date) if part.arco_updated_date else None,native_depths_m=[float(x) for x in ds.depth.values],time_count=len(ds.time),valid_start=str(ds.time.values[0]),valid_end=str(ds.time.values[-1]),units={name:ds[name].attrs.get('units') for name in source['variables']},sha256=sha256(output/(key+'.nc')),operational_eligible=False,reason_codes=reasons)
             except Exception as error:
                 reports[key]=dict(status='failed',error_type=type(error).__name__,operational_eligible=False)
     except Exception as error:
