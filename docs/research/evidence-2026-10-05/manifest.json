@@ -1,0 +1,35 @@
+{
+  "claim_boundaries": [
+    "local_recalculation_not_operational_forecast",
+    "lodo_not_d1_accuracy",
+    "reference_geometry_experimental_very_low",
+    "later_temperature_not_applied_to_frozen_predictions",
+    "model_context_and_raw_datasets_not_in_authoring_bundle"
+  ],
+  "code_commit": "b33c7da7b3ac2f5ba09b855ddbf3f27e1166fce7",
+  "data_cutoff": "2026-10-05T06:43:30Z",
+  "dataset_sha256": "30043e7f6607b5f584b19131a709261641edb7c718a11d03631c96e52736c46d",
+  "files": {
+    "features.json": "e43e40e7d7844e5d142d3253f2146c613ad05127fca638115f3fd5d6457c0335",
+    "forward.json": "00a0c91c83e01c47af815116a3611edc29fd10d84d8eddf711ef3ce45af25f08",
+    "geometry.json": "9666b7a8bbfa65c917a727b0256428b0632c0810b1a4a7d3d64cff68e6bc3885",
+    "integration.json": "16c42ac9508135987d6ed758845afb4d88373dc6b800627b1dbdc8164f6d1c9f",
+    "lodo.json": "55973012c238e7ab93df857ed2a8c2963ca7aa5fcab5fdd07beb09fac10ae6ad",
+    "model.json": "fb71a017c6a80815197926ae18757ad120e0e151f9debe47ddeab53fca3c3167",
+    "results.json": "e8e1e92c7e9a2888e9da4d1a85283f68d6879647f80517c7406576586c93001b",
+    "sites.json": "248bb517a67cbbcf5e8485e34e140f682e4f0f580f46948f1072ce1469985cf8",
+    "sources.json": "e3702cbf35415dfa9ceae17d808ea16b6145b029c1f6da33d94439609a0434b6",
+    "temperature-checks.json": "89e995ecd41eb20ae7a0ee7f6ea641df6f1d047e136e4090a71d857131f65e37"
+  },
+  "kind": "frozen_research_evidence",
+  "model_context_file_sha256": "30043e7f6607b5f584b19131a709261641edb7c718a11d03631c96e52736c46d",
+  "model_training_cutoff": "2026-10-05T06:43:18Z",
+  "model_version": "weighted-analog-v1.3",
+  "results_canonical_sha256": "467e4b74d4dc09c34546647a1b284576bb08487e88aa1311983f1e030ba19a08",
+  "schema_version": "1.0",
+  "snapshot_id": "81951c4c-667f-4abc-9da8-88bd91a7e617",
+  "snapshot_manifest_sha256": "1e4f5edf0fcd367489bf866debf0097037a4542e4836cc0a174f993930854c95",
+  "snapshot_remotely_published": false,
+  "source_data_commit": "fc4e136ecc23101db9cbe7e3866fbb22c687d6e9",
+  "website_published": false
+}
