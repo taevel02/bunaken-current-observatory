@@ -1,6 +1,8 @@
 """Collection to immutable public files; operational evidence is never a fixture."""
 import gzip
 import json
+import os
+from pathlib import Path
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -32,6 +34,14 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
     if not collectable:
         for reasons in failures.values(): reasons.add("unverified_geometry")
     batches = {}
+    tide_cache = None
+    tide_cache_error = None
+    if collector is None and os.environ.get('FES_DERIVED_ROOT'):
+        from bunaken_engine.fes_cache import TideEphemeris
+        try:
+            tide_cache = TideEphemeris(Path(os.environ['FES_DERIVED_ROOT']), root)
+        except SourceError as error:
+            tide_cache_error = error.code
     if collector is None:
         from bunaken_engine.copernicus_batch import collect_batch
         from bunaken_engine.copernicus_batch import point_key
@@ -52,7 +62,9 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
                 if collector:
                     result=collector(source,geometry,start_at,end_at)
                 elif source["provider"]=="fes":
-                    result=collect_fes(source,geometry,(start-timedelta(hours=2)).isoformat(),(end+timedelta(hours=2)).isoformat())
+                    if tide_cache_error: raise SourceError(tide_cache_error)
+                    method = tide_cache.collect if tide_cache else collect_fes
+                    result=method(source,geometry,(start-timedelta(hours=2)).isoformat(),(end+timedelta(hours=2)).isoformat())
                 elif source["provider"]=="copernicus":
                     if not usable_geometry(geometry): raise SourceError("unverified_geometry")
                     batch = batches[source_id]

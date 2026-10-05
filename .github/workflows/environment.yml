@@ -37,10 +37,6 @@ on:
         required: false
       OPEN_METEO_API_KEY:
         required: false
-      AVISO_USERNAME:
-        required: false
-      AVISO_PASSWORD:
-        required: false
 permissions:
   contents: read
 jobs:
@@ -81,35 +77,15 @@ jobs:
         run: |
           uv run --project engine --locked python -m unittest discover -s engine/tests
           uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
-      - name: Prepare private FES atlas
+      - name: Fetch verified tidal ephemeris
         if: env.OPERATION == 'collect'
         env:
-          AVISO_USERNAME: ${{ secrets.AVISO_USERNAME }}
-          AVISO_PASSWORD: ${{ secrets.AVISO_PASSWORD }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN }}
         run: |
-          if [[ -z "$AVISO_USERNAME" || -z "$AVISO_PASSWORD" ]]; then
-            echo "Private FES credentials unavailable; collection remains fail closed"
-            exit 1
-          fi
-          uv run --project engine --extra providers --locked python -m bunaken_engine.fes_atlas --output .local/fes2022b --workers 3 --discard-originals
-          echo "FES_CONFIG_PATH=$GITHUB_WORKSPACE/.local/fes2022b/fes2022.yaml" >> "$GITHUB_ENV"
-          echo "FES_ATLAS_UNIT=cm" >> "$GITHUB_ENV"
-      - name: Verify FES against independent reference
-        if: env.OPERATION == 'collect'
-        env:
-          LIBFES_COMMIT: b1d65f7782c32fab57e9ac3d14ca20b883b67331
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends cmake libnetcdf-dev
-          git clone --no-checkout https://github.com/CNES/aviso-fes.git "$RUNNER_TEMP/libfes-source"
-          git -C "$RUNNER_TEMP/libfes-source" checkout --detach "$LIBFES_COMMIT"
-          [[ "$(git -C "$RUNNER_TEMP/libfes-source" rev-parse HEAD)" == "$LIBFES_COMMIT" ]]
-          git -C "$RUNNER_TEMP/libfes-source" submodule update --init --depth 1
-          cmake -S "$RUNNER_TEMP/libfes-source" -B "$RUNNER_TEMP/libfes-build" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_SHARED_LIBS=ON
-          cmake --build "$RUNNER_TEMP/libfes-build" -j 2
-          REFERENCE_DAY=$(TZ=Asia/Makassar date -d yesterday +%F)
-          uv run --project engine --extra providers --locked python -m bunaken_engine.fes_research --atlas .local/fes2022b --start "${REFERENCE_DAY}T00:00:00+08:00" --days 1 --reference-library "$RUNNER_TEMP/libfes-build/src/libfes.so" --output .local/fes-reference
-          echo "FES_VALIDATION_MANIFEST_PATH=$GITHUB_WORKSPACE/.local/fes-reference/manifest.json" >> "$GITHUB_ENV"
+          uv run --project engine --locked python -m bunaken_engine.fes_cache fetch --directory "$RUNNER_TEMP/fes-derived"
+          echo "FES_DERIVED_ROOT=$RUNNER_TEMP/fes-derived" >> "$GITHUB_ENV"
       - name: Collect or seal in one chain
         env:
           REPOSITORY: ${{ github.repository }}

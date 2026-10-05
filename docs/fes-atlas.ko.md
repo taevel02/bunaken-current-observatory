@@ -75,4 +75,4 @@ adapter는 동일 evaluator를 사용하며 atlas·코드·SDK·보고서 hash�
 
 Actions 원격 설치·예약 실행은 P7 운영 연결 범위다. hosted runner의 로컬 atlas는 job 종료 후 사라지므로 저장 방식·라이선스·전송 시간·cutoff를 확인하고 연결해야 한다. 로컬 `.env`는 GitHub Secrets에 자동 등록되지 않는다.
 
-workflow는 승인받은 AVISO Secrets로 private atlas를 준비하고 고정 LIBFES 2.9.7과 전날 하루를 독립 비교한다. 성공한 증거 경로를 같은 job의 adapter에 전달한다. hosted runner에서는 검증된 지역 추출 후 `--discard-originals`로 원본만 정리하며 cache/artifact에 올리지 않는다. [Actions 운영 설치 절차](actions-operations.ko.md)의 원격 실행 검수를 완료해야 운영 연결 완료로 판단한다.
+일반 hosted workflow는 원 atlas 대신 hash가 코드에 고정된 조석 파생값을 재사용한다. 로컬의 검증된 atlas로 `fes_cache prepare`를 실행하고 `config/fes-derived.json`을 등록한다. data에는 허용된 조석값·provenance만 저장하며 원 NetCDF는 저장하지 않는다. 좌표·계산 코드 변경이나 준비 기간 만료 시 새 파생값이 필요하다. [Actions 운영 설치 절차](actions-operations.ko.md)의 실제 실행 검수를 완료해야 운영 연결 완료로 판단한다.
