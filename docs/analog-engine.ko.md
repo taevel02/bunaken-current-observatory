@@ -77,7 +77,7 @@ snapshot 1.2는 model context와 SHA-256, scaler SHA-256을 추가한다. contex
 
 입수 좌표와 Site 대표 수심 18m, 허용 격자 거리 6km를 사용한다. 지도 화살표 기본값은 `reference_geometry`로 저장하며 독립된 진행/외해 축에 투영한다. target 또는 선택 analog가 근사 geometry이면 `experimental / very_low`로 제한한다. 실측 벽 방향 검증과 Zone 위치 특정은 추후 진행한다. 실제 관측의 대표 수심과 관측일별 numeric label·환경 연결도 필요하다. source freshness·FES conformance가 확인되지 않으면 숫자를 발행하지 않는다. 실제 예측력·Medium/High 기준은 아직 검증되지 않았다. 배포, workflow 설치·예약 및 공개 발행은 P7에서 별도 확인한다.
 
-## 실제 데이터 통합 확인 (2026-10-05)
+## 초기 v1.1 실제 데이터 통합 확인 (2026-10-05)
 
 원격 data head `43be7a66d8ba0fe9aef9789bac582472a7f4c46b`의 현재 관측 18개를 다시 읽어 로컬 입력과 일치함을 확인했다. 사용자 승인 대표 수심 18m와 동일 observer/rubric의 Overall label 18개·7일을 사용했다. 후보 적격과 숫자 예측 가능 여부는 별도다.
 
@@ -87,4 +87,4 @@ forward와 Leave-One-Day-Out은 각각 7개 날짜 fold·18개 test 관측에서
 
 snapshot과 공개 release를 같은 고정 입력·UUID·생성 시각으로 재생성하여 전체 파일 바이트 일치를 확인했다. 메모리상의 합성 revision으로 PCI 정정, 철회, 학습 제외 반영을 확인했고 실제 관측은 변경하지 않았다. 날짜별 test/training ID 분리와 forward 미래 날짜 배제도 확인했다. 상세 결과는 로컬 `.local/p3-integration-2026-10-05/integration.json`, `forward.json`, `lodo.json`에 보관한다. 원격 발행·배포·공식 D+1 seal은 수행하지 않았다.
 
-다음 검토는 소스 freshness 근거와 feature coverage 정책이다. 대표 수심 18m를 유지하므로 수심 변동을 만들지 않는다. 조석 phase 정의·coverage 분모·weight 변경이 필요하면 계약과 모델 버전을 함께 검토하고 재검증한다. 실제 숫자가 제공되지 않은 상태에서 예측 오차나 검증된 성능을 주장하지 않는다.
+이 초기 결과 이후 공식 공급 갱신 시각·6km 내 바람·18m 전용 비교 범위를 검증했다. 최신 v1.3 결과는 PLAN의 후속 검증과 별도 로컬 final 산출물에 기록한다. 대표 수심 18m를 유지하므로 수심 변동을 만들지 않는다. 조석 phase 정의·coverage 분모·weight 변경이 필요하면 계약과 모델 버전을 함께 검토하고 재검증한다. 실제 숫자가 제공되지 않은 상태에서 예측 오차나 검증된 성능을 주장하지 않는다.

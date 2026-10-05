@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.5\
+버전: 1.6\
 작성일: 2026-10-05\
-기준: [PRD.md](PRD.md) v1.6 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.8\
+기준: [PRD.md](PRD.md) v1.8 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.0\
 상태: P0–P5 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -34,15 +34,34 @@ P0–P5의 완료 표시는 코드·계약 검증 완료를 뜻한다. P6는 미
 
 2026-10-05 실제 검증: Copernicus 19 Site 배치 수집 성공, FES 독립 참조 비교 912건 통과, 9/29–10/4 환경 backfill 28,101 sample 확보. 사용자 승인 대표 관측 수심 18m 정정은 원격 data head `43be7a66d8ba0fe9aef9789bac582472a7f4c46b`에서 현재 기록 18개·이력 36개·원본 필드 보존을 확인했다. 환경 결합은 현재 후보 18개, numeric Overall 18개(서로 다른 7일)다. scaler 2,128행은 겹치는 환경 구간이며 현장 관측 2,128건이 아니다. 실제 학습 결합 결과와 운영 자동화 상태는 구분한다.
 
-통합 검증 결과: 304개 슬롯의 숫자 제공은 0개다. forward와 LODO 모두 실제 관측 18개에서 제공 0/18·MAE null이다. 과거 날짜 cutoff 이전에는 이번 정정 revision과 backfill이 없어 forward 학습 후보가 0개이며, LODO는 미래 날짜를 포함하는 진단이다. 어느 결과도 D+1 운영 성능으로 표시하지 않는다. 산출물은 `.local/p3-integration-2026-10-05/`에만 생성했으며 data branch·홈페이지에 발행하지 않았다.
+초기 v1.1 통합 검증 결과: 304개 슬롯의 숫자 제공은 0개였다. forward와 LODO 모두 실제 관측 18개에서 제공 0/18·MAE null이다. 과거 날짜 cutoff 이전에는 이번 정정 revision과 backfill이 없어 forward 학습 후보가 0개이며, LODO는 미래 날짜를 포함하는 진단이다. 어느 결과도 D+1 운영 성능으로 표시하지 않는다. 산출물은 `.local/p3-integration-2026-10-05/`에만 생성했으며 data branch·홈페이지에 발행하지 않았다.
+
+### 최신 18m 후속 검증
+
+`weighted-analog-v1.3` / `site-18m-v2`로 2026-10-06의 304개 슬롯을 재계산했다. 10개 Site의 160개 슬롯에 PCI 0.283–0.448을 제공하며, 9개 Site의 144개 슬롯은 같은 Site 관측이 없어 `missing_same_site`로 남는다. 모든 숫자는 `experimental / very_low`이며 전체 feature coverage는 0.833333이다. σ 1.0·유사도 0.2·coverage 0.8·3개 label·3일·N_eff 2·같은 Site gate는 유지했다.
+
+같은 Site 관측이 필요한 곳: Lekuan 1, Johnson’s Wall, Tengah, Raymond’s Point, Mike’s Point, Tanjung Parigi, Bunaken Timur 1, Bunaken Timur 2, Pangalisang. Site 하나의 label만으로 모든 gate 통과를 보장하지 않으며 실제 추가 관측을 사용한다.
+
+고정 18m 비교는 동일 수심의 조류 벡터·속력과 모델 수온을 사용한다. 미정의 조석 phase·고정 수심·10–30m profile 차이는 해당 거리 범위에서 제외하되 실제 원자료와 환경 표시는 보존한다. 다른 수심으로 확장할 때 재검증한다. 이전 v1.1/v1.2 설정과 계산 분기는 immutable 결과 재현을 위해 보존했다.
+
+바람·파고는 공식 공급 갱신 metadata를 검증해 다시 수집했다. Copernicus 모델 수온은 실제 공급 갱신이 오래되어 제외했고 사용자 확인 28°C로 대신하지 않았다. 사용자 승인 기존 18개 관측의 수온 28°C는 revision 3에 반영했다. 원격 data head `fc4e136ecc23101db9cbe7e3866fbb22c687d6e9`에서 현재 18개·전체 이력 54개·다른 필드 보존을 확인했다. 신규 실측 수온은 모델의 필수 입력이 아니므로 선택 입력을 유지한다. 과거 환경은 6일+9/19의 실제 39,862 sample을 사용했다.
+
+격자는 공급 모델의 대표 계산 셀이다. Site 입수 좌표와 공급 셀 중심이 다를 수 있고 여러 Site가 같은 셀을 공유한다. 실제 Copernicus 공급 셀 거리는 2.603–5.343km로 사용자 지정 6km 이내이며, 18m는 유효한 양쪽 수심 15.810/18.496m 사이 보간이다. 현장 실측 유속이나 Site별 미세 흐름 해상도로 해석하지 않는다.
+
+최종 snapshot과 release를 동일 입력으로 재생성하여 전체 파일 바이트 일치를 확인했다. 실제 생성 패키지에 production 웹 reader를 적용한 통합 테스트 1개와 엔진 86개·웹 47개 테스트, lint/typecheck가 통과했다. 패키지는 압축 121,067byte·해제 6,053,075byte로 두 크기 제한 이내다. 한국어 문장부호 검사는 규칙 미지원으로 skipped이며 통과로 계산하지 않는다.
+
+v1.3 날짜 검증: forward는 18개 중 제공 0개·MAE null이다. 과거 cutoff 이전에는 이번 정정 revision과 backfill이 없어 학습 후보·scaler가 0개다. LODO는 18개 중 15개·6일에 제공하며 MAE 0.09832, 동일 제공 표본의 전체 baseline MAE 0.12000·Site baseline MAE 0.12133이다. 3개는 abstention이다. 날짜별 test/training ID 분리·forward 미래 배제·LODO held-out 날짜 배제를 확인했다. LODO에는 미래 날짜 학습이 포함되므로 운영 예측력이나 D+1 성능으로 보고하지 않는다.
+
+최종 산출물은 `.local/pci-repair-2026-10-05/final/`에 보관한다. 로컬 생성과 원격 발행·홈페이지 반영·공식 D+1 seal을 구분한다.
 
 | 추천 순서 | 관련 항목 | 남은 작업·현재 상태 | 담당·의존 | 완료 기준 |
 |---|---|---|---|---|
 | 병행 시작 | P2, P5 실제 데이터 | 실제 관측 축적, 대표 수심·시각 입력, 기억하는 과거 기록의 명시적 정정. 숫자 예측 적격은 데이터 축적에 의존 | 사용자: 현장 기록. Codex: 적격·결측 사유 표시 확인 | 실제 대표 수심·동일 observer/rubric·use_for_model 조건 확인. 3개 label·서로 다른 3일·같은 Site 자료·N_eff 2·환경 coverage 0.8 등 모든 gate 검사 |
 | 완료 1 | P3-03/04 후속 | Copernicus run별 regional 공유 읽기·120초 worker deadline·retry 1회 구현. 19 Site 실제 수집·6일 backfill 성공 | Codex. 기존 소스 접근 설정 사용 | 원격 갱신 시각·6km·18m·바다 셀 보존. mock 비교·deadline·retry 검증 통과 |
-| 완료 2 | P3-05, P5-01/08 후속 | enrich CLI로 frozen data head·실제 다이빙 구간·18m 환경 결합 완료. 학습 후보 18개 중 Overall numeric 18개. scaler 2,128행·활성 feature 16개 | Codex. 로컬 분석 산출물이며 공개 환경 발행·운영 chain은 별도 | EnvironmentLink 18개·모델 입력·scaler·제외 사유·data commit 보존. 6일+9/19 backfill을 당시 forecast로 취급하지 않음 |
-| 완료 3 | P3–P5 통합 | 실제 18개 관측으로 2026-10-06의 19 Site·304개 슬롯 재계산, forward/LODO 검증, 공개 패키지 로컬 생성·웹 reader 통합 확인 | Codex. 원격 발행·운영 성능 검증과 구분 | snapshot·release 동일 바이트 재현, 정정/철회/학습 제외 민감도, 날짜·revision 누수 방지, 손상 패키지 거부 통과. PCI 304개 모두 null, coverage 0.4625–0.55로 숫자 제공 조건 미충족 |
-| 다음 1 | P3, P5 환경 적격 | 수온 freshness·파고 갱신 시각·6km 내 바람 공급 근거 확인. 미확정 조석 phase·고정 18m의 zero IQR에 따른 coverage 정책 검토 | Codex: 공급 근거·설정 영향 분석. 사용자: 연구 정책 검토 | stale/unknown 자료 제외 유지. 현재 coverage 분모·weight·0.8 gate를 임의 완화하지 않고 필요한 변경의 PRD/SPEC·model version·검증을 함께 처리 |
+| 완료 2 | P3-05, P5-01/08 후속 | enrich CLI로 frozen data head·실제 다이빙 구간·18m 환경 결합 완료. 학습 후보 18개 중 Overall numeric 18개. scaler 2,128행. 18m 전용 범위에서 거리 feature를 별도로 선택 | Codex. 로컬 분석 산출물이며 공개 환경 발행·운영 chain은 별도 | EnvironmentLink 18개·모델 입력·scaler·제외 사유·data commit 보존. 6일+9/19 backfill을 당시 forecast로 취급하지 않음 |
+| 완료 3 | P3–P5 통합 | 실제 18개 관측으로 2026-10-06의 19 Site·304개 슬롯 재계산, forward/LODO 검증, 공개 패키지 로컬 생성·웹 reader 통합 확인 | Codex. 원격 발행·운영 성능 검증과 구분 | snapshot·release 동일 바이트 재현, 정정/철회/학습 제외 민감도, 날짜·revision 누수 방지, 손상 패키지 거부 통과. 초기 v1.1은 304개 모두 null. 최신 v1.3 결과는 위 후속 검증에 기록 |
+| 완료 4 | P3, P5 환경 적격 | 공식 갱신 metadata·6km 내 ECMWF IFS 바람·파고 재수집. 사용자 승인 18개 수온 28°C 정정. v1.3 고정 18m 비교 범위 구현 | Codex. 신규 수심 확장은 별도 검증 | stale 수온 제외 유지, σ·0.8 coverage·numeric gate 유지. PRD/SPEC·버전·이전 설정 archive·회귀 검증 완료 |
+| 다음 1 | P3 수온 공급 | Copernicus 수온 실제 갱신 시각 회복 확인. 해당 run은 stale로 제외하되 다른 group의 적격 조건으로 계산 | Codex: 공급 상태 확인 | 실측 28°C로 미래 모델 수온을 대체하지 않음. 현재 freshness·보간 조건을 통과한 공급자료만 사용 |
 | 4 | P7-01/02, P3-08 운영 | GitHub 환경 설정·최신 trusted SHA·data entrypoint 설치·branch 보호·FES 비공개 atlas 실행 환경 연결. 로컬 .env는 자동 전달되지 않음 | Codex. 계정 UI·권한에 접근할 수 없는 부분은 사용자 | 필요한 secret/variable·FES 실행 환경 확보, main 보호·non-force 쓰기 확인, 외부 PR/preview secret 격리. 현재 template의 이전 고정 SHA 갱신 |
 | 5 | P7-04/05 | 수집 07:17/19:17, seal 20:17 WITA 예약 실행과 관측 push 후 자동 갱신 연결. 현재 reusable workflow는 수동/push 호출이며 schedule 없음 | Codex. 순서 3/4 | 실제 수집→모델 갱신→검증→release chain 성공. PAT/GITHUB_TOKEN 후속 처리, 중복 실행·지연·결측, 실제 Git 저장 cutoff/seal·홈페이지 반영 확인 |
 | 6 | P7-01/03, P2 수동 acceptance | Vercel 운영 설정·WAF·canonical origin·이전 deployment 접근 차단. iOS Safari/Android Chrome 실제 입력·키보드·오류 복구 검증 | Codex. 계정 설정 접근·실기기 조작은 사용자와 함께 | 실제 로그인 제한·세션 철회/no-store 검증, 실제 관측 저장 확인, 360px·소프트 키보드·세션 만료·60초 입력 시간 측정 |
@@ -50,7 +69,7 @@ P0–P5의 완료 표시는 코드·계약 검증 완료를 뜻한다. P6는 미
 | 8 | P7-06/07/08, P2 규모 대응 | Git bundle 복원·source age·지연·사용량·출처 검수. 관리자 최신순 목록의 전체 revision 조회 비용 개선 | Codex. 운영 테스트 자료와 데이터 규모 측정 필요 | 관측/snapshot/seal/manifest 복원, 저장 p95·반영 지연·LCP 측정. 규모 확대 전에 원자 갱신 목록 인덱스 또는 prefix sharding 검증 |
 | 9 | P7-09 | 최종 출시·공개 실행. 실제 배포와 공개 데이터 쓰기는 별도 승인 범위 | 사용자: 공개·배포 승인. Codex: 승인된 실행 | P6 및 운영 acceptance 충족, 버전·시각·복구 절차·미검증 한계 기록. label 부족 상태로도 cold-start 출시 가능 |
 
-로컬 수집·환경 결합·Analog 재계산·패키지 통합은 완료했다. 다음은 환경 적격 검토와 순서 4의 운영 설정이다. 새 서비스·DB·필수 API 키를 추가하지 않는다. Open-Meteo 비상업 이용에 API 키를 필수로 요구하지 않는다. 외부 장애는 결측/null 상태로 남기고 이전 immutable snapshot을 보존한다. 원격 단계는 non-force commit과 새 release로 기록하며 과거 snapshot·관측 이력을 재작성하지 않는다.
+로컬 수집·환경 결합·Analog 재계산·패키지 통합은 완료했다. 다음은 수온 공급 상태 확인과 순서 4의 운영 설정이다. 새 서비스·DB·필수 API 키를 추가하지 않는다. Open-Meteo 비상업 이용에 API 키를 필수로 요구하지 않는다. 외부 장애는 결측/null 상태로 남기고 이전 immutable snapshot을 보존한다. 원격 단계는 non-force commit과 새 release로 기록하며 과거 snapshot·관측 이력을 재작성하지 않는다.
 
 사용자가 확정한 입수 좌표·Site 18m·6km·지도 기본축은 다시 미확정 설정으로 분류하지 않는다. 근사축은 reference_geometry로 유지하고 numeric 출력은 experimental/very_low로 제한한다. Zone 위치 특정·GPS·실측 벽 방향·검증 오차 허용기준은 사용자 현장 검토 후 확장한다. Zone/GPS와 높은 Support는 Site 수준 cold-start 운영을 차단하지 않는다. 대표 관측 수심은 필수이며 사용자 지정 신규 기본값 18m를 확인·수정한다. 기존 null 관측도 2026-10-05 명시 승인에 따라 개별 18m 정정 revision을 저장했다. 실측 평균 수심으로 단정하거나 앞으로의 미확인 과거 기록을 자동 보충하지 않는다.
 
