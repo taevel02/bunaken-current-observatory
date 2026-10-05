@@ -85,3 +85,14 @@ node --conditions=react-server --test apps/web/test/observation-browser.integrat
 ```
 
 1920×1080·360px, 필수 대표 관측 수심·18m 기본값, WITA 오늘 날짜, 50분 출수 제안·수동 변경, 시간 역전·다음 날 출수, 목록 로딩·기록 재선택, 빈 Peak 숨김, 저장 실패 시 입력 유지, 기존 초안 복원과 메타데이터 보존을 검사한다. 브라우저 모듈 미지정 시 이 선택 테스트는 명시적으로 skip한다. 스크린샷 위치는 `BUNAKEN_UI_ARTIFACT_DIR`로 지정하거나 시스템 임시 디렉터리를 사용한다.
+
+### 공개 패키지 reader 통합 검증
+
+생성한 로컬 release를 실제 서버 reader로 읽고 hash·schema·공개 변수 allowlist·크기 제한·stale·미래 생성 시각 거부를 확인한다. HTTP는 전부 메모리 응답으로 대체하며 실제 외부 요청이나 발행은 하지 않는다. Node 24의 module hook은 테스트에서만 alias를 연결한다.
+
+```sh
+BUNAKEN_PUBLIC_RELEASE_DIR=.local/generated-release \
+node --conditions=react-server --test apps/web/test/public-release.integration.mjs
+```
+
+입력은 `web/latest.json`과 연결된 manifest/gzip이 있는 release output 디렉터리다. 환경변수 미지정 시 선택 테스트는 skip한다. 자료 없는 빈 패키지는 통합 성공으로 처리하지 않는다.
