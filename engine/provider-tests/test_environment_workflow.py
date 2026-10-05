@@ -29,6 +29,7 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         invocation = entry['jobs']['environment']
         self.assertRegex(invocation['with']['code_commit'],r'^[0-9a-f]{40}$')
         self.assertEqual(invocation['uses'].rsplit('@',1)[1],invocation['with']['code_commit'])
+        self.assertEqual(set(invocation['secrets']),set(data['on']['workflow_call']['secrets']))
 
     def test_schedule_serializes_collection_without_delaying_seal(self):
         root = Path(__file__).resolve().parents[2]

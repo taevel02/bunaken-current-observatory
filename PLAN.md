@@ -66,7 +66,7 @@ v1.3 날짜 검증: forward는 18개 중 제공 0개·MAE null이다. 과거 cut
 
 | 추천 순서 | 관련 항목 | 남은 작업·현재 상태 | 담당 | 완료 기준 |
 |---|---|---|---|---|
-| 완료 | P3 후속 | FES 60일 조석 파생값 생성·hash 고정·재사용 adapter와 hosted 원 atlas 다운로드 제거 | Codex | 실제 값 대조, 기간·좌표·코드·변조 거부. data 파생 자료 등록과 실제 hosted 실행은 별도 확인 |
+| 완료 | P3 후속 | FES 60일 조석 파생값 생성·hash 고정·재사용 adapter와 hosted 원 atlas 다운로드 제거 | Codex | 실제 값 대조, 기간·좌표·코드·변조 거부. data 파생 자료 등록·원격 재조회 통과. 실제 hosted 실행은 별도 확인 |
 | 완료 | 연구 근거 | 2026-10-05 로컬 결과와 config·검증을 docs/research/evidence-2026-10-05에 고정 | Codex | 파일 hash·18개/7일·304슬롯·forward/LODO 구분, 당시 수온 stale와 이후 회복을 혼합하지 않음 |
 | 완료 | P6-01/02/03/04/06 기반 | 네 원고·상태·results/manifest·안전 미리보기·불변 발행·정정·철회 안내 구현 | Codex | 계약·저장 경쟁·멱등·unsafe 원고·결과표·공개 reader·ko/en 검증. 실제 원고/웹 발행은 다음 작업 |
 | 1 | P6-05 콘텐츠 | 고정 근거로 전문가용·일반용 한국어 보고서 작성, 현장 검토 후 영어판 작성 | Astra + 사용자 | 네 원고의 cutoff·version·핵심 수치·한계 일치. 자체 발행·동료심사 미실시 표기 |
@@ -261,3 +261,11 @@ P3 남은 운영 의존: 벽/외해 방향·Zone geometry·허용 격자 거리�
 - 관측 UX: 최신 입수순 고정 head 페이지 정렬, 로딩 힌트, WITA 오늘 날짜, 날짜 한 번 선택, 출수 필수·50분 제안·직접 수정·명시적 다음 날 출수를 적용했다. schema 1.4를 도입하고 과거 nullable 출수·이미 성공한 멱등 요청을 보존한다. 빈 Peak 섹션은 숨기며 복원된 기존 사건·Zone·경로는 삭제하지 않는다.
 - 남은 연결: 공급자 요청 제한/지연 복구·공유 셀 요청 최적화, 실제 관측 구간 자동 환경 결합, 최신 trusted code를 사용하는 원격 수집→모델 갱신→검증→release chain, 실제 저장 cutoff/seal·홈페이지 반영 검증. 현장 정답은 자동 생성하지 않으며 관측 축적 전 숫자 예측 gate는 유지한다.
 - 검증: 독립 worktree의 typecheck·lint·production build 통과. 웹 단위/계약/HTTP 47개, 엔진 74개, 실제 Chrome 브라우저 회귀 1개(13개 항목) 통과. 최신순 테스트 2개는 수정 전 코드에서 실패를 재현했다. 실제 GitHub 관측 저장·배포는 수행하지 않았다.
+
+### 이번 요청 완료와 다음 의존 (2026-10-05)
+
+FES 파생 조석 54,891개(19 Site × 2,889 시각), gzip 498,284 bytes를 data commit `4e3ae9aff4bb89c774677ae5921ce9922e70247e`에 저장하고 같은 고정 head에서 다시 읽어 hash·geometry·계산 코드 검증을 통과했다. 원 atlas는 공개 저장하지 않았다. valid 범위는 WITA 2026-10-05 22:00–2026-12-05 02:00이다. 7일 수집과 양끝 2시간을 포함한 마지막 온전한 target date는 2026-11-28이다. 만료 직전까지 기다리지 않고 11월 중순에 다음 파생 묶음을 준비한다. 좌표·계산 코드 변경 시에도 새 묶음·pin이 필요하다.
+
+trusted data entrypoint template은 검토된 코드 `490264b25362a60ad1425a686f7f83a4084ef898`에 고정했다. AVISO secret 전달은 제거했으며 원격 entrypoint 설치·Secrets·보호 환경·실제 실행은 P7에 남는다. 로컬 커밋만으로 원격 workflow가 바뀌지 않는다.
+
+P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HTTP·합성 연구 브라우저 2개, provider 12개, TypeScript 7·ESLint·격리 production build·actionlint 통과. 1920px·360px 확인, 최신 revision·timeout 동일 요청 복구·편집 후 검토 초기화·검토 내용 불변 발행 검증을 포함한다. 실제 원고 작성은 [Astra 지시문](docs/research/astra-authoring.ko.md)에 따라 진행한다. 원고·예측 snapshot의 실제 웹 발행과 production 검수는 수행하지 않았다.

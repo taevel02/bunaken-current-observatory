@@ -10,14 +10,12 @@ permissions:
   contents: read
 jobs:
   environment:
-    uses: taevel02/bunaken-current-observatory/.github/workflows/environment.yml@dce16626986762650b089a692c770eeab97ea659
+    uses: taevel02/bunaken-current-observatory/.github/workflows/environment.yml@490264b25362a60ad1425a686f7f83a4084ef898
     with:
       operation: collect
-      code_commit: dce16626986762650b089a692c770eeab97ea659
+      code_commit: 490264b25362a60ad1425a686f7f83a4084ef898
     secrets:
       GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN }}
       COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
       COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-      AVISO_USERNAME: ${{ secrets.AVISO_USERNAME }}
-      AVISO_PASSWORD: ${{ secrets.AVISO_PASSWORD }}
       OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}

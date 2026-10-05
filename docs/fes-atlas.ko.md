@@ -73,6 +73,12 @@ adapter는 동일 evaluator를 사용하며 atlas·코드·SDK·보고서 hash�
 
 ## 운영 연결
 
-Actions 원격 설치·예약 실행은 P7 운영 연결 범위다. hosted runner의 로컬 atlas는 job 종료 후 사라지므로 저장 방식·라이선스·전송 시간·cutoff를 확인하고 연결해야 한다. 로컬 `.env`는 GitHub Secrets에 자동 등록되지 않는다.
+Actions 원격 설치·예약 실행은 P7 운영 연결 범위다. hosted runner는 원 atlas를 내려받지 않고 코드에 고정된 파생 조석을 읽는다. 로컬 `.env`는 GitHub Secrets에 자동 등록되지 않는다.
 
 일반 hosted workflow는 원 atlas 대신 hash가 코드에 고정된 조석 파생값을 재사용한다. 로컬의 검증된 atlas로 `fes_cache prepare`를 실행하고 `config/fes-derived.json`을 등록한다. data에는 허용된 조석값·provenance만 저장하며 원 NetCDF는 저장하지 않는다. 좌표·계산 코드 변경이나 준비 기간 만료 시 새 파생값이 필요하다. [Actions 운영 설치 절차](actions-operations.ko.md)의 실제 실행 검수를 완료해야 운영 연결 완료로 판단한다.
+
+## 파생 조석 등록 확인 (2026-10-05)
+
+19 Site·54,891개 실제 조석값을 498,284 bytes gzip으로 생성했다. direct atlas의 57개 값과 동일함을 확인했다. data commit `4e3ae9aff4bb89c774677ae5921ce9922e70247e`에 manifest와 gzip만 저장하고 원격 재조회 검증을 통과했다. trusted pin은 config/fes-derived.json이다.
+
+유효 범위 WITA 2026-10-05 22:00–2026-12-05 02:00. 7일 운영 수집은 target date 2026-11-28까지 전체 범위를 포함한다. 11월 중순 다음 기간을 준비하고 좌표·계산 코드 변경 시 새 manifest와 pin을 사용한다. 실제 Actions의 Secrets·entrypoint·예약 실행은 P7 운영 검수다.

@@ -55,8 +55,8 @@ uv run --env-file .env --env-file apps/web/.env.local --project engine --locked 
 
 1. 검증된 코드 커밋을 main에 반영하고 두 CI job의 성공을 확인한다. main push는 연결된 Vercel 배포를 유발할 수 있다.
 2. `environmental-data` 보호 환경과 위 설정을 등록한다. 처음에는 required reviewer를 유지한다.
-3. `ops/workflows/data-entrypoint.yml`을 data의 `.github/workflows/data-entrypoint.yml`에 설치한다. 다른 파일·관측을 변경하지 않는 non-force commit을 사용한다. `uses`와 `code_commit`은 `dce16626986762650b089a692c770eeab97ea659`로 일치한다. 이 SHA가 원격 main 이력에 있어야 한다. `@main`으로 바꾸지 않는다.
-4. Actions → Trusted environmental pipeline → Run workflow. main을 선택하고 `operation=collect`, `code_commit=dce16626986762650b089a692c770eeab97ea659`, date는 비워 WITA 내일을 수집한다. 새 snapshot·release를 공개 저장하는 실행이다.
+3. `ops/workflows/data-entrypoint.yml`을 data의 `.github/workflows/data-entrypoint.yml`에 설치한다. 다른 파일·관측을 변경하지 않는 non-force commit을 사용한다. `uses`와 `code_commit`은 `490264b25362a60ad1425a686f7f83a4084ef898`로 일치한다. 이 SHA가 원격 main 이력에 있어야 한다. `@main`으로 바꾸지 않는다.
+4. Actions → Trusted environmental pipeline → Run workflow. main을 선택하고 `operation=collect`, `code_commit=490264b25362a60ad1425a686f7f83a4084ef898`, date는 비워 WITA 내일을 수집한다. 새 snapshot·release를 공개 저장하는 실행이다.
 5. FES 파생값 hash·참조 증거 검증 성공, 19 Site 필수 소스·freshness, 저장 receipt/confirmation, release hash/schema, 공개 status를 실제로 확인한다. 학습 환경이 아직 data에 없으면 numeric label 결합이 부족할 수 있다. 로컬 backfill은 원격 모델에 자동 전달되지 않는다. 초기 역사 환경 연결은 별도 실제 데이터 작업으로 확인한다.
 6. 검수 후 required reviewer를 해제해 main/data branch 정책 아래 예약·관측 push 실행을 자동화한다. 두 예약 수집, 관측 push, seal 결과를 각각 확인해야 P7-04/05를 완료로 표시한다.
 
@@ -74,3 +74,7 @@ Actions 자체가 비용·소스 요청 제한·전송 시간을 면제하지 �
 - 로컬 실제 FES: 현재 코드로 하루 참조 증거 재생성, 19 Site atlas/conformance provenance 일치. `.env`의 증거 경로 갱신.
 - GitHub 읽기 확인: 계정 `taevel02`, repository ADMIN, 기본 branch main. 환경·Secrets·variables·ruleset 미등록, main/data 보호 미설정.
 - 원격 실행: 코드 push와 CI 성공은 확인했으나 entrypoint·Secrets·보호 환경·Actions dispatch·실제 forecast 발행은 별도 검수 대상이다. 보호 설정은 원격 적용 후 다시 읽어 검증한다.
+
+### FES 재사용 전환 확인
+
+2026-10-05 검증된 파생 조석을 data commit `4e3ae9aff4bb89c774677ae5921ce9922e70247e`에 불변 저장하고 원격 재조회 검증을 통과했다. 원 atlas와 AVISO credential은 hosted 수집에 필요 없다. 현재 entrypoint template의 전달 secret은 reusable workflow 선언과 일치한다. 실제 원격 설치·dispatch는 아직 수행하지 않았다. 7일 수집의 유효 target date 종료는 2026-11-28이므로 11월 중순 새 파생 기간을 준비한다.
