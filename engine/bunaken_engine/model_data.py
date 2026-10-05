@@ -45,7 +45,7 @@ def read_bundle(path, *, root=ROOT):
         manifest['artifact_hashes'] = {'features.json.gz': digest(gzip.compress(canonical(features), mtime=0)),
                                      'forecast.json.gz': digest(gzip.compress(canonical([]), mtime=0))}
         return dict(manifest=manifest, features=features, forecast=[], origin_manifest_sha256=origin,environment_configuration=configuration)
-    return dict(manifest=manifest, features=features, forecast=forecast)
+    return dict(manifest=manifest, features=features, forecast=forecast, environment_configuration=environment_configuration(manifest,root))
 
 
 def checked_bundles(bundles, *, root=ROOT):
@@ -77,7 +77,7 @@ def checked_bundles(bundles, *, root=ROOT):
                 make_bundle(manifest,bundle['features'],bundle['forecast'],root=replay,kind=manifest['kind'])
         else:
             make_bundle(manifest, bundle['features'], bundle['forecast'], root=root, kind=manifest['kind'])
-            bundle={**bundle,'environment_configuration':current_configuration(root)}
+            bundle={**bundle,'environment_configuration':environment_configuration(manifest,root)}
         identity = manifest['snapshot_id']
         hashed = digest(canonical(bundle))
         if identity in identities and identities[identity] != hashed:
@@ -136,7 +136,12 @@ def eligible_candidates(observations, bundles, observer, rubric, cutoff, *, root
             if any(row['status'] != 'succeeded' for row in readiness.values()):
                 continue
             window_geometry = {**geometry, 'reference_depth_m': observation['representative_depth_m']}
-            window = extract_window(samples, window_geometry, start.isoformat(), end.isoformat())
+            window_samples = samples
+            if config.get('comparison_scope') == 'site-18m-v1':
+                all_states = assess_sources(samples, list(load_sources(root)), manifest['created_at'], root,
+                                            reference_depth=observation['representative_depth_m'], historical=manifest['kind'] == 'backfill')
+                window_samples = [row for row in samples if all_states[row['source']]['status'] == 'succeeded']
+            window = extract_window(window_samples, window_geometry, start.isoformat(), end.isoformat())
             if any(not finite(window['values'].get(name)) for name in
                    ('tide_rate_m_per_hour', 'tide_excursion_m', 'current_along_m_s', 'current_cross_m_s', 'current_speed_m_s')):
                 continue
@@ -145,7 +150,8 @@ def eligible_candidates(observations, bundles, observer, rubric, cutoff, *, root
         if not available:
             excluded[observation['id']] = 'environment_link_unavailable'
             continue
-        _, _, _, manifest, window, snapshot_hash = min(available, key=lambda row: row[:3])
+        key = (lambda row: (row[0], -instant(row[1]).timestamp(), row[2])) if config.get('comparison_scope') else (lambda row: row[:3])
+        _, _, _, manifest, window, snapshot_hash = min(available, key=key)
         quality = config['quality'][observation['confidence']]
         if proxy or observation['time_precision'] == 'approximate': quality *= config['approximate_time_weight']
         if observation.get('depth_precision') == 'estimated': quality *= config['estimated_depth_weight']
@@ -203,7 +209,7 @@ def model_context(observations, bundles, observer, rubric, cutoff, *, root=ROOT)
                           key=lambda row:(row['id'],row['revision']))
     bundles = checked_bundles(bundles, root=root)
     # Only schema-validated public records enter the manifest. No arbitrary metadata or secrets.
-    return dict(schema_version='1.0', observations=observations, training_bundles=bundles,
+    return dict(schema_version='1.1' if read_json(root/'config/model.json').get('comparison_scope') else '1.0', observations=observations, training_bundles=bundles,
                 observer=observer, rubric=rubric, cutoff=cutoff,
                 config_sha256=digest(canonical(read_json(root / 'config/model.json'))),
                 feature_config_sha256=digest(canonical(read_json(root / 'config/features.json'))),
@@ -215,6 +221,21 @@ def current_configuration(root=ROOT):
     return dict(model=read_json(root/'config/model.json'), features=read_json(root/'config/features.json'),
                 geometry=load_geometry(root), sources=read_json(root/'config/source-registry.json'),
                 sites=read_json(root/'packages/contracts/data/sites.json'))
+
+
+def environment_configuration(manifest, root=ROOT):
+    """Match old untrained bundles to an archived, code-owned source contract."""
+    def matches(configuration):
+        return (manifest['source_registry_hash'] == digest(canonical(configuration['sources'])) and
+                manifest['geometry_hash'] == digest(canonical(configuration['geometry'])) and
+                manifest['feature_version'] == configuration['features']['version'])
+    current = current_configuration(root)
+    if matches(current): return current
+    for path in sorted((root/'config/model-configurations').glob('*.json')):
+        configuration = read_json(path)
+        if path.stem == digest(canonical(configuration)) and matches(configuration):
+            return trusted_configuration({'configuration': configuration}, root)
+    raise ValueError('untrusted_environment_configuration')
 
 
 def trusted_configuration(context, root=ROOT):

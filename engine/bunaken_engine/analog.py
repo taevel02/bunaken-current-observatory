@@ -76,10 +76,27 @@ def site_weight(target, candidate, config):
     return weights['same_zone' if target['zone_id'] == candidate['zone_id'] else 'same_site_other_zone']
 
 
+def comparison_features(feature_config, config):
+    """A versioned 18m stratum; missing or zero-IQR inputs still lose coverage."""
+    scope = config.get('comparison_scope')
+    if scope is None: return feature_config
+    if scope != 'site-18m-v1': raise ValueError('unknown_model_comparison_scope')
+    # Depth is an eligibility stratum. Undefined phase is not a measured distance feature.
+    groups = {name: {**group, 'features': [feature for feature in group['features']
+               if feature not in {'tide_phase_sin', 'tide_phase_cos'}]}
+              for name, group in feature_config['groups'].items() if name != 'depth'}
+    total = sum(group['weight'] for group in groups.values())
+    return {**feature_config, 'groups': {name: {**group, 'weight': group['weight']/total}
+                                       for name, group in groups.items()}}
+
+
 def neighbors(target, candidates, scaler, feature_config, config):
+    feature_config = comparison_features(feature_config, config)
     mask, coverage = target_mask(target['values'], scaler, feature_config)
     selected = []
     for candidate in candidates:
+        if config.get('comparison_scope') == 'site-18m-v1' and candidate['values'].get('reference_depth_m') != 18:
+            continue
         distance = environmental_distance(target['values'], candidate['values'], mask, scaler, feature_config)
         if distance is None:
             continue
@@ -158,6 +175,8 @@ def predict(target, candidates, scaler, *, config=None, feature_config=None, evi
                  row['candidate']['site_id'] == target['site_id'] and row['candidate'].get('zone_id') == target['zone_id']}
     n_eff = effective_size(weights)
     reasons = []
+    if config.get('comparison_scope') == 'site-18m-v1' and target['values'].get('reference_depth_m') != 18:
+        reasons.append('outside_model_depth_scope')
     if not target.get('geometry_verified', False): reasons.append('unverified_geometry')
     if not target.get('sources_ready', False): reasons.append('missing_required_sources')
     if not diagnostic and instant(scaler['cutoff']) > instant(target['start_at']): reasons.append('scaler_cutoff_after_target')
@@ -171,12 +190,12 @@ def predict(target, candidates, scaler, *, config=None, feature_config=None, evi
     pci = None if reasons else sum(row['weight'] * row['candidate']['pci'] for row in selected) / sum(weights)
     support = 'insufficient' if reasons else support_level(n_eff, len(daily), len(same_site), len(same_zone), target['site_id'], evidence, config)
     vertical = vertical_evidence(vertical_selected) if not any(reason in reasons for reason in
-        ('unverified_geometry', 'missing_required_sources', 'missing_required_features', 'insufficient_feature_coverage', 'scaler_cutoff_after_target')) else dict(status='insufficient')
+        ('unverified_geometry', 'missing_required_sources', 'missing_required_features', 'insufficient_feature_coverage', 'scaler_cutoff_after_target', 'outside_model_depth_scope')) else dict(status='insufficient')
     reference = target.get('reference_geometry') or any(row['candidate'].get('reference_geometry') for row in selected)
-    if pci is not None and reference: support='very_low'
+    if pci is not None and (reference or config.get('comparison_scope')): support='very_low'
     return dict(site_id=target['site_id'], zone_id=target.get('zone_id'), start_at=target['start_at'], duration_minutes=60,
                 reference_depth_m=target['values'].get('reference_depth_m'), pci=pci,
-                prediction_status='insufficient' if reasons else ('experimental' if reference or n_eff < 3 else 'available'),
+                prediction_status='insufficient' if reasons else ('experimental' if reference or config.get('comparison_scope') or n_eff < 3 else 'available'),
                 support=support, n_eff=n_eff, n_eff_days=effective_size(list(daily.values())),
                 distinct_days=len(daily), same_site_days=len(same_site), same_zone_days=len(same_zone),
                 vertical_evidence=vertical, feature_coverage=coverage, reason_codes=reasons,

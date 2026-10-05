@@ -12,6 +12,25 @@
 
 수직 evidence는 numeric PCI와 별도 집합으로 계산한다. unknown 제외, none은 알려진 음성 사례다. mixed에서 확인되지 않은 방향을 추정하지 않는다. 개수·날짜·N_eff 조건을 통과한 근거 상태만 제공하며 확률을 생성하지 않는다. 현재 large-error 기준과 High MAE 한계는 `null`이다. Medium/High는 승격하지 않는다.
 
+## 18m 전용 실험 범위
+
+`weighted-analog-v1.2`는 사용자 지정 18m를 동일 수심 비교 조건으로 사용한다. 다른 수심의 label은 이웃에서 제외하고 다른 수심 목표는 null이다. 변하지 않는 수심을 IQR로 나누거나 정보량으로 세지 않는다. 미구현 phase 쌍도 거리 registry에서 제외한다. Tide는 실제 rate와 구간 excursion을 사용한다.
+
+| Group | 18m 범위 weight | 거리 항목 |
+|---|---|---|
+| Tide | 0.30/0.90 | rate·구간 excursion |
+| Ocean | 0.35/0.90 | 진행/외해 투영·속력·10–30m 수평 shear |
+| Thermal | 0.15/0.90 | 모델 수온·10–30m 수온 차이 |
+| Weather | 0.10/0.90 | 바람·파랑·너울 |
+
+범위는 model config에 고정되며 runtime 소스 결측이나 zero IQR에 따라 좁히지 않는다. 등록된 항목의 결측·비활성은 coverage를 낮춘다. coverage 0.8, Tide/Ocean 필수, 3 label·3일·N_eff 2·같은 Site 조건은 유지한다. 이 범위의 숫자는 검증 전까지 experimental/very_low다. 기존 전체 범위의 weight와 phase·수심 분모는 archived v1.1 재현에 유지한다.
+
+학습 환경 선택에서도 소스 적격을 확인한다. 같은 cutoff 안에서 snapshot 우선, 같은 종류라면 최신 생성 환경을 선택하여 다시 수집한 바람 등을 결합한다. 과거 model context 1.0은 이전 처리를 재현하고 신규 context는 1.1로 저장한다. 변경 전 전체 config는 `config/model-configurations`에 보존한다.
+
+Open-Meteo 바람은 실제 19 Site의 6km 조건을 충족한 ECMWF IFS HRES 9km로 변경했다. 공급 갱신 시각은 수집 전후 공식 metadata가 일치하고 availability 이후 10분이 지났을 때만 사용한다. metadata는 개별 sample의 exact issued time이 아니므로 issued_at은 null로 유지한다. 누락·미래 시각·수집 중 갱신·원해상도 불일치는 source age 미확인으로 처리한다. 근거: [공식 model update 문서](https://open-meteo.com/en/docs/model-updates).
+
+실측 수온은 선택 입력이다. 사용자 확인한 기존 18개 기록의 28°C를 정정 revision으로 보존하지만, 측정 시각·수심은 unknown이며 미래 모델 수온·수심별 bias 보정에 대입하지 않는다.
+
 ## 로컬 명령
 
 프로젝트 루트에서 실행한다. 입력 관측은 공개 revision schema의 배열이며 실제 기록과 합성 fixture를 섞지 않는다.

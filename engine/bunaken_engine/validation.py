@@ -7,7 +7,7 @@ from bunaken_engine.analog import predict
 from bunaken_engine.features import finite, instant, extract_window
 from bunaken_engine.model_data import checked_bundles, eligible_candidates, environment_rows, latest_revisions
 from bunaken_engine.features import build_scaler
-from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry, usable_geometry
+from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry, usable_geometry, load_sources
 from bunaken_engine.time import wita_date
 
 WITA = ZoneInfo('Asia/Makassar')
@@ -43,6 +43,7 @@ def validation_target(observation, bundles, cutoff, *, operational, root=ROOT):
     except ValueError: return None
     if not usable_geometry(geometry) or not finite(observation['representative_depth_m']): return None
     available = []
+    scoped = read_json(root/'config/model.json').get('comparison_scope') == 'site-18m-v1'
     for bundle in bundles:
         manifest = bundle['manifest']
         from bunaken_engine.snapshots import canonical, digest
@@ -62,10 +63,19 @@ def validation_target(observation, bundles, cutoff, *, operational, root=ROOT):
         readiness = assess_sources(samples, ['fes-height', 'copernicus-currents'], manifest['created_at'], root,
                                    reference_depth=observation['representative_depth_m'], historical=not operational)
         if any(row['status'] != 'succeeded' for row in readiness.values()): continue
-        window = extract_window(samples, {**geometry, 'reference_depth_m': observation['representative_depth_m']}, start.isoformat(), end.isoformat())
-        available.append((storage['persisted_at'] if operational else manifest['created_at'], manifest['snapshot_id'], window))
+        window_samples = samples
+        if scoped:
+            states = assess_sources(samples, list(load_sources(root)), manifest['created_at'], root,
+                                    reference_depth=observation['representative_depth_m'], historical=manifest['kind'] == 'backfill')
+            window_samples = [row for row in samples if states[row['source']]['status'] == 'succeeded']
+        window = extract_window(window_samples, {**geometry, 'reference_depth_m': observation['representative_depth_m']}, start.isoformat(), end.isoformat())
+        available.append((storage['persisted_at'] if operational else manifest['created_at'], manifest['snapshot_id'], window, 0 if manifest['kind'] == 'snapshot' else 1))
     if not available: return None
-    _, snapshot_id, window = (max if operational else min)(available, key=lambda row:(instant(row[0]),row[1]))
+    if scoped and not operational:
+        selected = min(available, key=lambda row: (row[3], -instant(row[0]).timestamp(), row[1]))
+    else:
+        selected = (max if operational else min)(available, key=lambda row: (instant(row[0]), row[1]))
+    _, snapshot_id, window, _ = selected
     return dict(**window, site_id=observation['site_id'], zone_id=observation['zone_id'],
                 geometry_verified=True, reference_geometry=geometry['status']=='reference_geometry', sources_ready=True, source_snapshot_ids=[snapshot_id])
 

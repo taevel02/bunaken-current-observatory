@@ -98,6 +98,14 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
                 raise SnapshotError('source_export_forbidden')
             with replay_root(context,root) as replay:
                 return make_bundle(manifest,features,forecast,root=replay,kind=kind)
+    if context is None and manifest['source_registry_hash'] != digest(canonical(read_json(root/'config/source-registry.json'))):
+        from bunaken_engine.model_data import environment_configuration, replay_root
+        configuration = environment_configuration(manifest, root)
+        current_sources = load_sources(root)
+        if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']], [row['variable']]) for row in manifest['samples']):
+            raise SnapshotError('source_export_forbidden')
+        with replay_root({'configuration': configuration}, root) as replay:
+            return make_bundle(manifest, features, forecast, root=replay, kind=kind)
     registry=load_sources(root)
     if manifest.get("kind") != kind:
         raise SnapshotError("run_kind_mismatch")

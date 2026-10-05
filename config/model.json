@@ -1,5 +1,5 @@
 {
-  "version": "weighted-analog-v1.1",
+  "version": "weighted-analog-v1.2",
   "sigma": 1.0,
   "minimum_similarity": 0.2,
   "maximum_neighbors": 20,
@@ -7,12 +7,26 @@
   "minimum_labels": 3,
   "minimum_days": 3,
   "minimum_n_eff": 2.0,
-  "quality": {"high": 1.0, "normal": 0.8, "low": 0.5},
-  "provenance": {"snapshot": 1.0, "backfill": 0.7},
-  "site_weights": {"same_zone": 1.0, "same_site_unknown_zone": 0.8, "same_site_other_zone": 0.65, "verified_similar_geometry": 0.35, "other_site": 0.15},
+  "quality": {
+    "high": 1.0,
+    "normal": 0.8,
+    "low": 0.5
+  },
+  "provenance": {
+    "snapshot": 1.0,
+    "backfill": 0.7
+  },
+  "site_weights": {
+    "same_zone": 1.0,
+    "same_site_unknown_zone": 0.8,
+    "same_site_other_zone": 0.65,
+    "verified_similar_geometry": 0.35,
+    "other_site": 0.15
+  },
   "approximate_time_weight": 0.8,
   "estimated_depth_weight": 0.8,
   "large_error_threshold": null,
   "high_support_mae_limit": null,
-  "temperature_bias": null
+  "temperature_bias": null,
+  "comparison_scope": "site-18m-v1"
 }

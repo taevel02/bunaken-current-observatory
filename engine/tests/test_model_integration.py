@@ -135,6 +135,50 @@ class ModelIntegrationTest(unittest.TestCase):
         self.assertTrue(numeric)
         self.assertTrue(all(row['prediction_status']=='experimental' and row['support']=='very_low' for row in numeric))
 
+    def test_validation_and_training_exclude_stale_optional_source_and_select_latest(self):
+        from bunaken_engine.validation import validation_target
+        from bunaken_engine.model_data import eligible_candidates
+        bundle=copy.deepcopy(self.bundles[0])
+        for row in bundle['manifest']['samples']:
+            if row['source']=='copernicus-temperature': row['issued_at']='2026-08-28T00:00:00Z'
+        observation=self.observations[0]
+        cutoff='2026-09-06T00:00:00Z'
+        target=validation_target(observation,[bundle],cutoff,operational=False,root=self.root)
+        self.assertIsNone(target['values']['modelled_temperature_c'])
+        candidates,_=eligible_candidates([observation],[bundle],'synthetic-observer','synthetic-rubric',cutoff,root=self.root)
+        self.assertIsNone(candidates[0]['values']['modelled_temperature_c'])
+        old=copy.deepcopy(self.bundles[0]);old['manifest']['kind']='backfill'
+        newer=copy.deepcopy(old);newer['manifest'].update(created_at='2026-09-02T02:00:00Z',snapshot_id='22222222-2222-4222-8222-222222222222')
+        target=validation_target(observation,[old,newer],cutoff,operational=False,root=self.root)
+        self.assertEqual(target['source_snapshot_ids'],[newer['manifest']['snapshot_id']])
+        candidates,_=eligible_candidates([observation],[old,newer],'synthetic-observer','synthetic-rubric',cutoff,root=self.root)
+        self.assertEqual(candidates[0]['snapshot_id'],newer['manifest']['snapshot_id'])
+        config=read_json(self.root/'config/model.json');config.pop('comparison_scope')
+        (self.root/'config/model.json').write_bytes(canonical(config))
+        self.assertIsNotNone(validation_target(observation,[bundle],cutoff,operational=False,root=self.root)['values']['modelled_temperature_c'])
+
+    def test_cold_start_bundle_replays_archived_source_registry(self):
+        from bunaken_engine.model_data import current_configuration
+        current=read_json(self.root/'config/source-registry.json')
+        old=copy.deepcopy(current)
+        next(row for row in old['sources'] if row['id']=='open-meteo-wind')['dataset']='ecmwf_ifs025'
+        (self.root/'config/source-registry.json').write_bytes(canonical(old))
+        configuration=current_configuration(self.root)
+        (self.root/'config/model-configurations'/f'{digest(canonical(configuration))}.json').write_bytes(canonical(configuration))
+        with patch('bunaken_engine.pipeline.utc_now',return_value='2026-09-01T02:00:00Z'):
+            manifest,files=collect_run('2026-09-01','a'*40,days=1,root=self.root,collector=self.collector(1,'2026-09-01T02:00:00Z'))
+        self.assertTrue(any(row['dataset']=='ecmwf_ifs025' for row in manifest['samples']))
+        self.assertNotIn('model_context',manifest)
+        (self.root/'config/source-registry.json').write_bytes(canonical(current))
+        features=json.loads(gzip.decompress(next(raw for name,raw in files.items() if name.endswith('features.json.gz'))))
+        forecasts=json.loads(gzip.decompress(next(raw for name,raw in files.items() if name.endswith('forecast.json.gz'))))
+        self.assertEqual(make_bundle(manifest,features,forecasts,root=self.root),files)
+        for name,raw in files.items():
+            path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(raw)
+        manifest_path=self.root/next(name for name in files if name.endswith('manifest.json'))
+        bundle=read_bundle(manifest_path,root=self.root)
+        self.assertEqual(bundle['environment_configuration']['sources'],old)
+
     def test_storage_availability_and_revision_date_change(self):
         bundles=copy.deepcopy(self.bundles)
         for bundle in bundles:

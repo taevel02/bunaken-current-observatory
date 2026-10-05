@@ -27,7 +27,7 @@ class AnalogTest(unittest.TestCase):
         self.assertAlmostEqual(result['pci'], 1.3)
         self.assertEqual(result['n_eff'], 3)
         self.assertEqual(result['n_eff_days'], 3)
-        self.assertEqual(result['support'], 'low')
+        self.assertEqual(result['support'], 'very_low')
         self.assertEqual(effective_size([0, 0]), 0)
 
     def test_reference_target_or_training_geometry_caps_numeric_support(self):
@@ -58,6 +58,7 @@ class AnalogTest(unittest.TestCase):
         for row in candidates: row['quality_weight'] = 0
         self.assertEqual(predict(target, candidates, scaler)['n_eff'], 0)
         target['values']['tide_rate_m_per_hour'] = None
+        target['values']['tide_excursion_m'] = None
         self.assertIn('missing_required_features', predict(target, candidates, scaler)['reason_codes'])
 
     def test_disabled_features_do_not_inflate_coverage(self):
@@ -110,6 +111,38 @@ class AnalogTest(unittest.TestCase):
         self.assertEqual(support_level(20, 20, 20, 20, 'mandolin', evidence, config), 'medium')
         evidence['mode'] = 'leave_one_day_out'
         self.assertEqual(support_level(20, 20, 20, 20, 'mandolin', evidence, config), 'low')
+
+    def test_fixed_depth_profile_keeps_missing_weather_and_thermal_penalties(self):
+        target,candidates,scaler=setup()
+        config=read_json(ROOT/'config/model.json')
+        config.update(version='weighted-analog-v1.2',comparison_scope='site-18m-v1')
+        scaler['features']['reference_depth_m']['enabled']=False
+        for name in ('modelled_temperature_c','temperature_difference_10_30_c'):
+            target['values'][name]=None
+        result=predict(target,candidates,scaler,config=config)
+        self.assertAlmostEqual(result['feature_coverage']['total'],.75/.9)
+        self.assertAlmostEqual(result['pci'],1.3)
+        for name in read_json(ROOT/'config/features.json')['groups']['weather']['features']:
+            target['values'][name]=None
+        result=predict(target,candidates,scaler,config=config)
+        self.assertIsNone(result['pci'])
+        self.assertIn('insufficient_feature_coverage',result['reason_codes'])
+        # Old model and old coverage semantics remain reproducible.
+        config.pop('comparison_scope');config['version']='weighted-analog-v1.1'
+        self.assertAlmostEqual(predict(target,candidates,scaler,config=config)['feature_coverage']['total'],.55)
+
+    def test_fixed_depth_profile_cannot_borrow_other_depth_labels(self):
+        target,candidates,scaler=setup()
+        config=read_json(ROOT/'config/model.json')
+        config.update(version='weighted-analog-v1.2',comparison_scope='site-18m-v1')
+        candidates[0]['values']['reference_depth_m']=15
+        result=predict(target,candidates,scaler,config=config)
+        self.assertIsNone(result['pci'])
+        self.assertIn('insufficient_analogs',result['reason_codes'])
+        target['values']['reference_depth_m']=15
+        self.assertIn('outside_model_depth_scope',predict(target,candidates,scaler,config=config)['reason_codes'])
+        vertical = [dict(candidates[1], id=str(i), day=f'2026-09-0{i+1}', vertical='down' if i<2 else 'none') for i in range(5)]
+        self.assertEqual(predict(target,vertical,scaler,config=config)['vertical_evidence']['status'],'insufficient')
 
     def test_matched_baselines_abstention_and_wita_cutoff(self):
         rows = [dict(day='2026-09-01', pci=.5, actual=.4, global_baseline=.6, site_baseline=.7), dict(day='2026-09-02', pci=None, actual=10, global_baseline=0, site_baseline=0)]
