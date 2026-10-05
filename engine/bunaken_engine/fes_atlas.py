@@ -24,7 +24,7 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def install(output: Path, sites: list[dict], *, seed: Path | None = None, workers: int = 3):
+def install(output: Path, sites: list[dict], *, seed: Path | None = None, workers: int = 3, discard_originals: bool = False):
     import fcntl
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (output / ".install.lock").open("a") as lock:
@@ -32,10 +32,10 @@ def install(output: Path, sites: list[dict], *, seed: Path | None = None, worker
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise ValueError("atlas_install_busy") from None
-        return _install(output, sites, seed=seed, workers=workers)
+        return _install(output, sites, seed=seed, workers=workers, discard_originals=discard_originals)
 
 
-def _install(output: Path, sites: list[dict], *, seed: Path | None = None, workers: int = 3):
+def _install(output: Path, sites: list[dict], *, seed: Path | None = None, workers: int = 3, discard_originals: bool = False):
     if not 1 <= workers <= 6:
         raise ValueError("atlas_workers_out_of_range")
     if not sites or any(not all(isinstance(site.get(key), (int, float)) and not isinstance(site[key], bool)
@@ -130,8 +130,13 @@ def _install(output: Path, sites: list[dict], *, seed: Path | None = None, worke
             for variable in ("amplitude", "phase"):
                 cropped[variable] = cropped[variable].transpose("lon", "lat")
             cropped.to_netcdf(subset)
-        return dict(wave=wave, file=name, compressed_bytes=length, source_modified=modified,
-                    compressed_sha256=sha256(packed), native_sha256=sha256(unpacked), regional_sha256=sha256(subset))
+        entry = dict(wave=wave, file=name, compressed_bytes=length, source_modified=modified,
+                     compressed_sha256=sha256(packed), native_sha256=sha256(unpacked), regional_sha256=sha256(subset))
+        if discard_originals:
+            # Only this constituent's verified staging files; retain regional files and provenance.
+            unpacked.unlink()
+            packed.unlink()
+        return entry
 
     entries = []
     # NetCDF/HDF5 handles are not thread-safe in every runtime; crop sequentially.
@@ -162,9 +167,10 @@ def main():
     parser.add_argument("--sites",type=Path,default=Path("packages/contracts/data/sites.json"))
     parser.add_argument("--seed",type=Path)
     parser.add_argument("--workers",type=int,choices=range(1,7),default=3)
+    parser.add_argument("--discard-originals",action="store_true",help="remove downloaded originals after verified regional extraction")
     args=parser.parse_args()
     try:
-        manifest=install(args.output,json.loads(args.sites.read_text()),seed=args.seed,workers=args.workers)
+        manifest=install(args.output,json.loads(args.sites.read_text()),seed=args.seed,workers=args.workers,discard_originals=args.discard_originals)
         print(json.dumps({"status":"installed","files":len(manifest["files"])}))
     except Exception as error:
         # HTTP/SDK exception strings can contain sensitive details.

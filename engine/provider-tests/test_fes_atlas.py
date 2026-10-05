@@ -73,6 +73,31 @@ class FesAtlasProviderTest(unittest.TestCase):
                 install(output,[{'lat':1.61,'lon':124.7}])
 
 
+    def test_ephemeral_atlas_discards_only_verified_originals(self):
+        with TemporaryDirectory() as tmp:
+            output = Path(tmp)/'atlas'
+            original = output/'original'
+            original.mkdir(parents=True)
+            unrelated = original/'keep.txt'
+            unrelated.write_text('unrelated')
+            fixture = Path(tmp)/'fixture.nc'
+            xr.Dataset({'amplitude':(('lat','lon'),np.ones((15,15)),{'units':'cm'}),
+                        'phase':(('lat','lon'),np.zeros((15,15)),{'units':'degrees'})},
+                       coords={'lat':np.linspace(1.3,1.9,15),'lon':np.linspace(124.4,125,15)}).to_netcdf(fixture)
+            packed = lzma.compress(fixture.read_bytes())
+            def opener(request, timeout):
+                return Response(b'' if request.get_method() == 'HEAD' else packed,
+                                {'Content-Length':str(len(packed)), 'Last-Modified':'synthetic'})
+            with patch.dict(os.environ,{'AVISO_USERNAME':'synthetic','AVISO_PASSWORD':'synthetic'}), patch('bunaken_engine.fes_atlas.urlopen',side_effect=opener), patch('builtins.print'):
+                result = install(output,[{'lat':1.6,'lon':124.7}],discard_originals=True)
+            self.assertEqual(len(result['files']),len(WAVES))
+            self.assertEqual(list(original.iterdir()),[unrelated])
+            self.assertTrue(all((output/'regional'/entry['file']).is_file() for entry in result['files']))
+            from bunaken_engine.fes_research import verify_atlas
+            self.assertEqual(verify_atlas(output),result)
+            with patch.dict(os.environ,{'AVISO_USERNAME':'synthetic','AVISO_PASSWORD':'synthetic'}), patch('bunaken_engine.fes_atlas.urlopen',side_effect=AssertionError('no repeat download')):
+                self.assertEqual(install(output,[{'lat':1.6,'lon':124.7}],discard_originals=True),result)
+
     def test_invalid_coordinates_fail_before_network(self):
         with TemporaryDirectory() as tmp, patch('bunaken_engine.fes_atlas.urlopen') as opener:
             for sites in ([],[{'lat':float('nan'),'lon':124}],[{'lat':1,'lon':181}]):
