@@ -13,7 +13,7 @@
   ],
   "properties": {
     "id": { "type": "string", "format": "uuid" },
-    "schema_version": { "enum": ["1.0", "1.1", "1.2", "1.3", "1.4"] },
+    "schema_version": { "enum": ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5"] },
     "observer_id": { "type": "string", "minLength": 1, "maxLength": 64 },
     "rubric_version": { "type": "string", "minLength": 1, "maxLength": 64 },
     "revision": { "type": "integer", "minimum": 1 },
@@ -146,7 +146,7 @@
       }
     },
     {
-      "if": { "properties": { "schema_version": { "enum": ["1.3", "1.4"] } }, "required": ["schema_version"] },
+      "if": { "properties": { "schema_version": { "enum": ["1.3", "1.4", "1.5"] } }, "required": ["schema_version"] },
       "then": {
         "required": ["route_description", "vertical_onset"],
         "not": { "required": ["start_depth_m"] },
@@ -164,8 +164,12 @@
       }
     },
     {
-      "if": { "properties": { "schema_version": { "const": "1.4" } }, "required": ["schema_version"] },
+      "if": { "properties": { "schema_version": { "enum": ["1.4", "1.5"] } }, "required": ["schema_version"] },
       "then": { "properties": { "local_end": { "type": "string" }, "end_at": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "schema_version": { "const": "1.5" } }, "required": ["schema_version"] },
+      "then": { "properties": { "representative_depth_m": { "type": "number" } } }
     }
   ]
 }

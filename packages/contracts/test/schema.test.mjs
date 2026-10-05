@@ -34,6 +34,7 @@ test("synthetic observation validates in shared create-request contract", async 
 test("public observation exporter rejects unknown request fields and validates server revision shape", async () => {
   const request = await fixture("observation-create");
   assert.equal(validateCreateObservation(request).valid, true);
+  assert.equal(validateCreateObservation({ ...request, representative_depth_m: null }).valid, true);
   assert.equal(validateCreateObservation({ ...request, train_eligible: true, notes_private: "secret" }).valid, false);
   const revision = {
     ...request,
@@ -57,6 +58,9 @@ test("public observation exporter rejects unknown request fields and validates s
   const newRevision = { ...revision, schema_version: "1.3" };
   delete newRevision.time_samples;
   assert.equal(validateObservationRevision(newRevision).valid, true);
+  assert.equal(validateObservationRevision({ ...newRevision, representative_depth_m: null }).valid, true);
+  assert.equal(validateObservationRevision({ ...newRevision, schema_version: "1.5" }).valid, true);
+  assert.equal(validateObservationRevision({ ...newRevision, schema_version: "1.5", representative_depth_m: null }).valid, false);
   assert.equal(validateObservationRevision({ ...newRevision, schema_version: "1.4" }).valid, true);
   assert.equal(validateObservationRevision({ ...newRevision, schema_version: "1.4", local_end: null, end_at: null }).valid, false);
   assert.equal(validateObservationRevision({ ...newRevision, local_end: null, end_at: null }).valid, true);

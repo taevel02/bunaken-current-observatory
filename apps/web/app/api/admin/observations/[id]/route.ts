@@ -100,6 +100,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const store = new GitHubDataStore({ config: getGitHubDataConfig() });
     const replay = await readRequestStatus(store, keyDigest, requestHash);
     if (replay.found) return apiSuccess({ ...replay, saved_to_public_repository: true }, 200, { idempotent_replay: true }, { ETag: `"obs:${id}:rev:${replay.revision}"` });
+    // Legacy null-depth requests may replay; every fresh write requires a depth.
+    if (typeof rawFields.representative_depth_m !== "number" || !Number.isFinite(rawFields.representative_depth_m)) throw new ObservationStorageError("request_invalid", false, 422);
     const body: Record<string, unknown> = { ...rawFields, site_id: resolveSiteId(rawFields.site_id) };
     if (!body.site_id) throw new ObservationStorageError("request_invalid", false, 422);
     const validation = validateCreateObservation(body);
@@ -139,7 +141,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     delete revisionFields.time_samples;
     const document = {
       ...revisionFields,
-      schema_version: "1.4",
+      schema_version: "1.5",
       observer_id: current.revision.observer_id,
       rubric_version: current.revision.rubric_version,
       revision: expectedRevision + 1,
