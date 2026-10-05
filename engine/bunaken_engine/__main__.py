@@ -67,6 +67,15 @@ def parser():
     evaluation.add_argument('--mode',choices=['forward','leave_one_day_out'],default='forward')
     evaluation.add_argument('--operational',action='store_true',help='requires Git-verified actual storage evidence; never backfill performance')
     evaluation.add_argument('--output',type=Path,required=True)
+    enrichment=commands.add_parser('enrich',help='collect missing actual-dive environments and build analysis inputs; never publish')
+    inputs=enrichment.add_mutually_exclusive_group(required=True)
+    inputs.add_argument('--observations',type=Path)
+    inputs.add_argument('--from-data',action='store_true',help='read all revisions and confirmed bundles at one frozen Git head')
+    enrichment.add_argument('--snapshot',type=Path,action='append',default=[])
+    enrichment.add_argument('--observer',required=True)
+    enrichment.add_argument('--rubric',required=True)
+    enrichment.add_argument('--code-commit',required=True)
+    enrichment.add_argument('--output',type=Path,required=True)
     scaler=commands.add_parser("scaler",help="fit median/IQR to environment-only rows available at cutoff")
     scaler.add_argument("--input",type=Path,required=True)
     scaler.add_argument("--cutoff",required=True)
@@ -116,6 +125,21 @@ def main(argv=None):
             write_files(args.output,files)
             receipt=publish_bundle(store,manifest,files,root=root) if store else None
             result=dict(run_id=run_id,status=manifest["status"],samples=len(manifest["samples"]),source_status=manifest["source_status"],saved_to_public_repository=receipt is not None,storage_commit=receipt["storage_commit"] if receipt else None)
+        elif args.command=='enrich':
+            head=subprocess.run(['git','rev-parse','HEAD'],cwd=root,capture_output=True,text=True,check=True).stdout.strip()
+            dirty=subprocess.run(['git','status','--porcelain'],cwd=root,capture_output=True,text=True,check=True).stdout.strip()
+            if args.code_commit!=head or dirty: raise SnapshotError('code_commit_unverified_or_dirty')
+            from bunaken_engine.enrichment import enrich
+            from bunaken_engine.model_data import read_bundle
+            if args.from_data:
+                from bunaken_engine.model_input import data_inputs
+                data_head,observations,bundles=data_inputs(store_from_env(),utc_now(),root=root)
+            else:
+                data_head=None;observations=read_json(args.observations);bundles=[]
+            bundles += [read_bundle(path,root=root) for path in args.snapshot]
+            report=enrich(observations,bundles,args.observer,args.rubric,args.code_commit,args.output,root=root,source_data_commit=data_head)
+            result={key:report[key] for key in ('eligible_candidates','scaler_rows','enabled_features','excluded','saved_to_public_repository')}
+            result['source_data_commit']=data_head
         elif args.command in {'model','validate-model'}:
             from bunaken_engine.model_data import read_bundle, model_context, prepare_model
             observations=read_json(args.observations)
