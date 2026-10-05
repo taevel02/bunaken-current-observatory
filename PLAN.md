@@ -1,7 +1,7 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.2\
-작성일: 2026-10-04\
+버전: 1.3\
+작성일: 2026-10-05\
 기준: [PRD.md](PRD.md) v1.5 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.7\
 상태: P0–P5 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
 
@@ -27,6 +27,29 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 | P7 | 운영 연결과 출시 | P1–P6 | 출시 검수·복구·운영 문서 완료 |
 
 기능 개발과 관측 축적은 서로 다른 일정이다. 출시일까지 label이 부족해도 cold-start 상태로 서비스할 수 있다. 숫자 PCI나 높은 Support를 출시 조건으로 강제하지 않는다. 각 단계의 기간은 실제 데이터 접근성·구현 인력·테스트 결과를 확인한 뒤 추정한다.
+
+### 2.1 남은 작업과 추천 순서 (2026-10-05)
+
+P0–P5의 완료 표시는 코드·계약 검증 완료를 뜻한다. P6는 미구현이며 P7은 운영 설정·실제 실행 검증이 남아 있다. 아래 순서는 관측을 저장하면 환경을 결합하고 Analog를 다시 계산해 홈페이지까지 갱신하는 목표를 우선한다. P7의 수집·자동화 연결 일부를 P6보다 먼저 진행하고, P7 전체 출시 완료는 P6 이후에 판단한다.
+
+현재 근거는 로컬 HEAD `698af84`와 2026-10-04 실행 기록이다. 원격 설정·최신 data branch·실제 적격 label 수는 이번 계획 갱신에서 재조회하지 않았다. 기존 4개 revision·적격 label 0개·환경 bundle 0개는 2026-10-04 확인값이며 현재 건수로 단정하지 않는다.
+
+| 추천 순서 | 관련 항목 | 남은 작업·현재 상태 | 담당·의존 | 완료 기준 |
+|---|---|---|---|---|
+| 병행 시작 | P2, P5 실제 데이터 | 실제 관측 축적, 대표 수심·시각 입력, 기억하는 과거 기록의 명시적 정정. 숫자 예측 적격은 데이터 축적에 의존 | 사용자: 현장 기록. Codex: 적격·결측 사유 표시 확인 | 실제 대표 수심·동일 observer/rubric·use_for_model 조건 확인. 3개 label·서로 다른 3일·같은 Site 자료·N_eff 2·환경 coverage 0.8 등 모든 gate 검사 |
+| 1 | P3-03/04 후속 | Copernicus 요청 시간 제한·지연 복구·공유 셀 요청 중복 축소. 새 geometry의 최신 실시간 수집은 시간 초과로 검증 미완료 | Codex. 기존 소스 접근 설정 사용 | 실제 수집의 원격 갱신 시각·거리 6km·수심 18m·바다 셀 확인. 장애·stale 시 새 숫자 발행 차단 |
+| 2 | P3-05, P5-01/08 후속 | 실제 관측 구간 환경 자동 결합·부족 feature의 historical 분포/scaler 보완. 기존 부분 분포와 CLI를 확장·연결 | Codex. 순서 1과 사용자 관측 | revision별 EnvironmentLink·학습 bundle 생성. 실제 입출수 구간·결측·원본과 환경 분리·확보 cutoff 보존. 과거 backfill을 당시 forecast로 취급하지 않음 |
+| 3 | P3–P5 통합 | 관측 정정부터 Analog 재계산·검증·공개 패키지 생성까지 로컬에서 한 흐름으로 검증. 개별 코드 완료와 구분 | Codex. 순서 2 | 같은 입력 재현, withdrawn/정정 반영, 날짜 누수·낮은 support·null 사유 검증. 충분한 label이 없으면 cold-start 결과 생성 |
+| 4 | P7-01/02, P3-08 운영 | GitHub 환경 설정·최신 trusted SHA·data entrypoint 설치·branch 보호·FES 비공개 atlas 실행 환경 연결. 로컬 .env는 자동 전달되지 않음 | Codex. 계정 UI·권한에 접근할 수 없는 부분은 사용자 | 필요한 secret/variable·FES 실행 환경 확보, main 보호·non-force 쓰기 확인, 외부 PR/preview secret 격리. 현재 template의 이전 고정 SHA 갱신 |
+| 5 | P7-04/05 | 수집 07:17/19:17, seal 20:17 WITA 예약 실행과 관측 push 후 자동 갱신 연결. 현재 reusable workflow는 수동/push 호출이며 schedule 없음 | Codex. 순서 3/4 | 실제 수집→모델 갱신→검증→release chain 성공. PAT/GITHUB_TOKEN 후속 처리, 중복 실행·지연·결측, 실제 Git 저장 cutoff/seal·홈페이지 반영 확인 |
+| 6 | P7-01/03, P2 수동 acceptance | Vercel 운영 설정·WAF·canonical origin·이전 deployment 접근 차단. iOS Safari/Android Chrome 실제 입력·키보드·오류 복구 검증 | Codex. 계정 설정 접근·실기기 조작은 사용자와 함께 | 실제 로그인 제한·세션 철회/no-store 검증, 실제 관측 저장 확인, 360px·소프트 키보드·세션 만료·60초 입력 시간 측정 |
+| 7 | P6-01–06 | 연구 편집·안전한 Markdown·네 원고·results/manifest·검증·발행·정정 이력 구현. 현재 미구현 | Codex: 기능·방법론 초안. 사용자: 현장 해석 검토. 순서 2/3 이후 권장 | technical.ko/en·guide.ko/en의 결과 hash/version 일치, HTML/script 차단, 공개 draft 안내. 실제 성능 근거 없으면 방법론·한계만 보고 |
+| 8 | P7-06/07/08, P2 규모 대응 | Git bundle 복원·source age·지연·사용량·출처 검수. 관리자 최신순 목록의 전체 revision 조회 비용 개선 | Codex. 운영 테스트 자료와 데이터 규모 측정 필요 | 관측/snapshot/seal/manifest 복원, 저장 p95·반영 지연·LCP 측정. 규모 확대 전에 원자 갱신 목록 인덱스 또는 prefix sharding 검증 |
+| 9 | P7-09 | 최종 출시·공개 실행. 실제 배포와 공개 데이터 쓰기는 별도 승인 범위 | 사용자: 공개·배포 승인. Codex: 승인된 실행 | P6 및 운영 acceptance 충족, 버전·시각·복구 절차·미검증 한계 기록. label 부족 상태로도 cold-start 출시 가능 |
+
+최소 진행 단위는 1–3의 로컬 수집·환경 결합·Analog 재계산이다. 새 서비스·DB·필수 API 키를 추가하지 않는다. Open-Meteo 비상업 이용에 API 키를 필수로 요구하지 않는다. 외부 장애는 결측/null 상태로 남기고 이전 immutable snapshot을 보존한다. 원격 단계는 non-force commit과 새 release로 기록하며 과거 snapshot·관측 이력을 재작성하지 않는다.
+
+사용자가 확정한 입수 좌표·Site 18m·6km·지도 기본축은 다시 미확정 설정으로 분류하지 않는다. 근사축은 reference_geometry로 유지하고 numeric 출력은 experimental/very_low로 제한한다. Zone 위치 특정·GPS·실측 벽 방향·검증 오차 허용기준은 사용자 현장 검토 후 확장한다. Zone/GPS와 높은 Support는 Site 수준 cold-start 운영을 차단하지 않는다. 학습에는 실제 관측 대표 수심이 필요하며 Site 기본 18m로 대체하지 않는다.
 
 ## 3 P0 계약과 개발 기반
 
@@ -61,9 +84,9 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 ## 5 P2 모바일 관측과 다국어
 
-- [x] P2-01 날짜·시각·Site·Zone/unknown·시작 수심·PCI·수직 방향을 한 열 폼으로 구현한다.
+- [x] P2-01 WITA 날짜·입수/출수 시각·Site·Overall PCI와 실제 대표 관측 수심을 모바일 폼으로 구현한다. 날짜 기본값과 출수 50분 제안은 실제 입력 확인 후 저장한다.
 - [x] P2-02 숫자 직접 입력, 1.0 초과 입력, 기본값 확인, 44px 터치 영역과 키보드 대응을 구현한다.
-- [x] P2-03 수온·대표 수심·Peak 사건·공개 메모를 선택 영역으로 추가한다. 모르는 값은 강제로 채우지 않는다.
+- [x] P2-03 수온·수직 관측·공개 메모를 선택 영역으로 제공한다. 신규 Peak·Zone·경로 입력은 제외하며 기존 사건·복원 초안은 보존한다. 모르는 값은 강제로 채우지 않는다.
 - [x] P2-04 `공개 저장`과 공개 범위 안내를 제공한다. commit 성공 전에는 저장됨을 표시하지 않는다.
 - [x] P2-05 클라이언트 UUID/key를 재시도 동안 유지하고 timeout 후 결과 조회를 구현한다.
 - [x] P2-06 기기 임시저장 동의, 7일 보존, 인증 후 복원, 저장 후 정리, 로그아웃 삭제를 구현한다.
