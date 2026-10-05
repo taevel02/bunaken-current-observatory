@@ -75,4 +75,4 @@ adapter는 동일 evaluator를 사용하며 atlas·코드·SDK·보고서 hash�
 
 Actions 원격 설치·예약 실행은 P7 운영 연결 범위다. hosted runner의 로컬 atlas는 job 종료 후 사라지므로 저장 방식·라이선스·전송 시간·cutoff를 확인하고 연결해야 한다. 로컬 `.env`는 GitHub Secrets에 자동 등록되지 않는다.
 
-workflow는 승인받은 AVISO Secrets로 private atlas를 준비한다. 독립 참조 증거가 없는 runner에서는 검증 flag가 남는다. 현재 로컬 성공만으로 예약 작업이나 운영 PCI 예측이 준비됐다고 판정하지 않는다.
+workflow는 승인받은 AVISO Secrets로 private atlas를 준비하고 고정 LIBFES 2.9.7과 전날 하루를 독립 비교한다. 성공한 증거 경로를 같은 job의 adapter에 전달한다. hosted runner에서는 검증된 지역 추출 후 `--discard-originals`로 원본만 정리하며 cache/artifact에 올리지 않는다. [Actions 운영 설치 절차](actions-operations.ko.md)의 원격 실행 검수를 완료해야 운영 연결 완료로 판단한다.

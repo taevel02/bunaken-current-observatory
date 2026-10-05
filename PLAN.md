@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.7\
+버전: 1.8\
 작성일: 2026-10-05\
 기준: [PRD.md](PRD.md) v1.8 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.0\
 상태: P0–P5 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
@@ -72,8 +72,8 @@ v1.3 날짜 검증: forward는 18개 중 제공 0개·MAE null이다. 과거 cut
 | 완료 3 | P3–P5 통합 | 실제 18개 관측으로 2026-10-06의 19 Site·304개 슬롯 재계산, forward/LODO 검증, 공개 패키지 로컬 생성·웹 reader 통합 확인 | Codex. 원격 발행·운영 성능 검증과 구분 | snapshot·release 동일 바이트 재현, 정정/철회/학습 제외 민감도, 날짜·revision 누수 방지, 손상 패키지 거부 통과. 초기 v1.1은 304개 모두 null. 최신 v1.3 결과는 위 후속 검증에 기록 |
 | 완료 4 | P3, P5 환경 적격 | 공식 갱신 metadata·6km 내 ECMWF IFS 바람·파고 재수집. 사용자 승인 18개 수온 28°C 정정. v1.3 고정 18m 비교 범위 구현 | Codex. 신규 수심 확장은 별도 검증 | stale 수온 제외 유지, σ·0.8 coverage·numeric gate 유지. PRD/SPEC·버전·이전 설정 archive·회귀 검증 완료 |
 | 완료 5 | P3 수온 공급 | 2026-10-05 공식 catalogue 갱신 회복과 19 Site 실제 재수집 확인. 18m 유효 표본 114개, 304개 예측 구간에서 모델 수온 추출 가능 | Codex. 기존 dataset·version·36시간 기준 유지 | 342개 source sample schema·6km·바다 셀·양쪽 수심 보간 통과. stale/future/unknown 거부와 36시간 경계 확인. 기존 snapshot은 그대로 보존 |
-| 4 | P7-01/02, P3-08 운영 | GitHub 환경 설정·최신 trusted SHA·data entrypoint 설치·branch 보호·FES 비공개 atlas 실행 환경 연결. 로컬 .env는 자동 전달되지 않음 | Codex. 계정 UI·권한에 접근할 수 없는 부분은 사용자 | 필요한 secret/variable·FES 실행 환경 확보, main 보호·non-force 쓰기 확인, 외부 PR/preview secret 격리. 현재 template의 이전 고정 SHA 갱신 |
-| 5 | P7-04/05 | 수집 07:17/19:17, seal 20:17 WITA 예약 실행과 관측 push 후 자동 갱신 연결. 현재 reusable workflow는 수동/push 호출이며 schedule 없음 | Codex. 순서 3/4 | 실제 수집→모델 갱신→검증→release chain 성공. PAT/GITHUB_TOKEN 후속 처리, 중복 실행·지연·결측, 실제 Git 저장 cutoff/seal·홈페이지 반영 확인 |
+| 4 | P7-01/02, P3-08 운영 | GitHub 환경 설정·최신 trusted SHA·data entrypoint 설치·branch 보호·FES 비공개 atlas 실행 환경 연결. 로컬 .env는 자동 전달되지 않음 | Codex. 계정 UI·권한에 접근할 수 없는 부분은 사용자 | 필요한 secret/variable·FES 실행 환경 확보, main 보호·non-force 쓰기 확인, 외부 PR/preview secret 격리. template SHA는 `dce16626986762650b089a692c770eeab97ea659`로 갱신. 원격 설치·보호 설정은 미실행 |
+| 5 | P7-04/05 | 수집 07:17/19:17, seal 20:17 WITA 예약 실행과 관측 push 후 자동 갱신 연결. main workflow에 schedule 구현 완료. hosted FES 참조 검증·collect 직렬화·seal 별도 group 추가. 실제 예약/push 실행은 미검증 | Codex. 순서 3/4 | 실제 수집→모델 갱신→검증→release chain 성공. PAT/GITHUB_TOKEN 후속 처리, 중복 실행·지연·결측, 실제 Git 저장 cutoff/seal·홈페이지 반영 확인 |
 | 6 | P7-01/03, P2 수동 acceptance | Vercel 운영 설정·WAF·canonical origin·이전 deployment 접근 차단. iOS Safari/Android Chrome 실제 입력·키보드·오류 복구 검증 | Codex. 계정 설정 접근·실기기 조작은 사용자와 함께 | 실제 로그인 제한·세션 철회/no-store 검증, 실제 관측 저장 확인, 360px·소프트 키보드·세션 만료·60초 입력 시간 측정 |
 | 7 | P6-01–06 | 연구 편집·안전한 Markdown·네 원고·results/manifest·검증·발행·정정 이력 구현. 현재 미구현 | Codex: 기능·방법론 초안. 사용자: 현장 해석 검토. 순서 2/3 이후 권장 | technical.ko/en·guide.ko/en의 결과 hash/version 일치, HTML/script 차단, 공개 draft 안내. 실제 성능 근거 없으면 방법론·한계만 보고 |
 | 8 | P7-06/07/08, P2 규모 대응 | Git bundle 복원·source age·지연·사용량·출처 검수. 관리자 최신순 목록의 전체 revision 조회 비용 개선 | Codex. 운영 테스트 자료와 데이터 규모 측정 필요 | 관측/snapshot/seal/manifest 복원, 저장 p95·반영 지연·LCP 측정. 규모 확대 전에 원자 갱신 목록 인덱스 또는 prefix sharding 검증 |
@@ -82,6 +82,10 @@ v1.3 날짜 검증: forward는 18개 중 제공 0개·MAE null이다. 과거 cut
 로컬 수집·환경 결합·Analog 재계산·패키지 통합은 완료했다. 수온 공급 확인까지 완료했다. 다음은 순서 4의 GitHub/FES 운영 설정과 순서 5의 자동 갱신 연결이다. 새 서비스·DB·필수 API 키를 추가하지 않는다. Open-Meteo 비상업 이용에 API 키를 필수로 요구하지 않는다. 외부 장애는 결측/null 상태로 남기고 이전 immutable snapshot을 보존한다. 원격 단계는 non-force commit과 새 release로 기록하며 과거 snapshot·관측 이력을 재작성하지 않는다.
 
 사용자가 확정한 입수 좌표·Site 18m·6km·지도 기본축은 다시 미확정 설정으로 분류하지 않는다. 근사축은 reference_geometry로 유지하고 numeric 출력은 experimental/very_low로 제한한다. Zone 위치 특정·GPS·실측 벽 방향·검증 오차 허용기준은 사용자 현장 검토 후 확장한다. Zone/GPS와 높은 Support는 Site 수준 cold-start 운영을 차단하지 않는다. 대표 관측 수심은 필수이며 사용자 지정 신규 기본값 18m를 확인·수정한다. 기존 null 관측도 2026-10-05 명시 승인에 따라 개별 18m 정정 revision을 저장했다. 실측 평균 수심으로 단정하거나 앞으로의 미확인 과거 기록을 자동 보충하지 않는다.
+
+### Actions/FES 운영 연결 구현 (2026-10-05)
+
+[운영 설치 절차](docs/actions-operations.ko.md)에 환경 Secret/variable, 고정 SHA, branch 보호, 최초 실행·복구 조건을 기록했다. 예약은 UTC 23:17/11:17 수집·12:17 seal이며 cutoff는 기존 WITA 20:00이다. FES 원본은 private runner에서 처리하고 독립 LIBFES 비교가 성공해야 새 forecast 발행으로 진행한다. 일반 저장 PAT의 권한은 확대하지 않는다. 로컬 engine 86개·provider 12개·actionlint 검증을 통과했으며 FES 증거는 현재 코드에 맞춰 재생성했다. 원격 환경/Secrets·branch 보호·entrypoint 설치·실제 Actions 실행은 아직 완료 조건을 충족하지 않았다.
 
 ## 3 P0 계약과 개발 기반
 
