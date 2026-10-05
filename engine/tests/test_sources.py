@@ -28,11 +28,31 @@ class SourcesTest(unittest.TestCase):
         self.assertEqual(samples[0]["value"],0)
         self.assertIsNone(samples[1]["value"])
         self.assertIsNone(samples[0]["issued_at"])
-        self.assertIn("native_time_resolution_unknown",samples[0]["quality_flags"])
-        self.assertIn("models=ecmwf_ifs025",urls[0])
+        self.assertNotIn("native_time_resolution_unknown",samples[0]["quality_flags"])
+        self.assertTrue(any("models=ecmwf_ifs" in url for url in urls))
         data["hourly_units"]["wind_speed_10m"]="km/h"
         with self.assertRaises(SourceError):
             collect_open_meteo(source,GEOMETRY,"2026-01-01T00:00Z","2026-01-01T01:00Z",fetcher=fetcher,usage_mode="noncommercial")
+
+    def test_open_meteo_uses_stable_provider_update_metadata(self):
+        from unittest.mock import patch
+        source=load_sources()["open-meteo-wave"]
+        metadata=dict(last_run_initialisation_time=1767225600,last_run_modification_time=1767226200,
+                      last_run_availability_time=1767226800,temporal_resolution_seconds=10800,
+                      update_interval_seconds=43200,data_end_time=1767312000)
+        data=dict(latitude=1,longitude=124,hourly_units={name:unit for name,unit in source['variables'].items()},
+                  hourly=dict(time=[1767225600,1767229200],**{name:[1,2] for name in source['variables']}))
+        def fetcher(url): return metadata if '/static/meta.json' in url else data
+        with patch('bunaken_engine.sources.utc_now',return_value='2026-01-01T01:20:00Z'):
+            rows=collect_open_meteo(source,GEOMETRY,'2026-01-01T00:00Z','2026-01-01T01:00Z',fetcher=fetcher,usage_mode='noncommercial')
+        self.assertEqual(rows[0]['source_updated_at'],'2026-01-01T00:20:00Z')
+        self.assertNotIn('source_age_unknown',rows[0]['quality_flags'])
+        self.assertIsNone(rows[0]['issued_at'])  # Feed metadata is not the exact run identity of every sample.
+        metadata['last_run_availability_time']=1767232800
+        with patch('bunaken_engine.sources.utc_now',return_value='2026-01-01T01:20:00Z'):
+            rows=collect_open_meteo(source,GEOMETRY,'2026-01-01T00:00Z','2026-01-01T01:00Z',fetcher=fetcher,usage_mode='noncommercial')
+        self.assertIsNone(rows[0]['source_updated_at'])
+        self.assertIn('source_age_unknown',rows[0]['quality_flags'])
 
     def test_missing_credentials_fail_without_prompt(self):
         with self.assertRaises(SourceError) as error:

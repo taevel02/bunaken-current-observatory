@@ -77,6 +77,25 @@ def sample(source: dict, geometry: dict, variable: str, value, valid_time: str, 
     return dict(schema_version="1.1",geometry_version=geometry.get("version"),source=source["id"], product=source["product"], dataset=source["dataset"], variable=variable, version=version or source["dataset_version"] or source["dataset"], lat=geometry["lat"], lon=geometry["lon"], site_id=geometry["site_id"], zone_id=geometry.get("id"), selected_grid=f"{lat:.6f},{lon:.6f}", selected_lat=lat, selected_lon=lon, grid_distance_km=distance_km(geometry["lat"],geometry["lon"],lat,lon), depth_m=depth, valid_time=valid_time, issued_at=issued_at, source_updated_at=source.get("last_updated_at"), retrieved_at=retrieved_at, value=float(value) if finite(value) else None, unit=source["variables"][variable], native_resolution=json.dumps(source["native_resolution"],sort_keys=True), native_depths_m=depths, interpolation_method="none" if depth is None else "bounded_depth_linear", quality_flags=(flags or []) + (["reference_geometry"] if geometry["status"] == "reference_geometry" else []))
 
 
+def open_meteo_update(source, host, fetcher, now):
+    """Provider feed update, not an invented issue time for individual hourly values."""
+    try:
+        meta = fetcher(f"https://{host}/data/{source['dataset']}/static/meta.json")
+        names = ('last_run_initialisation_time', 'last_run_modification_time', 'last_run_availability_time',
+                 'temporal_resolution_seconds', 'update_interval_seconds', 'data_end_time')
+        if any(not finite(meta.get(name)) or meta[name] <= 0 for name in names): return None
+        initial, modified, available = (meta[name] for name in names[:3])
+        # Official eventual-consistency allowance: latest feed must be available for 10 minutes.
+        if not initial <= modified <= available <= instant(now).timestamp() - 600: return None
+        expected = source['native_resolution']['time_hours']
+        if expected is not None and meta['temporal_resolution_seconds'] != expected * 3600: return None
+        if meta['update_interval_seconds'] != source['update_interval_hours'] * 3600: return None
+        if meta['data_end_time'] < available: return None
+        return tuple(meta[name] for name in names)
+    except (SourceError, KeyError, TypeError, ValueError, OverflowError, AttributeError):
+        return None
+
+
 def collect_open_meteo(source: dict, geometry: dict, start: str, end: str, *, fetcher=fetch_json, usage_mode: str | None = None, api_key: str | None = None) -> list[dict]:
     require_geometry(geometry)
     mode = usage_mode or os.environ.get("OPEN_METEO_USAGE_MODE")
@@ -94,8 +113,14 @@ def collect_open_meteo(source: dict, geometry: dict, start: str, end: str, *, fe
         params["wind_speed_unit"] = "ms"
     if mode == "commercial":
         params["apikey"] = key
+    before = open_meteo_update(source, host, fetcher, utc_now())
     data = fetcher(f"https://{host}/v1/{'marine' if marine else 'forecast'}?{urlencode(params)}")
     retrieved = utc_now()
+    after = open_meteo_update(source, host, fetcher, retrieved)
+    updated = before[2] if before is not None and before == after else None
+    if updated is not None:
+        updated = datetime.fromtimestamp(updated, timezone.utc).isoformat().replace('+00:00', 'Z')
+    source = {**source, 'last_updated_at': updated}
     try:
         lat, lon = data["latitude"], data["longitude"]
         if not finite(lat) or not finite(lon) or distance_km(geometry["lat"],geometry["lon"],lat,lon) > geometry["max_grid_distance_km"]:
@@ -113,7 +138,11 @@ def collect_open_meteo(source: dict, geometry: dict, start: str, end: str, *, fe
             for timestamp, value in zip(timestamps,hourly[variable]):
                 valid = datetime.fromtimestamp(timestamp,timezone.utc).isoformat().replace("+00:00","Z")
                 if instant(start) <= instant(valid) <= instant(end):
-                    flags = ["issued_time_unavailable", "source_age_unknown", "sea_cell_preferred_not_verified"]
+                    flags = ["issued_time_unavailable", "sea_cell_preferred_not_verified"]
+                    if updated is None:
+                        flags.append("source_age_unknown")
+                    else:
+                        flags.append("provider_update_metadata_verified")
                     if source["native_resolution"]["time_hours"] is None:
                         flags.append("native_time_resolution_unknown")
                     if not finite(value):

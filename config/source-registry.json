@@ -313,25 +313,27 @@
       "id": "open-meteo-wind",
       "provider": "open-meteo",
       "product": "weather",
-      "dataset": "ecmwf_ifs025",
+      "dataset": "ecmwf_ifs",
       "variables": {
         "wind_speed_10m": "m/s",
         "wind_direction_10m": "degree"
       },
       "native_resolution": {
-        "horizontal": "0.25 degree",
-        "time_hours": null,
+        "horizontal": "ECMWF reduced Gaussian O1280 (~9 km)",
+        "time_hours": 1,
         "depth": "10 m above surface"
       },
       "update_interval_hours": 6,
       "stale_after_hours": 36,
-      "metadata_checked_at": "2026-09-30",
+      "metadata_checked_at": "2026-10-05",
       "evidence_urls": [
-        "https://open-meteo.com/en/docs"
+        "https://open-meteo.com/en/docs",
+        "https://open-meteo.com/en/docs/model-updates",
+        "https://api.open-meteo.com/data/ecmwf_ifs/static/meta.json"
       ],
       "dataset_version": null,
       "access": {
-        "status": "requires_runtime_metadata",
+        "status": "runtime_update_metadata_checked",
         "credentials": []
       },
       "redistribution": {
@@ -365,13 +367,15 @@
       },
       "update_interval_hours": 12,
       "stale_after_hours": 36,
-      "metadata_checked_at": "2026-09-30",
+      "metadata_checked_at": "2026-10-05",
       "evidence_urls": [
-        "https://open-meteo.com/en/docs/marine-weather-api"
+        "https://open-meteo.com/en/docs/marine-weather-api",
+        "https://open-meteo.com/en/docs/model-updates",
+        "https://marine-api.open-meteo.com/data/meteofrance_wave/static/meta.json"
       ],
       "dataset_version": null,
       "access": {
-        "status": "requires_runtime_metadata",
+        "status": "runtime_update_metadata_checked",
         "credentials": []
       },
       "redistribution": {
