@@ -96,3 +96,14 @@ node --conditions=react-server --test apps/web/test/public-release.integration.m
 ```
 
 입력은 `web/latest.json`과 연결된 manifest/gzip이 있는 release output 디렉터리다. 환경변수 미지정 시 선택 테스트는 skip한다. 자료 없는 빈 패키지는 통합 성공으로 처리하지 않는다.
+
+## 연구 보고서 편집
+
+`/ko/admin/research` 또는 `/en/admin/research`에서 네 Markdown 원고와 단일 `results.json`을 연결한다. 서버 초안도 공개 Git 저장이며, 홈페이지는 발행된 버전만 기본 표시한다. 원고·결과·제목 변경은 검토 확인을 초기화한다. 발행은 저장된 `ready` 내용과 정확히 일치할 때만 가능하다. 이전 발행 버전은 불변이며 개정판에는 새 version과 변경 이유가 필요하다.
+
+- 작성 근거: [고정 근거 묶음](docs/research/evidence-2026-10-05/README.ko.md)
+- Astra 지시문과 가져오기: [원고 작성 안내](docs/research/astra-authoring.ko.md)
+- 로컬 묶음 명령: `node apps/web/scripts/create-research-bundle.mjs --help`
+- 브라우저 검증: `BUNAKEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs node --conditions=react-server --test apps/web/test/research-browser.integration.mjs`
+
+실제 첫 보고서 원고·검토·발행은 별도 작업이다. 공개 목록은 20개 단위 metadata 조회이며 상세 페이지는 선택한 버전의 원고만 검증한다.

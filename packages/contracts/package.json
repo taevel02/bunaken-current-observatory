@@ -3,7 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { "./schemas/*": "./json-schema/*.schema.json", "./site-data": "./data/sites.json", "./sites": { "types": "./sites.d.mts", "import": "./sites.mjs" }, "./validate": "./validate.mjs" },
-  "scripts": { "test": "node --test test/*.test.mjs" },
-  "dependencies": { "ajv": "8.17.1", "ajv-formats": "3.0.1" }
+  "exports": {
+    "./schemas/*": "./json-schema/*.schema.json",
+    "./site-data": "./data/sites.json",
+    "./sites": {
+      "types": "./sites.d.mts",
+      "import": "./sites.mjs"
+    },
+    "./validate": "./validate.mjs",
+    "./research": {
+      "types": "./research.d.mts",
+      "import": "./research.mjs"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  }
 }

@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/research-release.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "data_cutoff": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "model_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "dataset_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "state": {
+      "enum": [
+        "draft",
+        "in_review",
+        "ready",
+        "published",
+        "superseded",
+        "withdrawn"
+      ]
+    },
+    "title": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ko": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "en": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "ko",
+        "en"
+      ]
+    },
+    "authors": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "alias": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "alias",
+          "role"
+        ]
+      }
+    },
+    "source_data_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "code_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "results_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "peer_review_status": {
+      "const": "not_peer_reviewed"
+    },
+    "change_reason": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reviews": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "translation": {
+          "type": "boolean"
+        },
+        "narrative": {
+          "type": "boolean"
+        },
+        "rights": {
+          "type": "boolean"
+        },
+        "real_synthetic": {
+          "type": "boolean"
+        },
+        "results": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "translation",
+        "narrative",
+        "rights",
+        "real_synthetic",
+        "results"
+      ]
+    },
+    "references": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://[^\\s]+$",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "title",
+          "url"
+        ]
+      }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "technical.ko.md": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "technical.en.md": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "guide.ko.md": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "guide.en.md": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "technical.ko.md",
+        "technical.en.md",
+        "guide.ko.md",
+        "guide.en.md"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "slug",
+    "version",
+    "data_cutoff",
+    "model_version",
+    "dataset_sha256",
+    "revision",
+    "state",
+    "title",
+    "authors",
+    "source_data_commit",
+    "code_commit",
+    "results_sha256",
+    "peer_review_status",
+    "change_reason",
+    "created_at",
+    "updated_at",
+    "reviews",
+    "references",
+    "files"
+  ]
+}

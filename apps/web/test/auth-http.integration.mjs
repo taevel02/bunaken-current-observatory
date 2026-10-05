@@ -61,6 +61,7 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   await cp(appDirectory, isolatedApp, { recursive: true, filter: (source) => !source.includes("/node_modules") && !source.includes("/.next") && !source.split("/").at(-1).startsWith(".env") });
   await mkdir(join(temporaryRoot, "config"), { recursive: true });
   await cp(resolve(appDirectory, "../../config/source-registry.json"), join(temporaryRoot, "config", "source-registry.json"));
+  await cp(resolve(appDirectory,"../../docs/research/evidence-2026-10-05"),join(temporaryRoot,"docs/research/evidence-2026-10-05"),{recursive:true});
   await symlink(join(appDirectory, "node_modules"), join(isolatedApp, "node_modules"), "dir");
   const port = await availablePort();
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -122,6 +123,10 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   assert.equal(protectedList.status, 401);
   const protectedDetail = await globalThis.fetch(`${baseUrl}/api/admin/observations/${randomBytes(16).toString("hex")}`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(protectedDetail.status, 401);
+  const protectedResearch = await globalThis.fetch(`${baseUrl}/api/admin/research`, { headers: { cookie: cookieHeader(jar) } });
+  assert.equal(protectedResearch.status,401);
+  const researchRedirect = await globalThis.fetch(`${baseUrl}/ko/admin/research`, { redirect:"manual" });
+  assert.equal(researchRedirect.status,307);
   const koreanLoginPage = await globalThis.fetch(`${baseUrl}/ko/admin/login`);
   const englishLoginPage = await globalThis.fetch(`${baseUrl}/en/admin/login`);
   assert.equal(koreanLoginPage.status, 200);
@@ -187,6 +192,12 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   const listUnavailable = await globalThis.fetch(`${baseUrl}/api/admin/observations`, { headers: { cookie: cookieHeader(jar) } });
   assert.equal(listUnavailable.status, 503);
   assert.match(listUnavailable.headers.get("cache-control"), /private, no-store/);
+  const researchUnavailable = await globalThis.fetch(`${baseUrl}/api/admin/research`, { headers: {cookie:cookieHeader(jar)} });
+  assert.equal(researchUnavailable.status,503);assert.match(researchUnavailable.headers.get("cache-control"),/private, no-store/);
+  for (const headers of [{origin:"https://attacker.example","x-csrf-token":csrfToken},{origin:baseUrl,"x-csrf-token":"tampered"}]) {
+    const rejected = await globalThis.fetch(`${baseUrl}/api/admin/research`,{method:"POST",headers:{...headers,cookie:cookieHeader(jar),"content-type":"application/json"},body:"{}"});
+    assert.equal(rejected.status,403);
+  }
   const statusUnavailable = await globalThis.fetch(`${baseUrl}/api/admin/requests/status`, {
     method: "POST",
     headers: { origin: baseUrl, cookie: cookieHeader(jar), "content-type": "application/json", "x-csrf-token": csrfToken },

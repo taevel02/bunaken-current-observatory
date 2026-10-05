@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.0\
+버전: 2.1\
 작성일: 2026-10-05\
-기준: [PRD.md](PRD.md) v1.8 · [AGENTS.md](AGENTS.md)\
+기준: [PRD.md](PRD.md) v1.9 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -400,6 +400,22 @@ draft→in_review→ready→published의 편집 상태를 사용한다. 발행�
 
 publish 요청은 네 원고의 존재, 번역 상태, hash/version 일치, 참고문헌, 공개 데이터 권리, 실제/가상 구분, peer_review_status를 검사한다. 실패하면 422와 항목별 오류를 반환하고 초안을 유지한다. 동료심사를 하지 않았다면 not_peer_reviewed로 명시한다. unsafe HTML/MDX는 실행하지 않는다. 모델 배치가 원고를 자동 발행하지 않는다.
 
+### 11.1 연구 저장 API와 불변 경로
+
+`research-release`와 `research-results` schema 1.0을 사용한다. `/api/admin/research` GET/POST와 `/{locale}/admin/research`는 자체 관리자 세션을 요구한다. POST는 Origin·CSRF·600KB 요청 상한·HMAC 멱등키·expected_revision을 검사한다. metadata의 추가 필드, 누락 원고, 결과/context/hash 불일치와 unsafe Markdown은 첫 Git blob 전에 거부한다. 오류는 422·field_errors이며 기존 입력을 보존한다.
+
+초안은 `research/{slug}/versions/{version}/revisions/{revision}/`에 manifest·results·네 원고를 불변 저장한다. current pointer·research/index.json·ledger·audit를 같은 non-force commit으로 갱신한다. ready/published는 네 본문·참고 자료·translation/narrative/rights/real_synthetic/results 검토 확인을 요구한다. 발행 시 `research/{slug}/releases/{version}/`을 같은 commit에 생성한다. 이미 발행한 버전은 본문 수정 불가, 개정판은 새 version과 change_reason을 요구한다.
+
+frontmatter는 version/data_cutoff/model_version/dataset_sha256/results_sha256/audience/locale의 JSON quoted 문자열만 허용한다. 각 원고에서 숫자 표 literal을 거부하고 `{{metrics.<key>}}`·`{{results}}`로 수치를 연결한다. 제한된 Markdown은 React text로 escaping하며 HTML·MDX·이미지·HTTPS/fragment 이외 링크는 거부한다. 본문 서술 검토는 자동 검사로 대신하지 않는다.
+
+공개 reader는 한 data head를 고정하고 index와 immutable release hash·네 문서·results를 검사한다. published는 기본 목록, superseded는 이전 버전, withdrawn은 본문 없는 안내다. draft/in_review/ready는 홈페이지에서 읽지 않는다. 서버 초안은 공개 Git에 존재한다. 웹 원고는 `/{locale}/research/{slug}/{technical|guide}?version={version}`으로 열람하며 언어 전환에서 version을 유지한다.
+
+### 11.2 FES 재사용 계약
+
+`fes_cache prepare`는 독립 참조 비교가 통과한 atlas로 기본 60일·30분 조석값과 양끝 2시간을 직접 계산한다. 생성 시각·atlas/config·SDK·계산 코드·geometry·source hash·conformance·attribution을 manifest에 보존한다. data 저장 경로는 `tides/ephemerides/{manifest hash}/{manifest.json|heights.json.gz}`만 허용하며 NetCDF는 금지한다.
+
+trusted code의 config/fes-derived.json은 manifest와 gzip hash를 고정한다. 일반 hosted 수집은 같은 data head의 두 파일을 읽고 hash·구조·좌표·source·계산 코드·기간을 검증한다. 생성 환경 SDK 버전은 provenance로 보존하고 hosted SDK와 같다고 가장하지 않는다. FES_DERIVED_ROOT가 설정되면 실패 시 원 atlas로 fallback하지 않는다. 유효 범위 밖·비정렬 시각·결측·변조는 fail closed다. 원래 생성 시각은 samples.retrieved_at에 유지하고 issued_at은 null이다. 새 snapshot의 실제 저장 cutoff는 별도 receipt/confirmation으로 판단한다.
+
 ## 12 검증과 재현
 
 주 검증은 날짜 순서 expanding/rolling window다. 동일 WITA 날짜의 모든 관측과 Peak·파생행은 같은 fold다. training 시점 이후 수정 정보·feature scaler·bias를 사용하지 않는다. LODO는 추가 진단으로 분리하고 미래 데이터를 포함했다면 실제 D+1 성능으로 표기하지 않는다.
@@ -421,7 +437,7 @@ publish 요청은 네 원고의 존재, 번역 상태, hash/version 일치, 참�
 
 ## 13 구현 전 확정할 설정
 
-정확한 FES/Copernicus dataset·변수·수심, Site 좌표·wall/offshore bearing, grid 거리 제한, feature registry와 normalization 분포, High 허용 오차, 코드·데이터 라이선스, 실제 관리자 secret·PAT·domain은 미확정이다. 미설정이면 관련 기능을 unavailable/disabled로 표시하고 값을 발명하지 않는다.
+FES2022b·Copernicus dataset/version·공개 파생 변수는 config/source-registry.json, 승인된 19 Site 좌표·대표 수심 18m·허용 거리 6km·지도 근사축은 config/geometry.json에 등록되어 있다. 근사축은 reference_geometry이며 Zone 위치·실측 벽 방향·High 허용 오차는 미확정이다. 실제 공급 metadata·freshness는 매 실행 재검증한다. 로컬 관리자/PAT 설정과 production Secrets·domain·WAF 운영 검수는 구분하며 값이 없으면 fail closed다.
 
 스키마·API·모델 계약을 바꾸면 SPEC 버전과 실제 schema/model 버전을 함께 검토하고 fixture·migration·PRD 영향·PLAN 작업을 갱신한다. 기록 저장을 공개→비공개로 바꾸거나 외부 OAuth/DB를 추가하는 변경은 단순 구현 세부가 아니라 제품 결정 변경이다.
 
@@ -436,3 +452,7 @@ publish 요청은 네 원고의 존재, 번역 상태, hash/version 일치, 참�
 WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 출수 +50분을 제안한다. 출수 수동 변경 후 입수 변경은 사용자가 정한 출수를 유지하며 시간 순서를 다시 검사한다. 출수는 신규·정정 저장의 필수값이며 시작보다 늦어야 한다. 자정 통과는 다음 날 선택으로 명시한다. schema 1.4의 local_end/end_at은 null을 허용하지 않는다. 기존 1.0–1.3 기록과 이미 성공한 멱등 요청은 그대로 읽거나 복구한다. 과거 출수를 자동 보충하지 않는다.
 
 관리자 목록은 입수 시각 내림차순, 동률은 생성 시각·ID 순이다. 페이지 cursor는 같은 Git head와 정렬 방식을 고정한다. 불러오는 동안 상태를 표시하고 완료 전 빈 목록으로 안내하지 않는다. 신규 Zone·경로·Peak 입력은 제거하고 기존 값은 보존한다. Peak가 없는 상세·정정 화면은 사건 섹션을 표시하지 않는다. 2026-10-05 사용자 결정에 따라 대표 관측 수심은 필수, 신규 기본값은 18m다. 저장 시 확인·수정하며 null 복원 초안은 임의로 채우지 않는다. schema 1.5는 대표 관측 수심 number와 출수 시각을 요구한다. 기존 1.0–1.4 null 기록·성공 요청 재시도는 호환한다. 기존 null 관측의 18m 지정은 사용자 명시 승인에 따른 개별 정정 revision으로 기록하고 원본 PCI·시각·사건·label_scope를 보존한다. 18m를 실측 평균 수심으로 표현하지 않는다.
+
+### 연구 검토와 조회 경계 보강
+
+원고·결과·metadata 편집은 editor의 review flags를 초기화하고 draft로 전환한다. ready→published 요청은 서버에 저장된 ready 원고·결과·핵심 metadata와 일치해야 한다. 응답 손실 시 동일 요청 확인 전 입력을 잠가 재시도 성공으로 새 편집 내용을 덮어쓰지 않는다. 목록 revision보다 상세 응답 revision을 저장 조건으로 사용한다. 공개 목록은 20개씩 metadata만 조회하며 상세는 선택 release만 조회한다. 조회 전체 시간 15초·누적 8MB 제한을 적용한다. 목록의 손상된 개별 release는 다른 항목을 차단하지 않으며 부분 실패 안내를 표시한다.

@@ -29,3 +29,8 @@ for (const schema of [predictionSchema, sampleSchema, dashboardSchema, releaseSc
 export const validatePublicDashboard = ajv.compile(dashboardSchema);
 export const validatePublicRelease = ajv.compile(releaseSchema);
 export const validateLatest = ajv.compile(latestSchema);
+
+import researchReleaseSchema from "./json-schema/research-release.schema.json" with { type: "json" };
+import researchResultsSchema from "./json-schema/research-results.schema.json" with { type: "json" };
+export const validateResearchRelease = ajv.compile(researchReleaseSchema);
+export const validateResearchResults = ajv.compile(researchResultsSchema);

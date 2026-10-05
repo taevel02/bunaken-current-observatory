@@ -3,7 +3,7 @@ import process from "node:process";
 import { Buffer } from "node:buffer";
 
 const API_ROOT = "https://api.github.com";
-const ALLOWED_ROOTS = ["audit/", "idempotency/", "observations/"];
+const ALLOWED_ROOTS = ["audit/", "idempotency/", "observations/", "research/"];
 
 export class GitHubDataError extends Error {
   constructor(kind, status, retryable = false, retryAfter) {

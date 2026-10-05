@@ -1,9 +1,9 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.8\
+버전: 1.9\
 작성일: 2026-10-05\
-기준: [PRD.md](PRD.md) v1.8 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.0\
-상태: P0–P5 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
+기준: [PRD.md](PRD.md) v1.9 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.1\
+상태: P0–P5와 P6 발행 기반 코드 구현 완료. 첫 원고 작성·검토·웹 발행, 실제 운영 연결과 외부 검수는 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
 
@@ -64,28 +64,24 @@ v1.3 날짜 검증: forward는 18개 중 제공 0개·MAE null이다. 과거 cut
 
 이번 단계는 수온 공급 적격·feature 연결 확인이다. 신규 전체 PCI snapshot·release 생성, 원격 발행·홈페이지 갱신은 수행하지 않았다. 위 160개 PCI 결과는 앞선 snapshot의 결과이며 신규 수온 반영 후 숫자로 재표기하지 않는다. 다음 수집은 실제 실행 시점의 freshness를 다시 검사해야 한다.
 
-| 추천 순서 | 관련 항목 | 남은 작업·현재 상태 | 담당·의존 | 완료 기준 |
+| 추천 순서 | 관련 항목 | 남은 작업·현재 상태 | 담당 | 완료 기준 |
 |---|---|---|---|---|
-| 병행 시작 | P2, P5 실제 데이터 | 실제 관측 축적, 대표 수심·시각 입력, 기억하는 과거 기록의 명시적 정정. 숫자 예측 적격은 데이터 축적에 의존 | 사용자: 현장 기록. Codex: 적격·결측 사유 표시 확인 | 실제 대표 수심·동일 observer/rubric·use_for_model 조건 확인. 3개 label·서로 다른 3일·같은 Site 자료·N_eff 2·환경 coverage 0.8 등 모든 gate 검사 |
-| 완료 1 | P3-03/04 후속 | Copernicus run별 regional 공유 읽기·120초 worker deadline·retry 1회 구현. 19 Site 실제 수집·6일 backfill 성공 | Codex. 기존 소스 접근 설정 사용 | 원격 갱신 시각·6km·18m·바다 셀 보존. mock 비교·deadline·retry 검증 통과 |
-| 완료 2 | P3-05, P5-01/08 후속 | enrich CLI로 frozen data head·실제 다이빙 구간·18m 환경 결합 완료. 학습 후보 18개 중 Overall numeric 18개. scaler 2,128행. 18m 전용 범위에서 거리 feature를 별도로 선택 | Codex. 로컬 분석 산출물이며 공개 환경 발행·운영 chain은 별도 | EnvironmentLink 18개·모델 입력·scaler·제외 사유·data commit 보존. 6일+9/19 backfill을 당시 forecast로 취급하지 않음 |
-| 완료 3 | P3–P5 통합 | 실제 18개 관측으로 2026-10-06의 19 Site·304개 슬롯 재계산, forward/LODO 검증, 공개 패키지 로컬 생성·웹 reader 통합 확인 | Codex. 원격 발행·운영 성능 검증과 구분 | snapshot·release 동일 바이트 재현, 정정/철회/학습 제외 민감도, 날짜·revision 누수 방지, 손상 패키지 거부 통과. 초기 v1.1은 304개 모두 null. 최신 v1.3 결과는 위 후속 검증에 기록 |
-| 완료 4 | P3, P5 환경 적격 | 공식 갱신 metadata·6km 내 ECMWF IFS 바람·파고 재수집. 사용자 승인 18개 수온 28°C 정정. v1.3 고정 18m 비교 범위 구현 | Codex. 신규 수심 확장은 별도 검증 | stale 수온 제외 유지, σ·0.8 coverage·numeric gate 유지. PRD/SPEC·버전·이전 설정 archive·회귀 검증 완료 |
-| 완료 5 | P3 수온 공급 | 2026-10-05 공식 catalogue 갱신 회복과 19 Site 실제 재수집 확인. 18m 유효 표본 114개, 304개 예측 구간에서 모델 수온 추출 가능 | Codex. 기존 dataset·version·36시간 기준 유지 | 342개 source sample schema·6km·바다 셀·양쪽 수심 보간 통과. stale/future/unknown 거부와 36시간 경계 확인. 기존 snapshot은 그대로 보존 |
-| 4 | P7-01/02, P3-08 운영 | GitHub 환경 설정·최신 trusted SHA·data entrypoint 설치·branch 보호·FES 비공개 atlas 실행 환경 연결. 로컬 .env는 자동 전달되지 않음 | Codex. 계정 UI·권한에 접근할 수 없는 부분은 사용자 | 필요한 secret/variable·FES 실행 환경 확보, main 보호·non-force 쓰기 확인, 외부 PR/preview secret 격리. template SHA는 `dce16626986762650b089a692c770eeab97ea659`로 갱신. 원격 설치·보호 설정은 미실행 |
-| 5 | P7-04/05 | 수집 07:17/19:17, seal 20:17 WITA 예약 실행과 관측 push 후 자동 갱신 연결. main workflow에 schedule 구현 완료. hosted FES 참조 검증·collect 직렬화·seal 별도 group 추가. 실제 예약/push 실행은 미검증 | Codex. 순서 3/4 | 실제 수집→모델 갱신→검증→release chain 성공. PAT/GITHUB_TOKEN 후속 처리, 중복 실행·지연·결측, 실제 Git 저장 cutoff/seal·홈페이지 반영 확인 |
-| 6 | P7-01/03, P2 수동 acceptance | Vercel 운영 설정·WAF·canonical origin·이전 deployment 접근 차단. iOS Safari/Android Chrome 실제 입력·키보드·오류 복구 검증 | Codex. 계정 설정 접근·실기기 조작은 사용자와 함께 | 실제 로그인 제한·세션 철회/no-store 검증, 실제 관측 저장 확인, 360px·소프트 키보드·세션 만료·60초 입력 시간 측정 |
-| 7 | P6-01–06 | 연구 편집·안전한 Markdown·네 원고·results/manifest·검증·발행·정정 이력 구현. 현재 미구현 | Codex: 기능·방법론 초안. 사용자: 현장 해석 검토. 순서 2/3 이후 권장 | technical.ko/en·guide.ko/en의 결과 hash/version 일치, HTML/script 차단, 공개 draft 안내. 실제 성능 근거 없으면 방법론·한계만 보고 |
-| 8 | P7-06/07/08, P2 규모 대응 | Git bundle 복원·source age·지연·사용량·출처 검수. 관리자 최신순 목록의 전체 revision 조회 비용 개선 | Codex. 운영 테스트 자료와 데이터 규모 측정 필요 | 관측/snapshot/seal/manifest 복원, 저장 p95·반영 지연·LCP 측정. 규모 확대 전에 원자 갱신 목록 인덱스 또는 prefix sharding 검증 |
-| 9 | P7-09 | 최종 출시·공개 실행. 실제 배포와 공개 데이터 쓰기는 별도 승인 범위 | 사용자: 공개·배포 승인. Codex: 승인된 실행 | P6 및 운영 acceptance 충족, 버전·시각·복구 절차·미검증 한계 기록. label 부족 상태로도 cold-start 출시 가능 |
+| 완료 | P3 후속 | FES 60일 조석 파생값 생성·hash 고정·재사용 adapter와 hosted 원 atlas 다운로드 제거 | Codex | 실제 값 대조, 기간·좌표·코드·변조 거부. data 파생 자료 등록과 실제 hosted 실행은 별도 확인 |
+| 완료 | 연구 근거 | 2026-10-05 로컬 결과와 config·검증을 docs/research/evidence-2026-10-05에 고정 | Codex | 파일 hash·18개/7일·304슬롯·forward/LODO 구분, 당시 수온 stale와 이후 회복을 혼합하지 않음 |
+| 완료 | P6-01/02/03/04/06 기반 | 네 원고·상태·results/manifest·안전 미리보기·불변 발행·정정·철회 안내 구현 | Codex | 계약·저장 경쟁·멱등·unsafe 원고·결과표·공개 reader·ko/en 검증. 실제 원고/웹 발행은 다음 작업 |
+| 1 | P6-05 콘텐츠 | 고정 근거로 전문가용·일반용 한국어 보고서 작성, 현장 검토 후 영어판 작성 | Astra + 사용자 | 네 원고의 cutoff·version·핵심 수치·한계 일치. 자체 발행·동료심사 미실시 표기 |
+| 병행 2 | P7-01/02/04/05 | GitHub 보호 환경·Secrets·branch 보호·최신 trusted entrypoint·역사 환경 연결·실제 자동 수집/seal 검수 | Codex | 07:17/19:17 수집, 20:17 seal, 전날20:00 실제 저장 cutoff. 원격 .env 자동 전달 가정 금지 |
+| 3 | P6 발행·연구 상세 UI | 원고 검토·발행, 상단 메뉴 단순화·두 문서 중심 연구 상세 최종 구성 | Codex + 사용자 | 기존 /pci·/observations 유지, 독자별 보고서·이전 버전·언어/모바일/인쇄 검수 |
+| 4 | P5 전향 검증 | 최소 한 달 실제 사전 예측과 현장 PCI 비교, 주간 결측·baseline·제공률·오차 점검 | 사용자 + 자동 처리 | 미래 누수·사후 backfill 제외. 실제 관측일/Site coverage와 미제공 사례 포함 |
+| 5 | P7-03/06/07/08/09 | production WAF·세션 철회·복구·성능·출처 검수와 최종 출시, 결과 보고서 개정 | Codex + 사용자 + Astra | 실제 운영 acceptance·새 연구 version·검증 근거·권한 범위·복구 절차 기록 |
 
-로컬 수집·환경 결합·Analog 재계산·패키지 통합은 완료했다. 수온 공급 확인까지 완료했다. 다음은 순서 4의 GitHub/FES 운영 설정과 순서 5의 자동 갱신 연결이다. 새 서비스·DB·필수 API 키를 추가하지 않는다. Open-Meteo 비상업 이용에 API 키를 필수로 요구하지 않는다. 외부 장애는 결측/null 상태로 남기고 이전 immutable snapshot을 보존한다. 원격 단계는 non-force commit과 새 release로 기록하며 과거 snapshot·관측 이력을 재작성하지 않는다.
+로컬 수집·환경 결합·Analog 재계산·패키지 통합은 완료했다. 수온 공급 확인까지 완료했다. 다음은 고정 근거로 원고 작성과 GitHub 자동 운영 연결을 병행한다. 새 서비스·DB·필수 API 키를 추가하지 않는다. Open-Meteo 비상업 이용에 API 키를 필수로 요구하지 않는다. 외부 장애는 결측/null 상태로 남기고 이전 immutable snapshot을 보존한다. 원격 단계는 non-force commit과 새 release로 기록하며 과거 snapshot·관측 이력을 재작성하지 않는다.
 
 사용자가 확정한 입수 좌표·Site 18m·6km·지도 기본축은 다시 미확정 설정으로 분류하지 않는다. 근사축은 reference_geometry로 유지하고 numeric 출력은 experimental/very_low로 제한한다. Zone 위치 특정·GPS·실측 벽 방향·검증 오차 허용기준은 사용자 현장 검토 후 확장한다. Zone/GPS와 높은 Support는 Site 수준 cold-start 운영을 차단하지 않는다. 대표 관측 수심은 필수이며 사용자 지정 신규 기본값 18m를 확인·수정한다. 기존 null 관측도 2026-10-05 명시 승인에 따라 개별 18m 정정 revision을 저장했다. 실측 평균 수심으로 단정하거나 앞으로의 미확인 과거 기록을 자동 보충하지 않는다.
 
 ### Actions/FES 운영 연결 구현 (2026-10-05)
 
-[운영 설치 절차](docs/actions-operations.ko.md)에 환경 Secret/variable, 고정 SHA, branch 보호, 최초 실행·복구 조건을 기록했다. 예약은 UTC 23:17/11:17 수집·12:17 seal이며 cutoff는 기존 WITA 20:00이다. FES 원본은 private runner에서 처리하고 독립 LIBFES 비교가 성공해야 새 forecast 발행으로 진행한다. 일반 저장 PAT의 권한은 확대하지 않는다. 로컬 engine 86개·provider 12개·actionlint 검증을 통과했으며 FES 증거는 현재 코드에 맞춰 재생성했다. 원격 환경/Secrets·branch 보호·entrypoint 설치·실제 Actions 실행은 아직 완료 조건을 충족하지 않았다.
+[운영 설치 절차](docs/actions-operations.ko.md)에 환경 Secret/variable, 고정 SHA, branch 보호, 최초 실행·복구 조건을 기록했다. 예약은 UTC 23:17/11:17 수집·12:17 seal이며 cutoff는 기존 WITA 20:00이다. FES 원본은 비공개 로컬에서 검증한다. 일반 hosted runner는 코드 hash에 고정된 조석 파생값만 읽고 실제 forecast 수집을 진행한다. 일반 저장 PAT의 권한은 확대하지 않는다. 로컬 engine 86개·provider 12개·actionlint 검증을 통과했으며 FES 증거는 현재 코드에 맞춰 재생성했다. 원격 환경/Secrets·branch 보호·entrypoint 설치·실제 Actions 실행은 아직 완료 조건을 충족하지 않았다.
 
 ## 3 P0 계약과 개발 기반
 
@@ -180,16 +176,18 @@ P3-08 구현 근거: `.github/workflows/environment.yml`과 `ops/workflows/data-
 
 완료 근거: MODEL-01–05, VAL-01, SNAP-01–02. 합성 데이터에서 알고리즘이 정상 동작하는 것과 실제 예측력이 입증된 것은 구분한다. 초기 label이 부족하면 실제 공개 출력은 계속 null이어야 한다.
 
-P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_input.py`, `validation.py`, snapshot/model-context 계약과 `docs/analog-engine.ko.md`. 최신 revision·실제 저장 cutoff·같은 WITA 날짜/관측 ID 분리, 고정 mask·이웃/ESS·수직 근거, baseline·abstention, trusted 역사 설정으로 원자료부터 재현하여 변조를 거부하는 경계를 구현했다. 합성 integration에서 numeric PCI와 공개 release 생성·버전 변경 후 replay를 검증한다. 실제 data branch는 4개 revision을 읽었으며 현재 적격 label 0개(관측 대표 수심 미입력), 확인된 학습 환경 bundle 0개다. 실제 Copernicus 19개 Site/18m 파생 샘플 456개가 유효하다. 2026-10-04 사용자 승인에 따라 허용 거리 6km·지도 진행/외해 근사축을 reference_geometry로 등록했다. target 또는 선택 analog가 이 기준이면 experimental/very_low로 제한하며 실제 예측력 검증 완료를 뜻하지 않는다. Zone은 위치 근거 확보 전 미등록이다. 큰 오차·High 기준은 null로 유지하고 Medium/High를 승격하지 않는다.
+P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_input.py`, `validation.py`, snapshot/model-context 계약과 `docs/analog-engine.ko.md`. 최신 revision·실제 저장 cutoff·같은 WITA 날짜/관측 ID 분리, 고정 mask·이웃/ESS·수직 근거, baseline·abstention, trusted 역사 설정으로 원자료부터 재현하여 변조를 거부하는 경계를 구현했다. 합성 integration에서 numeric PCI와 공개 release 생성·버전 변경 후 replay를 검증한다. 2026-10-04 초기 검증 당시 data branch는 4개 revision·적격 label 0개였고 관측 대표 수심과 환경 결합이 부족했다. 이 초기 상태는 2026-10-05 정정·18개 학습 후보·7일 로컬 결합 결과로 대체되었으며 최신 근거는 §2.1과 고정 연구 근거 묶음을 따른다. 실제 Copernicus 19개 Site/18m 파생 샘플 456개가 유효하다. 2026-10-04 사용자 승인에 따라 허용 거리 6km·지도 진행/외해 근사축을 reference_geometry로 등록했다. target 또는 선택 analog가 이 기준이면 experimental/very_low로 제한하며 실제 예측력 검증 완료를 뜻하지 않는다. Zone은 위치 근거 확보 전 미등록이다. 큰 오차·High 기준은 null로 유지하고 Medium/High를 승격하지 않는다.
 
 ## 9 P6 연구 발행
 
-- [ ] P6-01 공개 Markdown 원고와 metadata의 draft/in_review/ready/published 상태를 구현한다.
-- [ ] P6-02 technical.ko/en, guide.ko/en을 같은 release에 연결한다.
-- [ ] P6-03 단일 results.json과 manifest로 숫자·차트·표를 연결하고 네 원고 간 hash/version 불일치를 검사한다.
-- [ ] P6-04 안전한 Markdown 미리보기, 발행 버튼, 이전 버전, 정정 이유를 구현한다.
+- [x] P6-01 공개 Markdown 원고와 metadata의 draft/in_review/ready/published 상태를 구현한다.
+- [x] P6-02 technical.ko/en, guide.ko/en을 같은 release에 연결한다.
+- [x] P6-03 단일 results.json과 manifest로 숫자·차트·표를 연결하고 네 원고 간 hash/version 불일치를 검사한다.
+- [x] P6-04 안전한 Markdown 미리보기, 발행 버튼, 이전 버전, 정정 이유를 구현한다.
 - [ ] P6-05 첫 방법론 보고서는 데이터 부족과 미검증 상태를 명시한다. 존재하지 않는 성능·DOI·심사 이력을 생성하지 않는다.
-- [ ] P6-06 홈페이지에는 published만 노출하되 저장소 draft가 공개라는 사실을 편집 화면에 표시한다.
+- [x] P6-06 홈페이지에는 published만 노출하되 저장소 draft가 공개라는 사실을 편집 화면에 표시한다.
+
+구현 근거: research-release/results schema 1.0, /api/admin/research, /{locale}/admin/research, immutable research releases와 공개 reader. 고정 근거 묶음·Astra 작성 지시는 docs/research/에 둔다. 연구 원고 작성·사람 검토·실제 웹 발행은 아직 수행하지 않았다.
 
 완료 근거: RES-01–02, OPEN-03. 논문 작성·외부 학술지 제출은 별도 콘텐츠 작업이며 이 계획으로 자동 제출하지 않는다.
 

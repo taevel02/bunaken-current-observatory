@@ -10,11 +10,11 @@ export function requestId() {
   return randomUUID();
 }
 
-/** @param {{id?: string, retryable?: boolean, retryAfter?: number}} options */
+/** @param {{id?: string, retryable?: boolean, retryAfter?: number, fieldErrors?: Record<string,string>}} options */
 export function apiError(status, code, messageKey, options = {}) {
   const { id = requestId(), retryable = false, retryAfter } = options;
   return NextResponse.json(
-    { error: errorEnvelope(code, messageKey, id, retryable), meta: { request_id: id } },
+    { error: { ...errorEnvelope(code, messageKey, id, retryable), field_errors: options.fieldErrors ?? {} }, meta: { request_id: id } },
     { status, headers: errorResponseHeaders(retryAfter) },
   );
 }
