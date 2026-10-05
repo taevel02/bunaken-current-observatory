@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.3\
+버전: 1.4\
 작성일: 2026-10-05\
-기준: [PRD.md](PRD.md) v1.5 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.7\
+기준: [PRD.md](PRD.md) v1.6 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v1.8\
 상태: P0–P5 코드 구현 완료. 실제 운영 연결과 외부 검수는 P7에 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -32,13 +32,13 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 P0–P5의 완료 표시는 코드·계약 검증 완료를 뜻한다. P6는 미구현이며 P7은 운영 설정·실제 실행 검증이 남아 있다. 아래 순서는 관측을 저장하면 환경을 결합하고 Analog를 다시 계산해 홈페이지까지 갱신하는 목표를 우선한다. P7의 수집·자동화 연결 일부를 P6보다 먼저 진행하고, P7 전체 출시 완료는 P6 이후에 판단한다.
 
-현재 근거는 로컬 HEAD `698af84`와 2026-10-04 실행 기록이다. 원격 설정·최신 data branch·실제 적격 label 수는 이번 계획 갱신에서 재조회하지 않았다. 기존 4개 revision·적격 label 0개·환경 bundle 0개는 2026-10-04 확인값이며 현재 건수로 단정하지 않는다.
+2026-10-05 실제 검증: Copernicus 19 Site 배치 수집 성공, FES 독립 참조 비교 912건 통과, 9/29–10/4 환경 backfill 28,101 sample 확보. 사용자 승인 대표 관측 수심 18m 정정은 원격 data head `43be7a66d8ba0fe9aef9789bac582472a7f4c46b`에서 현재 기록 18개·이력 36개·원본 필드 보존을 확인했다. 환경 결합은 현재 후보 18개, numeric Overall 18개(서로 다른 7일)다. scaler 2,128행은 겹치는 환경 구간이며 현장 관측 2,128건이 아니다. 실제 학습 결합 결과와 운영 자동화 상태는 구분한다.
 
 | 추천 순서 | 관련 항목 | 남은 작업·현재 상태 | 담당·의존 | 완료 기준 |
 |---|---|---|---|---|
 | 병행 시작 | P2, P5 실제 데이터 | 실제 관측 축적, 대표 수심·시각 입력, 기억하는 과거 기록의 명시적 정정. 숫자 예측 적격은 데이터 축적에 의존 | 사용자: 현장 기록. Codex: 적격·결측 사유 표시 확인 | 실제 대표 수심·동일 observer/rubric·use_for_model 조건 확인. 3개 label·서로 다른 3일·같은 Site 자료·N_eff 2·환경 coverage 0.8 등 모든 gate 검사 |
-| 1 | P3-03/04 후속 | Copernicus 요청 시간 제한·지연 복구·공유 셀 요청 중복 축소. 새 geometry의 최신 실시간 수집은 시간 초과로 검증 미완료 | Codex. 기존 소스 접근 설정 사용 | 실제 수집의 원격 갱신 시각·거리 6km·수심 18m·바다 셀 확인. 장애·stale 시 새 숫자 발행 차단 |
-| 2 | P3-05, P5-01/08 후속 | 실제 관측 구간 환경 자동 결합·부족 feature의 historical 분포/scaler 보완. 기존 부분 분포와 CLI를 확장·연결 | Codex. 순서 1과 사용자 관측 | revision별 EnvironmentLink·학습 bundle 생성. 실제 입출수 구간·결측·원본과 환경 분리·확보 cutoff 보존. 과거 backfill을 당시 forecast로 취급하지 않음 |
+| 완료 1 | P3-03/04 후속 | Copernicus run별 regional 공유 읽기·120초 worker deadline·retry 1회 구현. 19 Site 실제 수집·6일 backfill 성공 | Codex. 기존 소스 접근 설정 사용 | 원격 갱신 시각·6km·18m·바다 셀 보존. mock 비교·deadline·retry 검증 통과 |
+| 완료 2 | P3-05, P5-01/08 후속 | enrich CLI로 frozen data head·실제 다이빙 구간·18m 환경 결합 완료. 학습 후보 18개 중 Overall numeric 18개. scaler 2,128행·활성 feature 16개 | Codex. 로컬 분석 산출물이며 공개 환경 발행·운영 chain은 별도 | EnvironmentLink 18개·모델 입력·scaler·제외 사유·data commit 보존. 6일+9/19 backfill을 당시 forecast로 취급하지 않음 |
 | 3 | P3–P5 통합 | 관측 정정부터 Analog 재계산·검증·공개 패키지 생성까지 로컬에서 한 흐름으로 검증. 개별 코드 완료와 구분 | Codex. 순서 2 | 같은 입력 재현, withdrawn/정정 반영, 날짜 누수·낮은 support·null 사유 검증. 충분한 label이 없으면 cold-start 결과 생성 |
 | 4 | P7-01/02, P3-08 운영 | GitHub 환경 설정·최신 trusted SHA·data entrypoint 설치·branch 보호·FES 비공개 atlas 실행 환경 연결. 로컬 .env는 자동 전달되지 않음 | Codex. 계정 UI·권한에 접근할 수 없는 부분은 사용자 | 필요한 secret/variable·FES 실행 환경 확보, main 보호·non-force 쓰기 확인, 외부 PR/preview secret 격리. 현재 template의 이전 고정 SHA 갱신 |
 | 5 | P7-04/05 | 수집 07:17/19:17, seal 20:17 WITA 예약 실행과 관측 push 후 자동 갱신 연결. 현재 reusable workflow는 수동/push 호출이며 schedule 없음 | Codex. 순서 3/4 | 실제 수집→모델 갱신→검증→release chain 성공. PAT/GITHUB_TOKEN 후속 처리, 중복 실행·지연·결측, 실제 Git 저장 cutoff/seal·홈페이지 반영 확인 |
@@ -49,7 +49,7 @@ P0–P5의 완료 표시는 코드·계약 검증 완료를 뜻한다. P6는 미
 
 최소 진행 단위는 1–3의 로컬 수집·환경 결합·Analog 재계산이다. 새 서비스·DB·필수 API 키를 추가하지 않는다. Open-Meteo 비상업 이용에 API 키를 필수로 요구하지 않는다. 외부 장애는 결측/null 상태로 남기고 이전 immutable snapshot을 보존한다. 원격 단계는 non-force commit과 새 release로 기록하며 과거 snapshot·관측 이력을 재작성하지 않는다.
 
-사용자가 확정한 입수 좌표·Site 18m·6km·지도 기본축은 다시 미확정 설정으로 분류하지 않는다. 근사축은 reference_geometry로 유지하고 numeric 출력은 experimental/very_low로 제한한다. Zone 위치 특정·GPS·실측 벽 방향·검증 오차 허용기준은 사용자 현장 검토 후 확장한다. Zone/GPS와 높은 Support는 Site 수준 cold-start 운영을 차단하지 않는다. 학습에는 실제 관측 대표 수심이 필요하며 Site 기본 18m로 대체하지 않는다.
+사용자가 확정한 입수 좌표·Site 18m·6km·지도 기본축은 다시 미확정 설정으로 분류하지 않는다. 근사축은 reference_geometry로 유지하고 numeric 출력은 experimental/very_low로 제한한다. Zone 위치 특정·GPS·실측 벽 방향·검증 오차 허용기준은 사용자 현장 검토 후 확장한다. Zone/GPS와 높은 Support는 Site 수준 cold-start 운영을 차단하지 않는다. 대표 관측 수심은 필수이며 사용자 지정 신규 기본값 18m를 확인·수정한다. 기존 null 관측도 2026-10-05 명시 승인에 따라 개별 18m 정정 revision을 저장했다. 실측 평균 수심으로 단정하거나 앞으로의 미확인 과거 기록을 자동 보충하지 않는다.
 
 ## 3 P0 계약과 개발 기반
 
