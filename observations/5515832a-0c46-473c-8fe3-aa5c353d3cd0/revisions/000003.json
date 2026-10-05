@@ -1,0 +1,51 @@
+{
+  "confidence": "normal",
+  "correction_reason": "2026-10-05 사용자 확인: 기존 관측의 실측 수온은 모두 28°C. 측정 시각·수심은 미확인으로 보존하며 미래 모델 수온 대용으로 사용하지 않음.",
+  "created_at": "2026-10-04T09:20:11.587Z",
+  "end_at": "2026-10-01T02:22:00.000Z",
+  "id": "5515832a-0c46-473c-8fe3-aa5c353d3cd0",
+  "label_scope": "dive_overall",
+  "local_end": "2026-10-01T10:22",
+  "local_start": "2026-10-01T09:41",
+  "notes_public": "",
+  "observed_temperature": {
+    "depth_m": null,
+    "at": null,
+    "celsius": 28
+  },
+  "observer_id": "bunaken-observer-01",
+  "overall_pci": 0.65,
+  "peak_events": [
+    {
+      "at": "2026-10-01T02:10:00.000Z",
+      "context_description": null,
+      "depth_m": null,
+      "duration_description": null,
+      "id": "16cfbbc2-f4cd-44b5-804d-f587c63766a5",
+      "local_at": "2026-10-01T10:10",
+      "pci": 0.7,
+      "vertical_direction": "unknown",
+      "vertical_intensity": null,
+      "zone_id": null
+    }
+  ],
+  "record_status": "corrected",
+  "representative_depth_m": 18,
+  "revision": 3,
+  "route_description": "",
+  "rubric_version": "pci-overall-v1",
+  "schema_version": "1.3",
+  "site_id": "rons-point",
+  "start_at": "2026-10-01T01:41:00.000Z",
+  "time_precision": "reported_minute",
+  "timezone": "Asia/Makassar",
+  "train_eligible": false,
+  "updated_at": "2026-10-05T04:48:40.824Z",
+  "use_for_model": true,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "zone_id": null
+}
