@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 from bunaken_engine.features import extract_window, instant, finite
 from bunaken_engine.registry import ROOT, read_json, load_sources, load_geometry, export_allowed, usable_geometry, COORDINATE_STATUSES
-from bunaken_engine.sources import collect_fes, collect_copernicus, collect_open_meteo, SourceError, utc_now
+from bunaken_engine.sources import collect_fes, collect_open_meteo, SourceError, utc_now
 from bunaken_engine.git_store import StorageError
 from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, bundle_path, assess_sources, select_seal, SnapshotError
 
@@ -15,7 +15,7 @@ WITA=ZoneInfo("Asia/Makassar")
 REQUIRED=["fes-height","copernicus-currents"]
 
 
-def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind="snapshot", root=ROOT, collector=None, model=None) -> tuple[dict,dict[str,bytes]]:
+def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind="snapshot", root=ROOT, collector=None, model=None, extraction_depths=None) -> tuple[dict,dict[str,bytes]]:
     target=date.fromisoformat(target_date)
     if not 1<=days<=14:
         raise SnapshotError("invalid_collection_horizon")
@@ -31,6 +31,17 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
     collectable=[geometry for geometry in targets if geometry["status"] in COORDINATE_STATUSES]
     if not collectable:
         for reasons in failures.values(): reasons.add("unverified_geometry")
+    batches = {}
+    if collector is None:
+        from bunaken_engine.copernicus_batch import collect_batch
+        from bunaken_engine.copernicus_batch import point_key
+        for source_id, source in registry.items():
+            if source['provider'] != 'copernicus' or not export_allowed(source, list(source['variables'])):
+                continue
+            try:
+                batches[source_id] = collect_batch(source, usable_targets, start_at, end_at, depths=sorted(set((extraction_depths or []) + [10,30] + [g["reference_depth_m"] for g in usable_targets])))
+            except SourceError as error:
+                batches[source_id] = {'error': error.code}
     for geometry in collectable:
         point_samples=[]
         for source_id,source in registry.items():
@@ -43,7 +54,11 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
                 elif source["provider"]=="fes":
                     result=collect_fes(source,geometry,(start-timedelta(hours=2)).isoformat(),(end+timedelta(hours=2)).isoformat())
                 elif source["provider"]=="copernicus":
-                    result=collect_copernicus(source,geometry,start_at,end_at,geometry["reference_depth_m"],extraction_depths=[geometry["reference_depth_m"],10,30])
+                    if not usable_geometry(geometry): raise SourceError("unverified_geometry")
+                    batch = batches[source_id]
+                    point = batch if 'error' in batch else batch[point_key(geometry)]
+                    if 'error' in point: raise SourceError(point['error'])
+                    result = point['samples']
                 else:
                     result=collect_open_meteo(source,geometry,start_at,end_at)
                 point_samples.extend(result)
