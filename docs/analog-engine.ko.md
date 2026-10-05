@@ -57,3 +57,15 @@ snapshot 1.2는 model context와 SHA-256, scaler SHA-256을 추가한다. contex
 ## 남은 현장·운영 조건
 
 입수 좌표와 Site 대표 수심 18m, 허용 격자 거리 6km를 사용한다. 지도 화살표 기본값은 `reference_geometry`로 저장하며 독립된 진행/외해 축에 투영한다. target 또는 선택 analog가 근사 geometry이면 `experimental / very_low`로 제한한다. 실측 벽 방향 검증과 Zone 위치 특정은 추후 진행한다. 실제 관측의 대표 수심과 관측일별 numeric label·환경 연결도 필요하다. source freshness·FES conformance가 확인되지 않으면 숫자를 발행하지 않는다. 실제 예측력·Medium/High 기준은 아직 검증되지 않았다. 배포, workflow 설치·예약 및 공개 발행은 P7에서 별도 확인한다.
+
+## 실제 데이터 통합 확인 (2026-10-05)
+
+원격 data head `43be7a66d8ba0fe9aef9789bac582472a7f4c46b`의 현재 관측 18개를 다시 읽어 로컬 입력과 일치함을 확인했다. 사용자 승인 대표 수심 18m와 동일 observer/rubric의 Overall label 18개·7일을 사용했다. 후보 적격과 숫자 예측 가능 여부는 별도다.
+
+2026-10-06의 19 Site·304개 60분 예측 슬롯을 재계산했다. 전체 PCI는 null이며 환경 coverage는 0.4625 또는 0.55로 0.8 gate에 미달했다. 일부 슬롯은 analog·날짜·N_eff·동일 Site 조건도 부족했다. Copernicus 수온은 공급 갱신 시각이 오래되어 제외했고, Open-Meteo 파고는 공급 나이 미확인, 바람은 6km 격자 거리 조건 실패로 제외했다. 미확정 조석 phase와 고정 18m의 zero IQR feature도 원래 coverage 분모에 남는다. 자료를 0으로 보충하거나 gate·weight를 바꾸지 않았다.
+
+forward와 Leave-One-Day-Out은 각각 7개 날짜 fold·18개 test 관측에서 숫자 제공 0/18, abstention 18, MAE와 baseline 비교 MAE null이다. forward의 과거 cutoff 이전에는 이번 정정 revision과 환경 backfill이 없으므로 학습 후보·scaler 입력이 0개다. LODO는 held-out 날짜를 제외한 15–17개 후보를 사용하지만 미래 날짜를 포함하는 진단이며 D+1 운영 성능이 아니다.
+
+snapshot과 공개 release를 같은 고정 입력·UUID·생성 시각으로 재생성하여 전체 파일 바이트 일치를 확인했다. 메모리상의 합성 revision으로 PCI 정정, 철회, 학습 제외 반영을 확인했고 실제 관측은 변경하지 않았다. 날짜별 test/training ID 분리와 forward 미래 날짜 배제도 확인했다. 상세 결과는 로컬 `.local/p3-integration-2026-10-05/integration.json`, `forward.json`, `lodo.json`에 보관한다. 원격 발행·배포·공식 D+1 seal은 수행하지 않았다.
+
+다음 검토는 소스 freshness 근거와 feature coverage 정책이다. 대표 수심 18m를 유지하므로 수심 변동을 만들지 않는다. 조석 phase 정의·coverage 분모·weight 변경이 필요하면 계약과 모델 버전을 함께 검토하고 재검증한다. 실제 숫자가 제공되지 않은 상태에서 예측 오차나 검증된 성능을 주장하지 않는다.

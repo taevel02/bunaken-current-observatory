@@ -1,6 +1,6 @@
 # 공개 대시보드와 release 운영
 
-P4 화면은 ko/en, WITA 내일 기본값, 오늘부터 D+7, Site 비교·상세·조석·공개 관측·PCI 기준·방법론·자료 상태를 지원한다. Site 예측 기준 수심은 18m다. 현재 release는 experimental이며 공식 D+1 발행이 아니다. 숫자 PCI는 P5의 모델·검증 gate가 구현될 때까지 null이다.
+P4 화면은 ko/en, WITA 내일 기본값, 오늘부터 D+7, Site 비교·상세·조석·공개 관측·PCI 기준·방법론·자료 상태를 지원한다. Site 예측 기준 수심은 18m다. 현재 release는 experimental이며 공식 D+1 발행이 아니다. P5 모델·검증 gate는 구현되어 있으며 모든 적격 조건을 통과한 슬롯에만 숫자 PCI를 제공한다.
 
 ## 로컬 확인
 
@@ -14,7 +14,7 @@ pnpm dev
 
 환경 비교값은 선택 날짜 12:00 WITA와 정확히 일치하는 실제 sample이다. 같은 시각 중복·누락, 수심 불일치, 품질·공개 권한 미충족, stale release는 미제공으로 표시한다. 최근접 시각으로 대체하거나 방향을 평균하지 않는다. 메인 hint의 margin-top은 8px다. 그래프 해석·표시 불가 사유·기준 사건·출처·생성 정보는 연구 상세에서 확인한다. 정상 생성 시각은 연구 상세로 옮기되 오래된 자료의 생성 시각은 메인에 유지한다.
 
-PCI 그래프의 가로축은 08:00–16:00 WITA의 다이빙 시작 시각, 세로축은 60분 대표 체감 PCI다. 서버의 유효한 30분 시작 슬롯만 Site별로 연결하고 null·같은 Site 내 중복·빠진 시간 구간은 끊는다. Site 간 수치를 하나의 평균 PCI로 합치지 않는다. 1.0 초과를 허용하며 1.0을 상한·위험선으로 사용하지 않는다. 현재 P5가 구현되지 않아 실제 숫자 곡선은 없고 미제공 이유를 표시한다. 수직조류·방향·위험도는 이 곡선만으로 판단하지 않는다.
+PCI 그래프의 가로축은 08:00–16:00 WITA의 다이빙 시작 시각, 세로축은 60분 대표 체감 PCI다. 서버의 유효한 30분 시작 슬롯만 Site별로 연결하고 null·같은 Site 내 중복·빠진 시간 구간은 끊는다. Site 간 수치를 하나의 평균 PCI로 합치지 않는다. 1.0 초과를 허용하며 1.0을 상한·위험선으로 사용하지 않는다. 2026-10-05 실제 데이터 통합 검증에서는 환경 coverage 부족 등으로 모든 슬롯이 null이며 숫자 곡선 대신 미제공 이유를 표시한다. 수직조류·방향·위험도는 이 곡선만으로 판단하지 않는다.
 
 조석은 높이 m이며 현장 유속이 아니다. 독립 보조 그래프로 표시하고 PCI와 서로 다른 단위를 같은 축에 겹치지 않는다. 곡선 아래 접이식 수치 표를 제공한다.
 
@@ -48,6 +48,12 @@ release 1.1은 `web/releases/{uuid}/manifest.json`, `dashboard.json.gz`, `web/la
 P7 운영 연결 후 CLI의 `--publish`를 명시한 경우에만 공개 저장한다. `.env`를 읽는 발행 명령은 `uv run --env-file .env ...` 형태다. output 경로를 유지하고 같은 명령으로 재시도한다. 저장소/PAT 설정과 source_data_commit에 해당하는 원격 데이터가 필요하다. 이미 존재하는 local output의 publish는 그 후보를 재사용한다.
 
 trusted 환경 workflow는 collect→receipt/confirmation→web release를 한 chain에서 수행한다. 다음 workflow가 GITHUB_TOKEN commit으로 자동 실행될 것에 의존하지 않는다. template의 고정 code SHA·원격 설치·Secrets·실제 실행은 P7 검수 대상이다. 이 작업에서는 push·원격 실행·배포를 수행하지 않았다.
+
+## 실제 패키지 통합 확인 (2026-10-05)
+
+현재 관측 18개·19 Site·예측 슬롯 304개를 담은 release 후보를 로컬에서 생성했다. gzip 97,080byte, 해제 JSON 5,047,981byte로 크기 제한을 통과했다. 실제 웹 서버 reader에 생성 파일을 공급하여 pointer·manifest·gzip hash·공개 소스 계약을 검증했다. 손상 파일, hash를 다시 계산한 허용되지 않는 소스 variable, 미래 생성 시각은 거부했고 오래된 source 생성 시각은 stale로 처리했다. 환경 화면은 실패 source의 reason code가 있으면 정상 수치에서 제외한다.
+
+동일 입력의 release 재생성 바이트 일치도 확인했다. 로컬 후보는 `.local/p3-integration-2026-10-05/release/`에 있으며 원격 latest 갱신·홈페이지 반영은 수행하지 않았다. 반복 검증 명령은 README의 공개 release reader integration 항목을 따른다.
 
 ## 캐시와 시각
 
