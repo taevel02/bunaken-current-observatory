@@ -1,11 +1,13 @@
 # 부나켄 조류 관측과 예측 서비스 제품 요구사항
 
-문서 버전: 1.7\
+문서 버전: 1.8\
 작성일: 2026-10-05
 제품 가칭: Bunaken Current Observatory  
 기본 언어: 한국어 `ko` · 추가 언어: 영어 `en`  
 서비스 기준 시간대: `Asia/Makassar` · WITA · UTC+08:00  
 상태: 구현 기준 문서. 실제 데이터 공급 연결, 인증 설정, 배포 및 성능 검증은 아직 수행하지 않았다.
+
+1.8 변경: 18m 전용 거리 범위를 `weighted-analog-v1.3 / site-18m-v2`로 고정한다. Ocean·Thermal은 같은 18m의 값으로 비교하고 10–30m 차이는 참고 자료로 보존한다. v1.2 범위는 archive로 재현하며 sigma=1과 숫자 gate를 유지한다.
 
 1.7 변경: 사용자 위임에 따라 `weighted-analog-v1.2`의 18m 전용 실험 비교 범위를 적용한다. 수심은 동일 18m 제한 조건이며 거리 항목에서 제외한다. 정의되지 않은 조석 phase는 사용하지 않는다. Tide/Ocean/Thermal/Weather의 기존 상대 weight를 유지해 합계 1로 정규화하고 실제 결측·zero IQR의 coverage 차감은 유지한다. 과거 모델 재현과 신규 model context 1.1을 함께 지원한다. 기존 관측 18개의 실측 수온 28°C는 사용자 확인 정정이며 미래 모델 수온 대용이 아니다.
 
@@ -257,7 +259,7 @@ Zone의 검증된 대표 위치에서 바다 격자를 선택한다. 육지 셀�
 
 ### 5.4 결측과 품질
 
-2026-10-05의 18m 전용 실험 범위에서는 Depth를 거리 항목 대신 동일 수심 적격 조건으로 사용한다. 미구현 phase 항목은 비교 registry에서 제외하고 Tide는 rate·구간 excursion 두 항목으로 계산한다. 네 환경 group의 weight는 0.30/0.90, 0.35/0.90, 0.15/0.90, 0.10/0.90이다. 이 범위는 목표·analog마다 달라지지 않는다. 18m 외 목표는 null이고 다른 수심 label은 이웃에서 제외한다. 소스 장애나 zero IQR를 이유로 runtime registry·분모를 줄이지 않는다. 기존 v1.1의 전체 수심·phase 분모는 archived config로 재현한다.
+2026-10-05의 18m 전용 실험 범위에서는 Depth를 거리 항목 대신 동일 수심 적격 조건으로 사용한다. 미구현 phase 항목은 비교 registry에서 제외하고 Tide는 rate·구간 excursion 두 항목으로 계산한다. v1.3의 Ocean·Thermal은 동일 18m 값만 거리에서 비교하고 다른 수심 간 차이는 거리 항목에서 제외한다. 네 환경 group의 weight는 0.30/0.90, 0.35/0.90, 0.15/0.90, 0.10/0.90이다. 이 범위는 목표·analog마다 달라지지 않는다. 18m 외 목표는 null이고 다른 수심 label은 이웃에서 제외한다. 소스 장애나 zero IQR를 이유로 runtime registry·분모를 줄이지 않는다. 기존 v1.1의 전체 수심·phase 분모는 archived config로 재현한다.
 
 관측 결측은 null이며 0으로 채우지 않는다. 목표와 analog에 공통으로 있는 활성 feature만 비교하고 `feature_coverage`를 산출한다. 기본적으로 Tide와 Ocean group은 필수, 전체 가중 coverage는 0.80 이상이어야 숫자 PCI 후보가 된다. group 안에서는 설정된 활성 feature의 절반 이상이 유효해야 한다. 부족하면 raw 데이터만 제공하고 `missing_required_features`를 기록한다.
 

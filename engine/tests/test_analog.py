@@ -144,6 +144,20 @@ class AnalogTest(unittest.TestCase):
         vertical = [dict(candidates[1], id=str(i), day=f'2026-09-0{i+1}', vertical='down' if i<2 else 'none') for i in range(5)]
         self.assertEqual(predict(target,vertical,scaler,config=config)['vertical_evidence']['status'],'insufficient')
 
+    def test_18m_v2_compares_matching_depth_without_profile_gradients(self):
+        target,candidates,scaler=setup()
+        config=read_json(ROOT/'config/model.json')
+        config.update(version='weighted-analog-v1.3',comparison_scope='site-18m-v2')
+        target['values']['horizontal_shear_10_30_m_s']=1000
+        target['values']['temperature_difference_10_30_c']=1000
+        target['values']['modelled_temperature_c']=None
+        result=predict(target,candidates,scaler,config=config)
+        self.assertAlmostEqual(result['pci'],1.3)
+        self.assertAlmostEqual(result['feature_coverage']['total'],.75/.9)
+        self.assertEqual((result['prediction_status'],result['support']),('experimental','very_low'))
+        target['values']['current_along_m_s']=1000
+        self.assertIsNone(predict(target,candidates,scaler,config=config)['pci'])
+
     def test_matched_baselines_abstention_and_wita_cutoff(self):
         rows = [dict(day='2026-09-01', pci=.5, actual=.4, global_baseline=.6, site_baseline=.7), dict(day='2026-09-02', pci=None, actual=10, global_baseline=0, site_baseline=0)]
         result = metrics(rows, .15)

@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 1.9\
+버전: 2.0\
 작성일: 2026-10-05\
-기준: [PRD.md](PRD.md) v1.7 · [AGENTS.md](AGENTS.md)\
+기준: [PRD.md](PRD.md) v1.8 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -293,6 +293,8 @@ Tide는 구간 중심 전후 60분의 rate, 조차와 위상 sin/cos를 포함�
 Coverage는 nominal group weight에 group 내부 사용 feature 비율을 곱해 더한 0–1 값으로 계산한다. disabled feature는 사용 정보에 포함하지 않아 coverage를 인위적으로 높이지 않는다. Tide/Ocean group이 필요하고 coverage>=0.80이어야 한다. 사용 가능한 group weight는 거리 계산 시 합계 1로 재정규화한다. 구체 feature registry가 없으면 모델을 production-ready로 간주하지 않는다.
 
 `weighted-analog-v1.2`의 `comparison_scope=site-18m-v1`은 사용자 지정 18m 전용 실험 범위다. Depth group과 정의되지 않은 phase 쌍을 거리·coverage registry에서 고정 제외하고 네 환경 group의 기존 weight를 합계 0.90으로 나눈다. 나머지 registry의 disabled·zero IQR·결측은 분모에 남는다. 목표 수심이 18m가 아니면 `outside_model_depth_scope`, 이웃 수심이 다르면 후보에서 제외한다. 이 범위의 숫자는 항상 experimental/very_low다. 관측 실측 수온은 선택 입력이며 미래 modelled temperature를 대체하지 않는다.
+
+`weighted-analog-v1.3 / comparison_scope=site-18m-v2`는 v1.2와 같은 수심 stratum·네 group weight·숫자 gate를 사용한다. Ocean은 18m along/cross/speed 세 항목, Thermal은 18m modelled temperature 한 항목이다. 10–30m shear·수온 차이는 원자료와 참고 표에 남기고 이 profile 거리·coverage registry에서 고정 제외한다. sigma=1은 유지한다. v1.2의 profile은 archived config로 재현한다.
 
 신규 model context는 1.1이며 schema는 과거 1.0도 읽는다. 동일 시각 cutoff 내에서 snapshot을 backfill보다 우선하고, 같은 종류에서는 최신 생성 환경을 사용한다. 학습과 예측 모두 해당 관측 수심의 소스 적격 검사를 적용한다. archived v1.1 config는 이전 선택·coverage·소스 처리 동작으로 재현하며 과거 immutable 산출물을 고치지 않는다.
 

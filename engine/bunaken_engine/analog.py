@@ -80,10 +80,12 @@ def comparison_features(feature_config, config):
     """A versioned 18m stratum; missing or zero-IQR inputs still lose coverage."""
     scope = config.get('comparison_scope')
     if scope is None: return feature_config
-    if scope != 'site-18m-v1': raise ValueError('unknown_model_comparison_scope')
+    if scope not in {'site-18m-v1', 'site-18m-v2'}: raise ValueError('unknown_model_comparison_scope')
+    excluded = {'tide_phase_sin', 'tide_phase_cos'}
+    if scope == 'site-18m-v2': excluded.update({'horizontal_shear_10_30_m_s', 'temperature_difference_10_30_c'})
     # Depth is an eligibility stratum. Undefined phase is not a measured distance feature.
     groups = {name: {**group, 'features': [feature for feature in group['features']
-               if feature not in {'tide_phase_sin', 'tide_phase_cos'}]}
+               if feature not in excluded]}
               for name, group in feature_config['groups'].items() if name != 'depth'}
     total = sum(group['weight'] for group in groups.values())
     return {**feature_config, 'groups': {name: {**group, 'weight': group['weight']/total}
@@ -95,7 +97,7 @@ def neighbors(target, candidates, scaler, feature_config, config):
     mask, coverage = target_mask(target['values'], scaler, feature_config)
     selected = []
     for candidate in candidates:
-        if config.get('comparison_scope') == 'site-18m-v1' and candidate['values'].get('reference_depth_m') != 18:
+        if config.get('comparison_scope') in {'site-18m-v1', 'site-18m-v2'} and candidate['values'].get('reference_depth_m') != 18:
             continue
         distance = environmental_distance(target['values'], candidate['values'], mask, scaler, feature_config)
         if distance is None:
@@ -175,7 +177,7 @@ def predict(target, candidates, scaler, *, config=None, feature_config=None, evi
                  row['candidate']['site_id'] == target['site_id'] and row['candidate'].get('zone_id') == target['zone_id']}
     n_eff = effective_size(weights)
     reasons = []
-    if config.get('comparison_scope') == 'site-18m-v1' and target['values'].get('reference_depth_m') != 18:
+    if config.get('comparison_scope') in {'site-18m-v1', 'site-18m-v2'} and target['values'].get('reference_depth_m') != 18:
         reasons.append('outside_model_depth_scope')
     if not target.get('geometry_verified', False): reasons.append('unverified_geometry')
     if not target.get('sources_ready', False): reasons.append('missing_required_sources')

@@ -14,16 +14,16 @@
 
 ## 18m 전용 실험 범위
 
-`weighted-analog-v1.2`는 사용자 지정 18m를 동일 수심 비교 조건으로 사용한다. 다른 수심의 label은 이웃에서 제외하고 다른 수심 목표는 null이다. 변하지 않는 수심을 IQR로 나누거나 정보량으로 세지 않는다. 미구현 phase 쌍도 거리 registry에서 제외한다. Tide는 실제 rate와 구간 excursion을 사용한다.
+`weighted-analog-v1.3`의 `site-18m-v2`는 사용자 지정 18m를 동일 수심 비교 조건으로 사용한다. 다른 수심의 label은 이웃에서 제외하고 다른 수심 목표는 null이다. 변하지 않는 수심을 IQR로 나누거나 정보량으로 세지 않는다. 미구현 phase 쌍도 거리 registry에서 제외한다. Tide는 실제 rate와 구간 excursion을 사용한다. 10–30m 수평 shear와 수온 차이는 원자료·화면에서 보존하지만 이 18m 거리 범위에는 넣지 않는다. 다른 수심으로 확장할 때 별도 profile을 검증한다.
 
 | Group | 18m 범위 weight | 거리 항목 |
 |---|---|---|
 | Tide | 0.30/0.90 | rate·구간 excursion |
-| Ocean | 0.35/0.90 | 진행/외해 투영·속력·10–30m 수평 shear |
-| Thermal | 0.15/0.90 | 모델 수온·10–30m 수온 차이 |
+| Ocean | 0.35/0.90 | 18m 진행/외해 투영·속력 |
+| Thermal | 0.15/0.90 | 18m 모델 수온 |
 | Weather | 0.10/0.90 | 바람·파랑·너울 |
 
-범위는 model config에 고정되며 runtime 소스 결측이나 zero IQR에 따라 좁히지 않는다. 등록된 항목의 결측·비활성은 coverage를 낮춘다. coverage 0.8, Tide/Ocean 필수, 3 label·3일·N_eff 2·같은 Site 조건은 유지한다. 이 범위의 숫자는 검증 전까지 experimental/very_low다. 기존 전체 범위의 weight와 phase·수심 분모는 archived v1.1 재현에 유지한다.
+범위는 model config에 고정되며 runtime 소스 결측이나 zero IQR에 따라 좁히지 않는다. 등록된 항목의 결측·비활성은 coverage를 낮춘다. coverage 0.8, Tide/Ocean 필수, 3 label·3일·N_eff 2·같은 Site 조건은 유지한다. 이 범위의 숫자는 검증 전까지 experimental/very_low다. 기존 전체 범위의 weight와 phase·수심 분모는 archived v1.1 재현에 유지한다. v1.2의 10–30m 비교 항목도 별도 archived config와 `site-18m-v1` 처리로 재현한다.
 
 학습 환경 선택에서도 소스 적격을 확인한다. 같은 cutoff 안에서 snapshot 우선, 같은 종류라면 최신 생성 환경을 선택하여 다시 수집한 바람 등을 결합한다. 과거 model context 1.0은 이전 처리를 재현하고 신규 context는 1.1로 저장한다. 변경 전 전체 config는 `config/model-configurations`에 보존한다.
 

@@ -267,7 +267,8 @@
                   },
                   "comparison_scope": {
                     "enum": [
-                      "site-18m-v1"
+                      "site-18m-v1",
+                      "site-18m-v2"
                     ]
                   }
                 }
@@ -498,7 +499,8 @@
             },
             "comparison_scope": {
               "enum": [
-                "site-18m-v1"
+                "site-18m-v1",
+                "site-18m-v2"
               ]
             }
           }

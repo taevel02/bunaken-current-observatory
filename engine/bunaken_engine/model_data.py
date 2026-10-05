@@ -137,7 +137,7 @@ def eligible_candidates(observations, bundles, observer, rubric, cutoff, *, root
                 continue
             window_geometry = {**geometry, 'reference_depth_m': observation['representative_depth_m']}
             window_samples = samples
-            if config.get('comparison_scope') == 'site-18m-v1':
+            if config.get('comparison_scope') in {'site-18m-v1', 'site-18m-v2'}:
                 all_states = assess_sources(samples, list(load_sources(root)), manifest['created_at'], root,
                                             reference_depth=observation['representative_depth_m'], historical=manifest['kind'] == 'backfill')
                 window_samples = [row for row in samples if all_states[row['source']]['status'] == 'succeeded']

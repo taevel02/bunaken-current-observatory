@@ -1,5 +1,5 @@
 {
-  "version": "weighted-analog-v1.2",
+  "version": "weighted-analog-v1.3",
   "sigma": 1.0,
   "minimum_similarity": 0.2,
   "maximum_neighbors": 20,
@@ -28,5 +28,5 @@
   "large_error_threshold": null,
   "high_support_mae_limit": null,
   "temperature_bias": null,
-  "comparison_scope": "site-18m-v1"
+  "comparison_scope": "site-18m-v2"
 }

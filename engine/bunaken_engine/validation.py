@@ -43,7 +43,7 @@ def validation_target(observation, bundles, cutoff, *, operational, root=ROOT):
     except ValueError: return None
     if not usable_geometry(geometry) or not finite(observation['representative_depth_m']): return None
     available = []
-    scoped = read_json(root/'config/model.json').get('comparison_scope') == 'site-18m-v1'
+    scoped = read_json(root/'config/model.json').get('comparison_scope') in {'site-18m-v1', 'site-18m-v2'}
     for bundle in bundles:
         manifest = bundle['manifest']
         from bunaken_engine.snapshots import canonical, digest
