@@ -19,6 +19,14 @@ export function DashboardView({locale,day,siteId,state,detail=false,moon=null}:{
  const commonDepth=registry.length&&registry.every(site=>site.reference_depth_m===registry[0].reference_depth_m)?registry[0].reference_depth_m:null;
  const inHorizon=(row:Prediction)=>state.data.valid_start!==null&&state.data.valid_end!==null&&Date.parse(row.start_at)>=Date.parse(state.data.valid_start)&&Date.parse(row.start_at)+3600000<=Date.parse(state.data.valid_end);
  const rows=state.data.predictions.filter(row=>row.zone_id===null&&witaDate(new Date(row.start_at))===day);
+ const observationCounts=new Map<string,number>();
+ const countedObservations=new Set<string>();
+ for(const observation of state.data.observations){
+  if(observation.record_status!=='withdrawn'&&!countedObservations.has(observation.id)){
+   countedObservations.add(observation.id);
+   observationCounts.set(observation.site_id,(observationCounts.get(observation.site_id)??0)+1);
+  }
+ }
  const summaries=registry.map(site=>{
    const siteRows=rows.filter(row=>row.site_id===site.id);
    const safeRows=siteRows.map(row=>state.status==='available'&&inHorizon(row)?row:{...row,pci:null});
@@ -26,6 +34,7 @@ export function DashboardView({locale,day,siteId,state,detail=false,moon=null}:{
    if(!reasons.length&&!siteRows.length) reasons.push('missing_required_features');
    return {site,morning:halfDay(safeRows,day,8),afternoon:halfDay(safeRows,day,12),reasons};
  });
+ const orderedSummaries=[...summaries].sort((a,b)=>(observationCounts.get(b.site.id)??0)-(observationCounts.get(a.site.id)??0));
  const current=summaries.find(summary=>summary.site.id===chartSite?.id);
  const name=(site:typeof sites[number])=>locale==='ko'?site.name_ko:site.name_en;
  const format=(value:number|null)=>value===null?t.noValue:value.toFixed(1);
@@ -65,8 +74,9 @@ export function DashboardView({locale,day,siteId,state,detail=false,moon=null}:{
  {!detail&&<section className="mt-3 min-w-0">
   <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{t.siteComparison}</h2><span className="text-sm text-[#49625c]">{t.environmentAtNoon}</span></div>
   <div className="max-h-[46dvh] min-w-0 overflow-auto border-y border-[#c8d6d0] focus-visible:outline-2" role="region" aria-label={t.siteComparison} tabIndex={0}>
-   <table className="w-full min-w-[900px] border-collapse text-left text-sm"><thead><tr>{[t.site,...(commonDepth===null?[t.depth]:[]),t.morning,t.afternoon,`${t.environment.metrics.uo} (m/s)`,`${t.environment.metrics.vo} (m/s)`,`${t.environment.metrics.wind_direction_10m} (°)`,`${t.environment.metrics.wave_height} (m)`,t.details].map((text,index)=><th key={text} scope="col" className={`sticky top-0 z-10 bg-[#e8efec] px-4 py-2 font-semibold ${index>0?'text-right':'left-0 z-20'}`}>{text}</th>)}</tr></thead><tbody>{summaries.map(({site,morning,afternoon})=><tr key={site.id} className={`border-t border-[#dce5e0] ${site.id===siteId?'bg-[#e8efec]':''}`}>
+   <table className="w-full min-w-[900px] border-collapse text-left text-sm"><thead><tr>{[t.site,t.dataCount,...(commonDepth===null?[t.depth]:[]),t.morning,t.afternoon,`${t.environment.metrics.uo} (m/s)`,`${t.environment.metrics.vo} (m/s)`,`${t.environment.metrics.wind_direction_10m} (°)`,`${t.environment.metrics.wave_height} (m)`,t.details].map((text,index)=><th key={text} scope="col" className={`sticky top-0 z-10 bg-[#e8efec] px-4 py-2 font-semibold ${index>0?'text-right':'left-0 z-20'}`}>{text}</th>)}</tr></thead><tbody>{orderedSummaries.map(({site,morning,afternoon})=><tr key={site.id} className={`border-t border-[#dce5e0] ${site.id===siteId?'bg-[#e8efec]':''}`}>
     <th scope="row" className={`sticky left-0 z-10 min-w-44 p-0 px-4 text-left font-medium ${site.id===siteId?'bg-[#e8efec]':'bg-white'}`}><Link aria-current={site.id===siteId?'true':undefined} className="flex min-h-11 items-center whitespace-nowrap text-base text-[#155f53] underline-offset-4 hover:underline active:translate-y-px" href={`/${locale}?${query(day,site.id)}`}>{name(site)}</Link></th>
+    <td className="px-4 text-right tabular-nums">{observationCounts.get(site.id)??0}</td>
     {commonDepth===null&&<td className="px-4 text-right tabular-nums">{site.reference_depth_m===null?t.unverified:`${site.reference_depth_m}m`}</td>}
     {[morning,afternoon].map((summary,index)=><td key={index} className="whitespace-nowrap px-4 text-right tabular-nums">{format(summary.median)} <span className="text-xs text-[#49625c]">{summary.count}/8</span></td>)}
     {[["uo","copernicus-currents","m/s"],["vo","copernicus-currents","m/s"],["wind_direction_10m","open-meteo-wind","degree"],["wave_height","open-meteo-wave","m"]].map(([variable,source,unit])=><td key={variable} className="whitespace-nowrap px-4 text-right tabular-nums">{environmentValue(site.id,site.reference_depth_m,variable,source,unit)}</td>)}
