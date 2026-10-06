@@ -1,0 +1,37 @@
+{
+  "id": "e4c98c46-38d6-4d6c-b602-a6c87bee37aa",
+  "local_start": "2026-10-06T11:26",
+  "local_end": "2026-10-06T12:26",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "celah-celah",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.21,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": {
+    "celsius": 28,
+    "depth_m": null,
+    "at": null
+  },
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-10-06T03:26:00.000Z",
+  "end_at": "2026-10-06T04:26:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-10-06T12:46:11.211Z",
+  "updated_at": "2026-10-06T12:46:11.211Z",
+  "train_eligible": false
+}
