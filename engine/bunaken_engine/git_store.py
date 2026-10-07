@@ -36,7 +36,11 @@ class GitDataStore:
             if code==404:
                 return None
             if code in {409,422}:
-                raise StorageError("branch_conflict") from None
+                if method == 'PATCH' and path == '/git/refs/heads/data':
+                    raise StorageError("branch_conflict") from None
+                operation = {'/git/blobs': 'blob', '/git/trees': 'tree', '/git/commits': 'commit'}.get(path)
+                reason = f'github_{operation}_validation_failed' if method == 'POST' and operation else 'github_validation_failed'
+                raise StorageError(reason) from None
             raise StorageError("github_unavailable") from None
         except (URLError,TimeoutError,ValueError):
             raise StorageError("github_unavailable") from None
