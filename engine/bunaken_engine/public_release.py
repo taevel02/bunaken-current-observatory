@@ -15,7 +15,8 @@ def build_release(source_commit, *, manifest_path=None, observations=None, root=
     first = last = source_generated = None
     source_status = {}
     if manifest_path:
-        manifest = read_json(manifest_path)
+        from bunaken_engine.snapshot_io import load_manifest
+        manifest = load_manifest(manifest_path)
         features = json.loads(gzip.decompress((manifest_path.parent/'features.json.gz').read_bytes()))
         predictions = json.loads(gzip.decompress((manifest_path.parent/'forecast.json.gz').read_bytes()))
         make_bundle(manifest, features, predictions, root=root, kind=manifest['kind'])

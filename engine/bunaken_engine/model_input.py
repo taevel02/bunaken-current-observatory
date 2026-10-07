@@ -8,6 +8,7 @@ from bunaken_engine.model_data import checked_bundles
 from bunaken_engine.snapshots import make_bundle, canonical, digest, validate
 from bunaken_engine.registry import ROOT
 from bunaken_engine.features import instant
+from bunaken_engine.snapshot_io import decode_manifest
 
 
 def data_inputs(store, cutoff, *, root=ROOT):
@@ -29,13 +30,14 @@ def data_inputs(store, cutoff, *, root=ROOT):
             if not receipt['storage_verified'] or instant(receipt['persisted_at']) > instant(cutoff): continue
             # Neither completed dive intervals nor scaler windows can use a future-only horizon.
             if instant(receipt['valid_start']) >= instant(cutoff): continue
-            manifest = json.loads(store.read(receipt['manifest_path'], receipt['storage_commit']))
+            manifest_raw = store.read(receipt['manifest_path'], receipt['storage_commit'])
+            manifest = decode_manifest(manifest_raw)
             if manifest['status'] != 'succeeded': continue
-            prefix = receipt['manifest_path'].removesuffix('/manifest.json')
+            prefix = receipt['manifest_path'].rsplit('/', 1)[0]
             features = json.loads(gzip.decompress(store.read(prefix+'/features.json.gz', receipt['storage_commit'])))
             forecast = json.loads(gzip.decompress(store.read(prefix+'/forecast.json.gz', receipt['storage_commit'])))
             make_bundle(manifest, features, forecast, root=root, kind=manifest['kind'])
-            origin = digest(canonical(manifest))
+            origin = digest(manifest_raw)
             configuration=None
             if manifest.get('model_context') is not None:
                 configuration=manifest['model_context']['configuration']
@@ -85,8 +87,8 @@ def verify_context_storage(store, context, head, *, root=ROOT):
             raise SnapshotError('model_environment_storage_unverified')
         if instant(receipt['persisted_at']) > instant(context['cutoff']):
             raise SnapshotError('model_environment_stored_after_cutoff')
-        original=json.loads(store.read(receipt['manifest_path'],receipt['storage_commit']))
-        prefix=receipt['manifest_path'].removesuffix('/manifest.json')
+        original=decode_manifest(store.read(receipt['manifest_path'],receipt['storage_commit']))
+        prefix=receipt['manifest_path'].rsplit('/', 1)[0]
         features=json.loads(gzip.decompress(store.read(prefix+'/features.json.gz',receipt['storage_commit'])))
         forecast=json.loads(gzip.decompress(store.read(prefix+'/forecast.json.gz',receipt['storage_commit'])))
         if original.get('model_context') is not None:

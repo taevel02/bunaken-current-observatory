@@ -17,6 +17,7 @@ from bunaken_engine.git_store import GitDataStore, StorageError
 from bunaken_engine.pipeline import collect_run, publish_bundle, publish_seal, verified_receipt, historical_rows
 from bunaken_engine.snapshots import canonical, digest, bundle_path, make_bundle, select_seal, SnapshotError
 from bunaken_engine.sources import SourceError, utc_now
+from bunaken_engine.snapshot_io import read_stored_manifest
 
 
 def store_from_env():
@@ -112,13 +113,12 @@ def main(argv=None):
             manifest=None;files=None
             if store:
                 head=store.head()
-                existing=store.read(prefix+"/manifest.json",head)
+                stored_path, manifest, existing=read_stored_manifest(store,prefix,head)
                 if existing:
-                    manifest=json.loads(existing)
                     feature_bytes=store.read(prefix+"/features.json.gz",head);forecast_bytes=store.read(prefix+"/forecast.json.gz",head)
                     if feature_bytes is None or forecast_bytes is None:
                         raise SnapshotError("incomplete_snapshot_bundle")
-                    files=make_bundle(manifest,json.loads(gzip.decompress(feature_bytes)),json.loads(gzip.decompress(forecast_bytes)),root=root,kind=args.kind)
+                    files=make_bundle(manifest,json.loads(gzip.decompress(feature_bytes)),json.loads(gzip.decompress(forecast_bytes)),root=root,kind=args.kind,compress_manifest=stored_path.endswith('.gz'))
             if manifest is None:
                 if args.resume_only:
                     raise SnapshotError('stored_snapshot_missing')

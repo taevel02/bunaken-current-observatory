@@ -59,6 +59,7 @@ class ModelDataTest(unittest.TestCase):
             manifest, files=collect_run('2026-10-01', 'a'*40, days=1, run_id='11111111-1111-4111-8111-111111111111', collector=unavailable, model=context)
         forecast=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('forecast.json.gz'))))
         self.assertEqual(manifest['schema_version'], '1.2')
+        self.assertTrue(any(path.endswith('/manifest.json.gz') for path in files))
         self.assertEqual(len(forecast), 304)
         self.assertTrue(all(row['pci'] is None and row['model_version']==read_json(ROOT/'config/model.json')['version'] for row in forecast))
         changed=copy.deepcopy(forecast); changed[0].update(pci=.5, prediction_status='available', support='low')
@@ -67,9 +68,10 @@ class ModelDataTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             for path,raw in files.items():
                 target=Path(folder)/path; target.parent.mkdir(parents=True, exist_ok=True); target.write_bytes(raw)
-            bundle=read_bundle(next(Path(folder)/path for path in files if path.endswith('manifest.json')))
+            bundle=read_bundle(next(Path(folder)/path for path in files if path.endswith(('manifest.json', 'manifest.json.gz'))))
             self.assertNotIn('model_context', bundle['manifest'])
-            self.assertEqual(bundle['origin_manifest_sha256'], digest(canonical(manifest)))
+            manifest_path=next(Path(folder)/path for path in files if path.endswith(('manifest.json', 'manifest.json.gz')))
+            self.assertEqual(bundle['origin_manifest_sha256'], digest(manifest_path.read_bytes()))
             candidates, scaler, _=prepare_model([], [bundle], 'synthetic-observer', 'synthetic-rubric', '2026-10-02T00:00:00Z')
             self.assertEqual(candidates, [])
 

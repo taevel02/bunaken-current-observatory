@@ -32,20 +32,24 @@ def latest_revisions(observations, *, cutoff=None, root=ROOT):
 
 
 def read_bundle(path, *, root=ROOT):
-    manifest = read_json(path)
+    from bunaken_engine.snapshot_io import load_manifest
+    manifest = load_manifest(path)
     features = json.loads(gzip.decompress((path.parent / 'features.json.gz').read_bytes()))
     forecast = json.loads(gzip.decompress((path.parent / 'forecast.json.gz').read_bytes()))
     make_bundle(manifest, features, forecast, root=root, kind=manifest['kind'])
     if manifest.get('model_context') is not None:
         # Derived environment-only projection: preserve origin hash; omit prior labels/models.
-        origin = digest(canonical(manifest))
+        origin = digest(path.read_bytes())
         configuration=manifest['model_context']['configuration']
         manifest = {key: value for key, value in manifest.items() if key not in {'model_context', 'model_context_sha256'}}
         manifest['schema_version'] = '1.1'
         manifest['artifact_hashes'] = {'features.json.gz': digest(gzip.compress(canonical(features), mtime=0)),
                                      'forecast.json.gz': digest(gzip.compress(canonical([]), mtime=0))}
         return dict(manifest=manifest, features=features, forecast=[], origin_manifest_sha256=origin,environment_configuration=configuration)
-    return dict(manifest=manifest, features=features, forecast=forecast, environment_configuration=environment_configuration(manifest,root))
+    result = dict(manifest=manifest, features=features, forecast=forecast, environment_configuration=environment_configuration(manifest,root))
+    if path.name.endswith('.gz'):
+        result['origin_manifest_sha256'] = digest(path.read_bytes())
+    return result
 
 
 def checked_bundles(bundles, *, root=ROOT):

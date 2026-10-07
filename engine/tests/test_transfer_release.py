@@ -87,7 +87,7 @@ class TransferReleaseTest(unittest.TestCase):
         self.assertEqual(sidecar['model_context_sha256'],digest(canonical(context)))
         for relative,raw in files.items():
             destination=fixture.root/'output'/relative;destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(raw)
-        manifest_path=fixture.root/'output'/next(relative for relative in files if relative.endswith('manifest.json'))
+        manifest_path=fixture.root/'output'/next(relative for relative in files if relative.endswith(('manifest.json', 'manifest.json.gz')))
         _,package=build_release('b'*40,manifest_path=manifest_path,observations=fixture.observations,
             root=fixture.root,experimental_transfer=True,code_commit='a'*40)
         payload=json.loads(gzip.decompress(next(raw for relative,raw in package.items() if relative.endswith('dashboard.json.gz'))))

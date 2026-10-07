@@ -80,7 +80,7 @@ def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT
     return result
 
 
-def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot") -> dict[str,bytes]:
+def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot", compress_manifest=False) -> dict[str,bytes]:
     """Validate every public field before constructing any Git blob."""
     context=manifest.get('model_context')
     if context is not None:
@@ -97,7 +97,7 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
             if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']],[row['variable']]) for row in manifest['samples']):
                 raise SnapshotError('source_export_forbidden')
             with replay_root(context,root) as replay:
-                return make_bundle(manifest,features,forecast,root=replay,kind=kind)
+                return make_bundle(manifest,features,forecast,root=replay,kind=kind,compress_manifest=compress_manifest)
     if context is None and manifest['source_registry_hash'] != digest(canonical(read_json(root/'config/source-registry.json'))):
         from bunaken_engine.model_data import environment_configuration, replay_root
         configuration = environment_configuration(manifest, root)
@@ -105,7 +105,7 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
         if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']], [row['variable']]) for row in manifest['samples']):
             raise SnapshotError('source_export_forbidden')
         with replay_root({'configuration': configuration}, root) as replay:
-            return make_bundle(manifest, features, forecast, root=replay, kind=kind)
+            return make_bundle(manifest, features, forecast, root=replay, kind=kind,compress_manifest=compress_manifest)
     registry=load_sources(root)
     if manifest.get("kind") != kind:
         raise SnapshotError("run_kind_mismatch")
@@ -146,7 +146,9 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
         raise SnapshotError("artifact_hash_mismatch")
     validate("snapshot",manifest,root)
     prefix=bundle_path(manifest["date_wita"],manifest["run_id"],kind)
-    return {f"{prefix}/manifest.json":canonical(manifest),f"{prefix}/features.json.gz":encoded_features,f"{prefix}/forecast.json.gz":encoded_forecast}
+    from bunaken_engine.snapshot_io import encode_manifest
+    manifest_name = 'manifest.json.gz' if compress_manifest else 'manifest.json'
+    return {f"{prefix}/{manifest_name}":encode_manifest(manifest,compressed=compress_manifest),f"{prefix}/features.json.gz":encoded_features,f"{prefix}/forecast.json.gz":encoded_forecast}
 
 
 def seal_cutoff(target_date: str) -> datetime:
@@ -178,4 +180,4 @@ def allowed_data_path(path: str) -> bool:
         return True
     uuid=r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     date_pattern=r"\d{4}-\d{2}-\d{2}"
-    return bool(re.fullmatch(rf"web/releases/{uuid}/(?:manifest\.json|dashboard\.json\.gz)",path) or path == "web/latest.json" or re.fullmatch(rf"(?:snapshots|backfills)/{date_pattern}/{uuid}/(?:manifest\.json|features\.json\.gz|forecast\.json\.gz)",path) or re.fullmatch(rf"snapshot-receipts/{uuid}\.json",path) or re.fullmatch(rf"snapshot-receipt-index/{date_pattern}/{uuid}\.json",path) or re.fullmatch(rf"snapshot-confirmations/{uuid}\.json",path) or re.fullmatch(rf"seals/target-{date_pattern}\.json",path))
+    return bool(re.fullmatch(rf"web/releases/{uuid}/(?:manifest\.json|dashboard\.json\.gz)",path) or path == "web/latest.json" or re.fullmatch(rf"(?:snapshots|backfills)/{date_pattern}/{uuid}/(?:manifest\.json(?:\.gz)?|features\.json\.gz|forecast\.json\.gz)",path) or re.fullmatch(rf"snapshot-receipts/{uuid}\.json",path) or re.fullmatch(rf"snapshot-receipt-index/{date_pattern}/{uuid}\.json",path) or re.fullmatch(rf"snapshot-confirmations/{uuid}\.json",path) or re.fullmatch(rf"seals/target-{date_pattern}\.json",path))

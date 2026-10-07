@@ -203,7 +203,10 @@ class GitDataStore:
         for snapshot_id in manifest['snapshot_ids']:
             day=datetime.fromisoformat(payload['valid_start'].replace('Z','+00:00')).astimezone(ZoneInfo('Asia/Makassar')).date().isoformat()
             snapshot_prefix=f'snapshots/{day}/{snapshot_id}'
-            snapshot=json.loads(self.read(snapshot_prefix+'/manifest.json',head))
+            from bunaken_engine.snapshot_io import read_stored_manifest
+            snapshot_path,snapshot,_=read_stored_manifest(self,snapshot_prefix,head)
+            if snapshot is None:
+                raise StorageError('release_source_mismatch')
             features=json.loads(gzip.decompress(self.read(snapshot_prefix+'/features.json.gz',head)))
             forecasts=json.loads(gzip.decompress(self.read(snapshot_prefix+'/forecast.json.gz',head)))
             from bunaken_engine.registry import load_geometry

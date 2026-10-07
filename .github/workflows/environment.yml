@@ -128,7 +128,11 @@ jobs:
             fi
             uv run --project engine --extra providers --locked python -m bunaken_engine collect --date "$TARGET_DATE" --code-commit "$CODE_COMMIT" --run-id "$SNAPSHOT_RUN_ID" --output "$RUNNER_TEMP/bunaken-output" --publish "${MODEL_ARGS[@]}" "${RESUME_ARGS[@]}"
             SOURCE_DATA_COMMIT=$(uv run --project engine --locked python -c 'from bunaken_engine.__main__ import store_from_env; print(store_from_env().head())')
-            uv run --project engine --locked python -m bunaken_engine.public_release --source-data-commit "$SOURCE_DATA_COMMIT" --snapshot "$RUNNER_TEMP/bunaken-output/snapshots/$TARGET_DATE/$SNAPSHOT_RUN_ID/manifest.json" --output "$RUNNER_TEMP/bunaken-web" --experimental-transfer --code-commit "$CODE_COMMIT" --publish
+            MANIFEST_FILE="$RUNNER_TEMP/bunaken-output/snapshots/$TARGET_DATE/$SNAPSHOT_RUN_ID/manifest.json.gz"
+            if [[ ! -f "$MANIFEST_FILE" ]]; then
+              MANIFEST_FILE="$RUNNER_TEMP/bunaken-output/snapshots/$TARGET_DATE/$SNAPSHOT_RUN_ID/manifest.json"
+            fi
+            uv run --project engine --locked python -m bunaken_engine.public_release --source-data-commit "$SOURCE_DATA_COMMIT" --snapshot "$MANIFEST_FILE" --output "$RUNNER_TEMP/bunaken-web" --experimental-transfer --code-commit "$CODE_COMMIT" --publish
           else
             uv run --project engine --locked python -m bunaken_engine seal --date "$TARGET_DATE" --publish
           fi

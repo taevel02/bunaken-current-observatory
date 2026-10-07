@@ -85,21 +85,21 @@ class ModelIntegrationTest(unittest.TestCase):
         self.assertTrue(all(row['pci']>1 and row['support'] in {'low','very_low'} for row in numeric))
         for path,raw in files.items():
             destination=self.root/'output'/path;destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(raw)
-        snapshot=next(self.root/'output'/path for path in files if path.endswith('manifest.json'))
+        snapshot=next(self.root/'output'/path for path in files if path.endswith(('manifest.json', 'manifest.json.gz')))
         release,published=build_release('b'*40,manifest_path=snapshot,observations=self.observations,root=self.root)
         self.assertTrue(published)
         # A later model configuration change cannot invalidate the frozen old model.
         config=read_json(self.root/'config/model.json');config['version']='synthetic-next-version'
         (self.root/'config/model.json').write_bytes(canonical(config))
         features=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('features.json.gz'))))
-        self.assertEqual(make_bundle(manifest,features,forecast,root=self.root),files)
+        self.assertEqual(make_bundle(manifest,features,forecast,root=self.root,compress_manifest=True),files)
         source_config=read_json(self.root/'config/source-registry.json')
         source_config['sources'][1]['dataset']='synthetic-next-dataset'
         (self.root/'config/source-registry.json').write_bytes(canonical(source_config))
         feature_config=read_json(self.root/'config/features.json')
         feature_config['groups']['weather']['features'].remove('wave_height_m')
         (self.root/'config/features.json').write_bytes(canonical(feature_config))
-        self.assertEqual(make_bundle(manifest,features,forecast,root=self.root),files)
+        self.assertEqual(make_bundle(manifest,features,forecast,root=self.root,compress_manifest=True),files)
         projected=read_bundle(snapshot,root=self.root)
         self.assertEqual(len(checked_bundles([projected],root=self.root)),1)
         prepare_model([], [projected], 'synthetic-observer','synthetic-rubric','2026-09-10T00:00:00Z',root=self.root)
@@ -175,7 +175,7 @@ class ModelIntegrationTest(unittest.TestCase):
         self.assertEqual(make_bundle(manifest,features,forecasts,root=self.root),files)
         for name,raw in files.items():
             path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(raw)
-        manifest_path=self.root/next(name for name in files if name.endswith('manifest.json'))
+        manifest_path=self.root/next(name for name in files if name.endswith(('manifest.json', 'manifest.json.gz')))
         bundle=read_bundle(manifest_path,root=self.root)
         self.assertEqual(bundle['environment_configuration']['sources'],old)
 

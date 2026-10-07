@@ -111,12 +111,12 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
         manifest.update(schema_version='1.2', model_context=model, model_context_sha256=digest(canonical(model)))
         forecast, manifest['scaler_version'] = forecast_context(model, feature_rows, manifest, root=root)
         manifest['artifact_hashes']['forecast.json.gz'] = digest(gzip.compress(canonical(forecast), mtime=0))
-    return manifest,make_bundle(manifest,feature_rows,forecast,root=root,kind=kind)
+    return manifest,make_bundle(manifest,feature_rows,forecast,root=root,kind=kind,compress_manifest=model is not None)
 
 
 def publish_bundle(store, manifest, files, *, root=ROOT) -> dict:
     receipt_path=f"snapshot-receipts/{manifest['run_id']}.json"
-    manifest_path=next(path for path in files if path.endswith("/manifest.json"))
+    manifest_path=next(path for path in files if path.endswith(("/manifest.json", "/manifest.json.gz")))
     manifest_hash=digest(files[manifest_path])
     existing=store.read(receipt_path,store.head())
     if existing is not None:
@@ -130,7 +130,7 @@ def publish_bundle(store, manifest, files, *, root=ROOT) -> dict:
         from bunaken_engine.model_input import verify_context_storage
         verify_context_storage(store,manifest['model_context'],store.head(),root=root)
     storage_commit=store.insert(files)
-    receipt=dict(schema_version="1.0",run_id=manifest["run_id"],kind=manifest["kind"],status=manifest["status"],manifest_path=manifest_path,manifest_sha256=manifest_hash,storage_commit=storage_commit,persisted_at=utc_now(),valid_start=manifest["valid_start"],valid_end=manifest["valid_end"])
+    receipt=dict(schema_version="1.1" if manifest_path.endswith('.gz') else "1.0",run_id=manifest["run_id"],kind=manifest["kind"],status=manifest["status"],manifest_path=manifest_path,manifest_sha256=manifest_hash,storage_commit=storage_commit,persisted_at=utc_now(),valid_start=manifest["valid_start"],valid_end=manifest["valid_end"])
     validate("snapshot-receipt",receipt,root)
     try:
         store.insert({receipt_path:canonical(receipt),f"snapshot-receipt-index/{manifest['date_wita']}/{manifest['run_id']}.json":canonical(receipt)},"confirm immutable snapshot storage")
@@ -182,10 +182,11 @@ def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
     raw=store.read(receipt["manifest_path"],receipt["storage_commit"])
     if raw is None or digest(raw)!=receipt["manifest_sha256"] or store.read(receipt["manifest_path"],head)!=raw:
         raise SnapshotError("receipt_manifest_mismatch")
-    manifest=json.loads(raw)
+    from bunaken_engine.snapshot_io import decode_manifest
+    manifest=decode_manifest(raw)
     validate("snapshot",manifest,root)
     prefix=bundle_path(manifest["date_wita"],manifest["run_id"],manifest["kind"])
-    if receipt["manifest_path"]!=prefix+"/manifest.json" or receipt["run_id"]!=manifest["run_id"] or receipt["kind"]!=manifest["kind"] or receipt["status"]!=manifest["status"]:
+    if receipt["manifest_path"] not in {prefix+"/manifest.json", prefix+"/manifest.json.gz"} or receipt["run_id"]!=manifest["run_id"] or receipt["kind"]!=manifest["kind"] or receipt["status"]!=manifest["status"]:
         raise SnapshotError("receipt_identity_mismatch")
     artifacts={}
     for name,expected in manifest["artifact_hashes"].items():
@@ -222,7 +223,8 @@ def publish_seal(store, target_date: str, receipts: list[dict], *, root=ROOT, no
 
 def historical_rows(manifest_path, *, root=ROOT) -> list[dict]:
     """Consume only a validated backfill bundle, preserving its availability cutoff."""
-    manifest=json.loads(manifest_path.read_bytes())
+    from bunaken_engine.snapshot_io import load_manifest
+    manifest=load_manifest(manifest_path)
     if manifest.get('kind') != 'backfill':
         raise SnapshotError('historical_backfill_required')
     features=json.loads(gzip.decompress((manifest_path.parent/'features.json.gz').read_bytes()))

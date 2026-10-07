@@ -72,7 +72,7 @@ class SnapshotTest(unittest.TestCase):
             root=Path(directory)
             for name,content in files.items():
                 target=root/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(content)
-            path=next(root/name for name in files if name.endswith("manifest.json"))
+            path=next(root/name for name in files if name.endswith(("manifest.json", "manifest.json.gz")))
             self.assertEqual(historical_rows(path),[])
             (path.parent/"features.json.gz").write_bytes(gzip.compress(b'[{}]',mtime=0))
             with self.assertRaises(SnapshotError):historical_rows(path)

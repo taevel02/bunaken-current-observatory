@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.2\
+버전: 2.3\
 작성일: 2026-10-07\
 기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
@@ -145,6 +145,8 @@ EnvironmentLink는 observation_id/revision, snapshot_id 또는 backfill_id, prov
 Snapshot manifest는 run_id, local_run_date, generated_at, source metadata, code_ref, input_data_ref, model/scaler/feature/geometry version, 파일 경로·hash를 포함한다. 자기 자신 또는 자기 commit SHA를 자기 내부 해시에 넣지 않는다. 같은 run_id로 다른 바이트를 덮어쓰지 않는다.
 
 Git ref 갱신 뒤 별도 immutable receipt에 snapshot_commit_sha와 실제 성공 확인 시각 recorded_at을 남긴다. commit 작성 시각만으로 cutoff 이전 저장을 증명하지 않는다. receipt ref 갱신을 확인한 직후 별도 immutable confirmation에 receipt hash와 confirmed_at을 기록한다. cutoff 적격 판정은 이 확인 시각까지 포함하며 confirmation이 없거나 실제 receipt 확인이 늦으면 보수적으로 부적격 처리한다. confirmation 파일 자체를 늦게 작성해도 확인 시각을 과거로 바꾸지 않는다. Git committer date는 보조 검사이고 독립된 저장 시각 증명은 아니다. 이 규칙은 PRD의 실제 보존 시점 조건을 구현하기 위한 세부 규약이다.
+
+Snapshot의 논리 JSON schema는 유지하고 신규 모델 snapshot의 저장 manifest는 `manifest.json.gz`로 압축한다. 기존 `manifest.json`도 계속 검증한다. Receipt schema `1.0`은 JSON 경로, `1.1`은 gzip 경로다. `manifest_sha256`은 해제 문서가 아닌 실제 저장 파일 bytes의 hash이며 projection은 이 origin hash를 보존한다. feature/forecast artifact hash와 모델 재현 검증을 함께 수행한다. manifest는 압축 8MiB·해제 256MiB 상한을 적용하고 초과 시 발행을 중단한다. raw atlas·NetCDF는 이 포맷의 대상이 아니다. 데이터 누적에 따른 input 참조화·중복 환경 제거와 자원 사용량은 P7 검수 항목이다.
 
 ### 4.5 Prediction과 웹 release
 
