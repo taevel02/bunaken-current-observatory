@@ -15,7 +15,7 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         self.assertEqual(data['permissions'],{'contents':'read'})
         steps = job['steps']
         prepare = next(step for step in steps if step.get('name') == 'Fetch verified tidal ephemeris')
-        self.assertEqual(prepare['if'],"env.OPERATION == 'collect'")
+        self.assertEqual(prepare['if'],"env.OPERATION == 'collect' && env.RESUME_RUN_ID == ''")
         self.assertEqual(prepare['env']['GITHUB_WRITE_TOKEN'],'${{ secrets.DATA_WRITE_TOKEN }}')
         self.assertIn('fes_cache fetch',prepare['run'])
         self.assertIn('FES_DERIVED_ROOT=',prepare['run'])

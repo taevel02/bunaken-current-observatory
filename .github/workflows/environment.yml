@@ -89,7 +89,7 @@ jobs:
           uv run --project engine --locked python -m unittest discover -s engine/tests
           uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
       - name: Fetch verified tidal ephemeris
-        if: env.OPERATION == 'collect'
+        if: env.OPERATION == 'collect' && env.RESUME_RUN_ID == ''
         env:
           GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.event.repository.name }}
@@ -116,14 +116,17 @@ jobs:
           export GITHUB_REPO="${REPOSITORY#*/}"
           if [[ "$OPERATION" == collect ]]; then
             SNAPSHOT_RUN_ID="$RESUME_RUN_ID"
+            RESUME_ARGS=()
             if [[ -z "$SNAPSHOT_RUN_ID" ]]; then
               SNAPSHOT_RUN_ID=$(uv run --project engine --locked python -c 'import os,uuid; print(uuid.uuid5(uuid.NAMESPACE_URL, "bunaken:"+os.environ["REPOSITORY"]+":"+os.environ["RUN_ID"]))')
+            else
+              RESUME_ARGS=(--resume-only)
             fi
             MODEL_ARGS=()
             if [[ -n "$MODEL_OBSERVER_ID" && -n "$MODEL_RUBRIC_VERSION" ]]; then
               MODEL_ARGS=(--model-from-data --observer "$MODEL_OBSERVER_ID" --rubric "$MODEL_RUBRIC_VERSION")
             fi
-            uv run --project engine --extra providers --locked python -m bunaken_engine collect --date "$TARGET_DATE" --code-commit "$CODE_COMMIT" --run-id "$SNAPSHOT_RUN_ID" --output "$RUNNER_TEMP/bunaken-output" --publish "${MODEL_ARGS[@]}"
+            uv run --project engine --extra providers --locked python -m bunaken_engine collect --date "$TARGET_DATE" --code-commit "$CODE_COMMIT" --run-id "$SNAPSHOT_RUN_ID" --output "$RUNNER_TEMP/bunaken-output" --publish "${MODEL_ARGS[@]}" "${RESUME_ARGS[@]}"
             SOURCE_DATA_COMMIT=$(uv run --project engine --locked python -c 'from bunaken_engine.__main__ import store_from_env; print(store_from_env().head())')
             uv run --project engine --locked python -m bunaken_engine.public_release --source-data-commit "$SOURCE_DATA_COMMIT" --snapshot "$RUNNER_TEMP/bunaken-output/snapshots/$TARGET_DATE/$SNAPSHOT_RUN_ID/manifest.json" --output "$RUNNER_TEMP/bunaken-web" --experimental-transfer --code-commit "$CODE_COMMIT" --publish
           else

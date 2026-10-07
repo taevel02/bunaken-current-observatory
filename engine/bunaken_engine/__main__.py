@@ -43,6 +43,7 @@ def parser():
     collect=commands.add_parser("collect",help="collect a forecast snapshot or historical analysis backfill")
     collect.add_argument("--date",default=(datetime.now(ZoneInfo("Asia/Makassar"))+timedelta(days=1)).date().isoformat(),help="first WITA date")
     collect.add_argument("--days",type=int,default=7)
+    collect.add_argument("--resume-only",action="store_true",help="require an existing immutable stored run; never recollect")
     collect.add_argument("--kind",choices=["snapshot","backfill"],default="snapshot")
     collect.add_argument("--run-id",default=None)
     collect.add_argument("--code-commit",required=True,help="40-character trusted code commit SHA")
@@ -106,6 +107,8 @@ def main(argv=None):
             run_id=args.run_id or str(uuid4())
             prefix=bundle_path(args.date,run_id,args.kind)
             store=store_from_env() if args.publish else None
+            if args.resume_only and (store is None or not args.run_id):
+                raise SnapshotError('resume_requires_stored_run')
             manifest=None;files=None
             if store:
                 head=store.head()
@@ -117,6 +120,8 @@ def main(argv=None):
                         raise SnapshotError("incomplete_snapshot_bundle")
                     files=make_bundle(manifest,json.loads(gzip.decompress(feature_bytes)),json.loads(gzip.decompress(forecast_bytes)),root=root,kind=args.kind)
             if manifest is None:
+                if args.resume_only:
+                    raise SnapshotError('stored_snapshot_missing')
                 model=read_json(args.model) if args.model else None
                 if args.model_from_data:
                     if args.model or not args.observer or not args.rubric: raise ValueError('model_observer_rubric_required')
