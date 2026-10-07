@@ -166,7 +166,12 @@ def main():
             store.publish_release(files,args.source_data_commit)
         print(json.dumps(dict(release_id=release['release_id'],local_output=True,published=args.publish)))
     except Exception as error:
-        print(json.dumps(dict(status='failed',error_type=type(error).__name__)))
+        import re
+        from bunaken_engine.git_store import StorageError
+        report = dict(status='failed',error_type=type(error).__name__)
+        if isinstance(error, (SnapshotError, StorageError)) and re.fullmatch(r'[a-z][a-z0-9_]{0,79}', str(error)):
+            report['error_code'] = str(error)
+        print(json.dumps(report))
         raise SystemExit(1) from None
 
 

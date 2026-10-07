@@ -42,3 +42,26 @@ class ReleaseLimitsTest(unittest.TestCase):
     def test_decompression_limit_remains_bounded(self):
         with self.assertRaisesRegex(SnapshotError, 'release_size_exceeded'):
             self.package(50_000_001)
+
+    def test_cli_reports_controlled_codes_without_arbitrary_exception_text(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from bunaken_engine.public_release import main
+        from bunaken_engine.git_store import StorageError
+        for error, code in [(SnapshotError('release_size_exceeded'), 'release_size_exceeded'),
+                            (StorageError('branch_conflict'), 'branch_conflict'),
+                            (ValueError('secret credential content'), None),
+                            (SnapshotError('credential=value'), None)]:
+            with self.subTest(error=type(error).__name__), TemporaryDirectory() as folder:
+                output = StringIO()
+                argv = ['public_release', '--source-data-commit', 'b' * 40,
+                        '--output', str(Path(folder) / 'output')]
+                with patch('sys.argv', argv), patch('bunaken_engine.public_release.build_release', side_effect=error), redirect_stdout(output):
+                    with self.assertRaises(SystemExit) as stopped:
+                        main()
+                self.assertEqual(stopped.exception.code, 1)
+                report = json.loads(output.getvalue())
+                self.assertEqual(report.get('error_code'), code)
+                self.assertNotIn('credential', output.getvalue())
