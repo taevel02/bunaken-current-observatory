@@ -27,6 +27,8 @@ def data_inputs(store, cutoff, *, root=ROOT):
         elif re.fullmatch(r'snapshot-receipts/[0-9a-f-]{36}\.json', path):
             receipt = verified_receipt(store, json.loads(store.read(path, head)), head, root=root)
             if not receipt['storage_verified'] or instant(receipt['persisted_at']) > instant(cutoff): continue
+            # Neither completed dive intervals nor scaler windows can use a future-only horizon.
+            if instant(receipt['valid_start']) >= instant(cutoff): continue
             manifest = json.loads(store.read(receipt['manifest_path'], receipt['storage_commit']))
             if manifest['status'] != 'succeeded': continue
             prefix = receipt['manifest_path'].removesuffix('/manifest.json')
