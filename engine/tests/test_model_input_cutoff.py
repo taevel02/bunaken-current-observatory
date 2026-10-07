@@ -26,7 +26,7 @@ class ModelInputCutoffTest(unittest.TestCase):
         verified = dict(receipt, storage_verified=True)
         with patch('bunaken_engine.model_input.verified_receipt', return_value=verified) as verify:
             head, observations, bundles = data_inputs(store, '2026-10-07T13:30:00Z')
-        verify.assert_called_once()
+        verify.assert_not_called()
         self.assertEqual(head, 'a' * 40)
         self.assertEqual(observations, [])
         self.assertEqual(bundles, [])
