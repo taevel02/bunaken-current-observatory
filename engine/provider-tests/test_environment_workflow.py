@@ -62,12 +62,17 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         data = yaml.load((root/'.github/workflows/environment.yml').read_text(),Loader=yaml.BaseLoader)
         script = next(step['run'] for step in data['jobs']['environment']['steps'] if step.get('name') == 'Validate trusted invocation')
         def accepted(**updates):
-            env = dict(os.environ,CODE_COMMIT='a'*40,TARGET_DATE='',OPERATION='collect',EVENT='workflow_dispatch',EVENT_REF='refs/heads/main')
+            env = dict(os.environ,CODE_COMMIT='a'*40,TARGET_DATE='',RESUME_RUN_ID='',OPERATION='collect',EVENT='workflow_dispatch',EVENT_REF='refs/heads/main')
             env.update(updates)
             return subprocess.run(['bash','-e','-c',script],env=env,capture_output=True).returncode == 0
         self.assertTrue(accepted())
         self.assertTrue(accepted(EVENT='push',EVENT_REF='refs/heads/data'))
         self.assertTrue(accepted(EVENT='schedule',OPERATION='seal'))
+        run_id = '11111111-1111-4111-8111-111111111111'
+        self.assertTrue(accepted(RESUME_RUN_ID=run_id,TARGET_DATE='2026-10-08'))
+        self.assertFalse(accepted(RESUME_RUN_ID=run_id))
+        self.assertFalse(accepted(RESUME_RUN_ID='../manifest.json',TARGET_DATE='2026-10-08'))
+        self.assertFalse(accepted(RESUME_RUN_ID=run_id,TARGET_DATE='2026-10-08',OPERATION='seal'))
         self.assertFalse(accepted(EVENT='pull_request',EVENT_REF='refs/pull/1/merge'))
         self.assertFalse(accepted(EVENT_REF='refs/heads/preview'))
         self.assertFalse(accepted(EVENT_REF='refs/tags/release'))
