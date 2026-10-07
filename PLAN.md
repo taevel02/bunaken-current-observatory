@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.9\
-작성일: 2026-10-05\
-기준: [PRD.md](PRD.md) v1.9 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.1\
+버전: 1.10\
+작성일: 2026-10-07\
+기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.2\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -36,7 +36,11 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 GitHub Actions의 main 검증 두 job은 보고서 reader 및 문서 갱신 commit에서 통과했다. production Vercel deployment와 실제 공개 route는 deployment 증거가 없어 검증 미완료이며 P7에 남는다. data branch release 발행을 홈페이지 production 반영 완료로 간주하지 않는다.
 
-대시보드 Site 목록은 공개 관측 수 내림차순으로 정렬한다. 보고서에도 최신 revision 기준 관측 수를 정렬해 싣는다. 저방문 Site의 PCI를 다른 Site 자료만으로 채우는 전이 모델은 구현하지 않았다. 근거 없는 PCI 점을 조석처럼 주기 곡선으로 합성하지 않는다. Site별 조석·모델 유속은 별도 물리량 계열로 표시할 수 있다. Site 간 PCI 전이는 별도 모델로 다루고 whole-Site holdout, spatial block, 독립 날짜, matched baseline으로 검증해야 한다. 모든 Site 그래프는 계산된 PCI가 있을 때만 점을 잇고 결측 구간에서 선을 끊어야 한다.
+대시보드 Site 목록은 공개 관측 수 내림차순으로 정렬한다. 보고서에도 최신 revision 기준 관측 수를 정렬해 싣는다. 2026-10-07 승인된 별도 `site-transfer-v1`과 실험 선택 화면을 구현했다. 기본 PCI에 자동 대입하지 않으며 3 Site/3일 및 유효 날짜/Site gate를 유지한다. 근거 없는 PCI 점을 조석처럼 주기 곡선으로 합성하지 않는다. Site별 조석·모델 유속은 별도 물리량 계열로 표시할 수 있다. Site 간 PCI 전이는 whole-Site holdout, spatial block 전진, 공식 조건 전진 검증 경로로 진단했다. 24개 관측의 whole-Site holdout MAE 0.10356은 matched baseline 0.08417보다 나쁘다. 공간 블록 사후자료 전진도 3/24 제공·MAE 0.12482 대 baseline 0.09667이다. 공식 조건 전진은 0/24·MAE null이며 성능 개선 근거가 없다. 모든 Site 그래프는 계산된 PCI가 있을 때만 점을 잇고 결측 구간에서 선을 끊어야 한다.
+
+실제 같은 날 남은 133개 시간 슬롯의 로컬 실험 분석에서 19 Site·108개 숫자를 산출하고 25개는 날짜 근거 부족으로 보류했다. 기존 공급 snapshot은 2026-10-07만 포함하므로 10-08 자료를 만들지 않았다. 이 숫자는 공식 D+1 forecast가 아니며 data branch에 발행하지 않았다. [실험 계약과 진단 결과](docs/site-transfer.ko.md)를 따른다. 기존 보고서 v1.0.1은 그대로 보존한다.
+
+현재 trusted entrypoint template은 검토 코드 `82dd0137296e0f94491159419d804104b7d0d0f7`로 갱신했다. 원격 push·CI·entrypoint 설치·새 소스 수집/웹 패키지 발행·Vercel 검수는 P7에서 수행해야 실험 결과가 서비스에 반영된다. 로컬 구현·검증과 production 운영을 구분한다.
 
 ### 2.1 남은 작업과 추천 순서 (2026-10-05, 당시 상태)
 

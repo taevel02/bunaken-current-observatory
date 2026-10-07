@@ -107,3 +107,17 @@ node --conditions=react-server --test apps/web/test/public-release.integration.m
 - 브라우저 검증: `BUNAKEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs node --conditions=react-server --test apps/web/test/research-browser.integration.mjs`
 
 첫 보고서 v1.0.1은 data branch에 발행했다. [최신 공개 release 원문](https://github.com/taevel02/bunaken-current-observatory/tree/data/research/bunaken-pci-methodology-initial-observations/releases/1.0.1). v1.0.0은 보존되며 superseded 상태다. 웹 경로는 `/{locale}/research/bunaken-pci-methodology-initial-observations/{technical|guide}`이며 production Vercel 배포 확인은 P7에 남았다. 공개 목록은 20개 단위 metadata 조회이며 상세 페이지는 선택한 버전의 원고만 검증한다.
+
+
+## Site 간 PCI 실험
+
+대시보드의 `PCI 모델 → Site 간 추정 · 실험`으로 별도 모델을 선택한다. 무관측 Site에도 다른 Site의 실제 Overall label과 그 Site의 환경으로 추정할 수 있지만, 최소 donor Site·날짜·유효 표본수 gate를 통과해야 한다. 항상 experimental/very_low·unvalidated다. 기본 모델 값과 자동 합치거나 학습 label로 저장하지 않는다.
+
+`PCI`, `모델 조류 속력`, `조석 높이` 그래프를 전환할 수 있다. 실제 점 사이만 부드럽게 연결하며 결측·중복 구간은 끊는다. Site 선택·날짜·모델·그래프는 언어 전환에도 유지된다. Site 표와 선택 목록은 공개 기록 수 내림차순이다.
+
+- [실험 방법·gate·현재 진단](docs/site-transfer.ko.md)
+- 검증 CLI: `uv run --project engine --locked python -m bunaken_engine validate-transfer --help`
+- 웹 exporter: `--experimental-transfer --code-commit <clean code SHA>`를 추가하면 schema 1.2 sidecar를 생성한다. 현재 CI chain에 연결했으며 실제 원격 반영은 P7 검수 대상이다.
+- 브라우저 검증: `BUNAKEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs BUNAKEN_BROWSER_EXECUTABLE=/absolute/path/to/chrome node --conditions=react-server --test apps/web/test/transfer-browser.integration.mjs`
+
+현재 24개 관측의 Site 제외·공간 블록 진단은 matched baseline보다 나쁘며 공식 조건 전진은 0/24 제공이다. 추정 기능 구현을 예측력 입증으로 해석하지 않는다. 기존 연구 보고서를 자동 개정·발행하지 않는다.

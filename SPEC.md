@@ -349,6 +349,8 @@ forecast snapshot provenance=1.00, 사후 analysis backfill=0.70이다. 불완�
 
 `config/site-transfer.json`의 `site-transfer-v1`은 target Site와 모든 Zone label을 제외한다. Tide rate/excursion, 18m current speed, modelled temperature, wave/swell height/period를 비교한다. 독립 지도축의 방향 projection은 전이 feature로 쓰지 않는다. similarity·K·quality·provenance는 baseline 설정을 사용한다. Site별 round robin으로 최대 K를 선택하고 각 raw weight를 그 Site/날짜의 관측 수와 그 Site의 기여 날짜 수로 나눈다. 최소 3개 donor Site·3일·3 analog, N_eff 및 날짜/Site 유효수 각각 2 이상, 최대 Site 기여 0.5를 요구한다. 물리 source·coverage 0.8·18m·시간 gate를 유지하며 항상 experimental/very_low로 표시한다. 수직 evidence는 전이하지 않는다.
 
+웹 exporter의 `--experimental-transfer --code-commit <clean HEAD>` 옵션은 dashboard/release schema 1.2로 `experimental_transfer` sidecar를 추가한다. 기본 `predictions`는 그대로 보존한다. sidecar는 config·context·실행 code SHA, unvalidated 상태, point별 donor Site/유효 Site 수/최대 기여 비율을 갖는다. 새 reader는 기존 schema 1.1도 읽는다. 발행 저장 경계에서 manifest/payload 버전·생성 시각을 일치시키고 sidecar를 원 snapshot·context에서 재계산한다. 재개 발행도 실제 clean HEAD를 검사한다. 실험 config 변경은 새 버전·새 패키지와 함께 진행한다.
+
 전진 검증과 별도 whole-Site holdout, 고정 3km 지리 블록의 전진 검증을 수행한다. held-out Site/블록의 label과 환경 scaler 행을 제외한다. whole-Site holdout은 미래 날짜를 포함하는 진단이며 D+1 성능으로 표기하지 않는다. 결과에는 분모·abstention·matched donor median baseline·fold ID/날짜/Site·config/context hash를 기록한다. 자동 정확도 승격이나 PCI label 생성은 금지한다. 상세는 [Site 전이 실험](docs/site-transfer.ko.md)을 따른다.
 
 ### 8.3 수직 근거와 anchor

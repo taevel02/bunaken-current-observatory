@@ -39,3 +39,28 @@ uv run --project engine --locked python -m bunaken_engine validate-transfer \
 그래프는 실제 숫자 슬롯만 표시한다. 두 점 사이를 단조 cubic Hermite 곡선으로 연결하되 overshoot·외삽을 막고 null·중복·누락 구간은 끊는다. 곡선 내부는 시각적 연결이며 새로운 예측 시각이 아니다. 모델 유속(m/s)·FES 조석(m)은 별도 계열로 표시한다. PCI를 사인 함수에 맞추지 않는다.
 
 참고한 구현 원리: [SciPy PCHIP 공식 문서](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.PchipInterpolator.html), [scikit-learn 그룹 분할 공식 문서](https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data). 새 라이브러리 의존성은 도입하지 않는다.
+
+
+## 실제 초기 진단 (2026-10-07)
+
+정정 data commit `a431af719b869ae578b95e1392df8618cee0dfc8`의 24개 관측·9개 WITA 날짜를 고정했다. baseline model context SHA-256은 `958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c`, 실험 config SHA-256은 `449630effb68f3ee2ba5d822d45c30f367331cb44811de53743b4762aa0cc3cb`다. 실제 분석 코드는 `028bbad50567c52f3e37da0971502f125d2114a6`에 보존한다.
+
+| 검증 | 제공 / 평가 | MAE | 같은 제공 표본의 donor median baseline MAE | 해석 |
+|---|---|---|---|---|
+| 공식 조건 전진 | 0 / 24 | null | null | 공식 snapshot/cutoff 근거 부족, 성능 평가 불가 |
+| Site 전체 제외 | 24 / 24 | 0.10355948 | 0.08416667 | 미래 날짜 포함 회고 진단, baseline보다 나쁨 |
+| 공간 블록 사후자료 전진 | 3 / 24 | 0.12481668 | 0.09666667 | 21개 abstention, 사후 backfill 사용, baseline보다 나쁨 |
+
+성능 개선 근거가 없으므로 validation_status와 Support를 승격하지 않는다. 기준선 비교는 예측 제공 표본에 맞춰 수행했고, 미제공 행도 평가 분모에 포함했다. 큰 오차·확률·운영 정확도를 추정하지 않았다. 현장 소스의 격자 공유와 관찰자 편향, 공간 방향을 생략한 feature의 한계가 남는다. Weighted mean은 선택한 실제 label 범위 안의 가설을 만들므로 미관측 강한 사건을 잘 재현한다는 근거도 없다.
+
+검증 JSON은 로컬 `.local/site-transfer-2026-10-07/forward-operational-v1.json`, `leave-one-site-out-v1.json`, `spatial-block-forward.json`에 보관했다. 실제 context와 원 공급 atlas는 이 문서에 복사하지 않았다. 원격 연구 발행·서비스 운영 성능으로 표기하지 않는다.
+
+같은 날 남은 시간대에 대해 검증된 snapshot `36d98dec-3132-450f-b9d8-ffcb9ffea2f7`을 사용한 로컬 실험 분석은 133개 슬롯에서 108개 숫자, 19개 Site를 제공했다. 25개는 distinct/effective day gate로 보류했다. 숫자 범위는 약 0.27296~0.34260이며 유속·위험도 또는 성능 수치가 아니다. source manifest SHA-256은 `8d605d39476805cba354cd4daffe475762ae1aea091bb92d890032c055a28d7a`다. 결과는 `remaining-day-analysis.json`/`remaining-day-summary.json`에 보존했고 data branch에 발행하지 않았다. 이 snapshot에는 다음 날 환경이 없어 다음 날의 PCI를 생성하지 않았다.
+
+## 실행·호환 조건
+
+기본 exporter는 schema 1.1을 유지한다. `--experimental-transfer --code-commit <clean HEAD>`로 schema 1.2와 실험 sidecar를 생성한다. 같은 snapshot의 기본 PCI는 바꾸지 않고, config/context hash와 실험 실행 code SHA를 함께 기록한다. 발행 재개도 실제 clean HEAD를 검사한다. Git 저장 전에 원 snapshot에서 sidecar를 재계산해 비교하며 manifest/payload 버전·생성 시각 불일치는 거부한다.
+
+공개 reader는 1.1/1.2를 읽고 실험 config/hash·donor 최소 조건·항상 very_low/unvalidated를 검사한다. 실험 config를 바꾸면 모델 버전을 올리고 새 reader/패키지를 함께 준비해야 한다. 기존 package를 수동 편집하지 않는다.
+
+수집 workflow는 추가 계정·Secret 없이 실험 exporter를 연결한다. main push/CI 성공 후 새 trusted SHA로 data entrypoint 설치와 실제 수집·발행을 검수해야 production에 결과가 보인다. Vercel 확인과 공식 D+1 seal은 P7에 남았다. 이번 변경에서 원격 데이터·snapshot·연구 보고서를 갱신하지 않았다.
