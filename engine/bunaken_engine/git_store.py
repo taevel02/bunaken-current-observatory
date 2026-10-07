@@ -171,8 +171,15 @@ class GitDataStore:
         validate('release',manifest)
         from bunaken_engine.public_release import validate_payload
         validate_payload(payload)
-        if manifest['release_id'] != pointer['release_id'] or manifest['source_data_commit_sha'] != expected_head or manifest['status'] != 'published' or manifest['schema_version'] != '1.1' or pointer['manifest_sha256'] != digest(files[prefix+'/manifest.json']) or manifest['files'] != [dict(path='dashboard.json.gz',sha256=digest(files[prefix+'/dashboard.json.gz']))]:
+        if manifest['release_id'] != pointer['release_id'] or manifest['source_data_commit_sha'] != expected_head or manifest['status'] != 'published' or manifest['schema_version'] not in {'1.1','1.2'} or pointer['manifest_sha256'] != digest(files[prefix+'/manifest.json']) or manifest['files'] != [dict(path='dashboard.json.gz',sha256=digest(files[prefix+'/dashboard.json.gz']))]:
             raise StorageError('release_integrity_invalid')
+        if payload.get('experimental_transfer'):
+            import subprocess
+            from bunaken_engine.registry import ROOT
+            actual=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
+            dirty=subprocess.run(['git','status','--porcelain'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
+            if actual != payload['experimental_transfer']['code_commit'] or dirty:
+                raise StorageError('release_transfer_code_mismatch')
         head = self.head()
         if all(self.read(path,head) == content for path,content in files.items()):
             return head
@@ -183,7 +190,7 @@ class GitDataStore:
         from zoneinfo import ZoneInfo
         from bunaken_engine.snapshots import make_bundle
         import gzip
-        if not manifest['snapshot_ids'] and (payload['predictions'] or payload['tides'] or payload.get('environment_samples')):
+        if not manifest['snapshot_ids'] and (payload['predictions'] or payload['tides'] or payload.get('environment_samples') or payload.get('experimental_transfer',{}).get('predictions')):
             raise StorageError('release_source_mismatch')
         if len(manifest['snapshot_ids']) > 1:
             raise StorageError('release_source_mismatch')
@@ -200,10 +207,14 @@ class GitDataStore:
             make_bundle(snapshot,features,forecasts)
             from bunaken_engine.public_release import public_samples, public_source_metadata
             tides, environment_samples=public_samples(snapshot['samples'])
-            if payload['schema_version']=='1.1' and (environment_samples!=payload['environment_samples'] or payload['sources']!=public_source_metadata(snapshot['source_status'])):
+            if payload['schema_version'] in {'1.1','1.2'} and (environment_samples!=payload['environment_samples'] or payload['sources']!=public_source_metadata(snapshot['source_status'])):
                 raise StorageError('release_source_mismatch')
             if snapshot['snapshot_id'] != snapshot_id or forecasts != payload['predictions'] or tides != payload['tides'] or payload['source_generated_at'] != snapshot['created_at'] or payload['valid_start'] != snapshot['valid_start'] or payload['valid_end'] != snapshot['valid_end']:
                 raise StorageError('release_source_mismatch')
+            if payload.get('experimental_transfer'):
+                from bunaken_engine.transfer import transfer_forecast
+                if transfer_forecast(snapshot.get('model_context'),features,snapshot,payload['experimental_transfer']['code_commit']) != payload['experimental_transfer']:
+                    raise StorageError('release_transfer_reproduction_mismatch')
         current=self.current_observations(head)
         if {row['id']:row for row in current} != {row['id']:row for row in payload['observations']}:
             raise StorageError('release_observations_incomplete')

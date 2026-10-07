@@ -26,6 +26,7 @@ test("observation browser flow and legacy draft recovery", { skip: !process.env.
  try {
  await fs.cp(app,isolated,{recursive:true,filter:src=>!src.includes('/node_modules')&&!src.includes('/.next')&&!path.basename(src).startsWith('.env')});
  await fs.mkdir(path.join(root,'config'),{recursive:true});await fs.copyFile(path.join(repo,'config/source-registry.json'),path.join(root,'config/source-registry.json'));await fs.symlink(path.join(app,'node_modules'),path.join(isolated,'node_modules'),'dir');
+await fs.copyFile(path.join(repo,'config/site-transfer.json'),path.join(root,'config/site-transfer.json'));
  const listener=net.createServer();listener.listen(0,'127.0.0.1');await once(listener,'listening');const port=listener.address().port;listener.close();await once(listener,'close');const base=`http://127.0.0.1:${port}`;
  const password='synthetic-only browser verification';const hash=await argon2.hash(password,{type:argon2.argon2id,memoryCost:19456,timeCost:2,parallelism:1});
  server=spawn(process.execPath,[path.join(app,'node_modules/next/dist/bin/next'),'dev','--webpack','--hostname','127.0.0.1','--port',String(port)],{cwd:isolated,env:{...process.env,ADMIN_ENABLED:'true',ADMIN_USERNAME:'synthetic-admin',ADMIN_PASSWORD_HASH:hash,ADMIN_AUTH_VERSION:'ui-check',SESSION_SECRET:crypto.randomBytes(32).toString('base64url'),IDEMPOTENCY_SECRET:crypto.randomBytes(32).toString('base64url'),CANONICAL_ORIGIN:base,PUBLIC_OBSERVER_ID:'synthetic-alias',GITHUB_WRITE_TOKEN:'',GITHUB_OWNER:'',GITHUB_REPO:'',NEXT_TELEMETRY_DISABLED:'1'},stdio:'ignore'});

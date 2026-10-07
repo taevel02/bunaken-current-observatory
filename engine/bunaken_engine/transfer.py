@@ -100,3 +100,30 @@ def predict_transfer(target, candidates, scaler, *, diagnostic=False, root=ROOT)
     return dict(prediction=result, donor_sites=sorted(sites), donor_site_count=len(sites), n_eff_sites=n_eff_sites,
                 max_site_share=share, analog_count=len(selected), validation_status='unvalidated',
                 config_sha256=digest(canonical(config)))
+
+
+def transfer_forecast(context, features, manifest, code_commit, *, root=ROOT):
+    """Sidecar reproducible from the same frozen context; snapshot baseline remains immutable."""
+    import re
+    from bunaken_engine.model_data import prepare_model, replay_root
+    from bunaken_engine.registry import resolve_geometry, usable_geometry
+    if not re.fullmatch('[0-9a-f]{40}', code_commit or ''):
+        raise ValueError('transfer_code_commit_required')
+    config = transfer_configuration(root)
+    estimates = []
+    if context is not None:
+        with replay_root(context, root) as replay:
+            candidates, scaler, _ = prepare_model(context['observations'], context['training_bundles'],
+                context['observer'], context['rubric'], context['cutoff'], root=replay)
+            for feature in features:
+                if instant(context['cutoff']) > instant(feature['start_at']):
+                    raise ValueError('model_cutoff_after_target')
+                point = resolve_geometry(feature['site_id'], feature['zone_id'], replay)
+                target = dict(**feature, geometry_verified=usable_geometry(point),
+                    reference_geometry=point['status'] == 'reference_geometry', sources_ready=manifest['status'] == 'succeeded',
+                    source_snapshot_ids=[manifest['snapshot_id']])
+                estimates.append(predict_transfer(target, candidates, scaler, root=replay))
+    return dict(model_version=config['version'], config=config, config_sha256=digest(canonical(config)),
+                model_context_sha256=digest(canonical(context)) if context is not None else None,
+                code_commit=code_commit, validation_status='unvalidated', predictions=estimates,
+                reason_codes=[] if context is not None else ['transfer_context_unavailable'])

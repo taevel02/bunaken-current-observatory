@@ -14,7 +14,9 @@ export type EnvironmentSample = Tide & {
 };
 export type Moon = { phase: string; illumination: number; at: string; retrievedAt: string; apiVersion: string } | null;
 export type Observation = { id: string; site_id: string; local_start: string; overall_pci: number; record_status: string; label_scope: string; notes_public?: string; revision: number };
+export type TransferEstimate = { prediction: Prediction; donor_sites: string[]; donor_site_count: number; n_eff_sites: number; max_site_share: number; analog_count: number; validation_status: "unvalidated"; config_sha256: string };
 export type Dashboard = {
+  experimental_transfer?: { model_version: string; config: Record<string, unknown>; config_sha256: string; model_context_sha256: string | null; code_commit: string; validation_status: "unvalidated"; predictions: TransferEstimate[]; reason_codes: string[] };
   forecast_kind: "experimental"; sites: RegisteredSite[]; source_generated_at: string | null; schema_version: string; generated_at: string | null; valid_start: string | null; valid_end: string | null;
   predictions: Prediction[]; tides: Tide[]; environment_samples?: EnvironmentSample[]; observations: Observation[];
   sources: { id: string; dataset: string; version: string | null; attribution: string; license_url: string; public_export_allowed: boolean; reason_codes: string[] }[];

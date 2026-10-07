@@ -10,7 +10,7 @@ from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, S
 from bunaken_engine.sources import utc_now
 
 
-def build_release(source_commit, *, manifest_path=None, observations=None, root=ROOT, release_id=None):
+def build_release(source_commit, *, manifest_path=None, observations=None, root=ROOT, release_id=None, experimental_transfer=False, code_commit=None):
     predictions, tides, environment_samples, snapshot_ids = [], [], [], []
     first = last = source_generated = None
     source_status = {}
@@ -34,13 +34,18 @@ def build_release(source_commit, *, manifest_path=None, observations=None, root=
         sites=[{key:s[key] for key in ('id','slug','name_ko','name_en','lat','lon','reference_depth_m','geometry_status')} for s in sites],
         predictions=predictions,tides=tides,environment_samples=environment_samples,observations=[] if observations is None else observations,sources=sources,
         anchor_similarity=dict(value=None,environment_restored=False,validated=False,reason_codes=['anchor_environment_unavailable']))
+    if experimental_transfer:
+        from bunaken_engine.transfer import transfer_forecast
+        payload['schema_version']='1.2'
+        payload['experimental_transfer']=transfer_forecast(manifest.get('model_context') if manifest_path else None,
+            features if manifest_path else [], manifest if manifest_path else {}, code_commit, root=root)
     validate_payload(payload,root=root)
     release_id=release_id or str(uuid4())
     prefix=f'web/releases/{release_id}'
     raw=gzip.compress(canonical(payload),mtime=0)
     if len(raw)>1_250_000 or len(canonical(payload))>10_000_000:
         raise SnapshotError('release_size_exceeded')
-    release=dict(release_id=release_id,schema_version='1.1',generated_at=payload['generated_at'],source_data_commit_sha=source_commit,snapshot_ids=snapshot_ids,files=[dict(path='dashboard.json.gz',sha256=digest(raw))],status='published')
+    release=dict(release_id=release_id,schema_version=payload['schema_version'],generated_at=payload['generated_at'],source_data_commit_sha=source_commit,snapshot_ids=snapshot_ids,files=[dict(path='dashboard.json.gz',sha256=digest(raw))],status='published')
     validate('release',release,root)
     pointer=dict(schema_version='1.0',release_id=release_id,manifest_sha256=digest(canonical(release)))
     validate('latest',pointer,root)
@@ -96,6 +101,28 @@ def validate_payload(payload, *, root=ROOT):
             row['distinct_days'] < 3 or row['n_eff'] < 2 or row['same_site_days'] < 1 or
             row['feature_coverage'].get('total',0)+1e-12 < .8 or row['reason_codes']):
             raise SnapshotError('public_numeric_gate_invalid')
+    transfer=payload.get('experimental_transfer')
+    if transfer:
+        from bunaken_engine.transfer import transfer_configuration
+        config=transfer_configuration(root)
+        if transfer['config'] != config or transfer['config_sha256'] != digest(canonical(config)):
+            raise SnapshotError('public_transfer_config_invalid')
+        slots=set()
+        for item in transfer['predictions']:
+            row=item['prediction']; donors=item['donor_sites']
+            identity=(row['site_id'],row['zone_id'],row['start_at'])
+            if identity in slots or row['site_id'] not in expected or row['site_id'] in donors or not set(donors).issubset(expected):
+                raise SnapshotError('public_transfer_identity_invalid')
+            slots.add(identity)
+            if item['config_sha256'] != transfer['config_sha256'] or row['model_version'] != config['version'] or len(set(donors)) != item['donor_site_count']:
+                raise SnapshotError('public_transfer_config_invalid')
+            if row['pci'] is not None and (row['prediction_status'] != 'experimental' or row['support'] != 'very_low' or
+                row['distinct_days'] < 3 or row['n_eff'] < 2 or row['n_eff_days'] < 2 or row['same_site_days'] != 0 or
+                row['zone_id'] is not None or row['reference_depth_m'] != 18 or row['reason_codes'] or
+                item['donor_site_count'] < config['minimum_sites'] or item['n_eff_sites'] < config['minimum_n_eff_sites'] or
+                item['analog_count'] < 3 or item['max_site_share'] > config['maximum_site_share'] + 1e-12 or
+                row['feature_coverage'].get('total',0)+1e-12 < .8 or not transfer['model_context_sha256']):
+                raise SnapshotError('public_transfer_numeric_gate_invalid')
     observation_ids=[row['id'] for row in payload['observations']]
     if len(observation_ids)!=len(set(observation_ids)) or any(row['site_id'] not in expected for row in payload['observations']):
         raise SnapshotError('public_site_identity_invalid')
@@ -108,9 +135,16 @@ def main():
     cli.add_argument('--observations',type=Path)
     cli.add_argument('--output',type=Path,required=True)
     cli.add_argument('--publish',action='store_true')
+    cli.add_argument('--experimental-transfer',action='store_true',help='include an independently labeled cross-Site hypothesis')
+    cli.add_argument('--code-commit',help='trusted clean code SHA, required for experimental transfer')
     args=cli.parse_args()
     try:
         store=None
+        if args.experimental_transfer:
+            import subprocess
+            actual=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
+            dirty=subprocess.run(['git','status','--porcelain'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
+            if args.code_commit != actual or dirty: raise ValueError('transfer_code_commit_unverified_or_dirty')
         if args.publish:
             from bunaken_engine.__main__ import store_from_env
             store=store_from_env()
@@ -123,7 +157,7 @@ def main():
             release=json.loads(files[prefix+'/manifest.json'])
         else:
             observations=read_json(args.observations) if args.observations else store.current_observations(args.source_data_commit) if store else []
-            release,files=build_release(args.source_data_commit,manifest_path=args.snapshot,observations=observations)
+            release,files=build_release(args.source_data_commit,manifest_path=args.snapshot,observations=observations,experimental_transfer=args.experimental_transfer,code_commit=args.code_commit)
             args.output.mkdir(parents=True)
             for path,raw in files.items():
                 destination=args.output/path;destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(raw)

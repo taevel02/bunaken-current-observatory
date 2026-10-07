@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/experimental-transfer.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_version",
+    "config",
+    "config_sha256",
+    "model_context_sha256",
+    "code_commit",
+    "validation_status",
+    "predictions",
+    "reason_codes"
+  ],
+  "properties": {
+    "model_version": {
+      "const": "site-transfer-v1"
+    },
+    "config": {
+      "type": "object"
+    },
+    "config_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "model_context_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "code_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "validation_status": {
+      "const": "unvalidated"
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "predictions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "prediction",
+          "donor_sites",
+          "donor_site_count",
+          "n_eff_sites",
+          "max_site_share",
+          "analog_count",
+          "validation_status",
+          "config_sha256"
+        ],
+        "properties": {
+          "prediction": {
+            "$ref": "https://bunaken-current-observatory.example/schemas/prediction.schema.json"
+          },
+          "donor_sites": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "donor_site_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "n_eff_sites": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max_site_share": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "analog_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "validation_status": {
+            "const": "unvalidated"
+          },
+          "config_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

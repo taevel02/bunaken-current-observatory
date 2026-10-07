@@ -131,12 +131,14 @@ def evaluate_transfer(context, *, mode='forward', operational=True, root=ROOT):
     """Independent Site and geographic-block diagnostics, with explicit temporal provenance."""
     import math
     from bunaken_engine.transfer import predict_transfer, transfer_configuration, transfer_features
-    from bunaken_engine.model_data import trusted_configuration
+    from bunaken_engine.model_data import trusted_configuration, current_configuration, replay_root
     from bunaken_engine.snapshots import canonical, digest, validate
     if mode not in {'forward', 'leave_one_site_out', 'spatial_block_forward'}:
         raise ValueError('invalid_transfer_validation_mode')
     validate('model-context', context, root)
-    trusted_configuration(context, root)
+    if trusted_configuration(context, root) != current_configuration(root):
+        with replay_root(context, root) as replay:
+            return evaluate_transfer(context, mode=mode, operational=operational, root=replay)
     if mode == 'leave_one_site_out': operational = False
     bundles = checked_bundles(context['training_bundles'], root=root)
     if operational:
@@ -161,7 +163,7 @@ def evaluate_transfer(context, *, mode='forward', operational=True, root=ROOT):
         key = day if mode == 'forward' else row['site_id'] if mode == 'leave_one_site_out' else (day, blocks.get(row['site_id']))
         partitions[key].append(row)
     names = [name for group in transfer_features(config)['groups'].values() for name in group['features']]
-    rows, folds = [], []
+    rows, folds, candidate_cache = [], [], {}
     for key, test in sorted(partitions.items(), key=lambda item: str(item[0])):
         day = wita_date(test[0]['start_at'])
         held_sites = set() if mode == 'forward' else {test[0]['site_id']} if mode == 'leave_one_site_out' else {
@@ -173,7 +175,12 @@ def evaluate_transfer(context, *, mode='forward', operational=True, root=ROOT):
         test_ids = {row['id'] for row in test}
         training = [row for row in latest_revisions(history, cutoff=cutoff, root=root) if row['id'] not in test_ids and
                     row['site_id'] not in held_sites and (mode == 'leave_one_site_out' or wita_date(row['start_at']) < day)]
-        candidates, _ = eligible_candidates(training, bundles, context['observer'], context['rubric'], cutoff, root=root)
+        if cutoff not in candidate_cache:
+            pool=[row for row in latest_revisions(history, cutoff=cutoff, root=root) if
+                  mode == 'leave_one_site_out' or wita_date(row['start_at']) < day]
+            candidate_cache[cutoff], _ = eligible_candidates(pool, bundles, context['observer'], context['rubric'], cutoff, root=root)
+        training_ids={row['id'] for row in training}
+        candidates=[row for row in candidate_cache[cutoff] if row['id'] in training_ids]
         numeric = [row for row in candidates if finite(row['pci'])]
         scaler_bundles = [{**bundle, 'features': [row for row in bundle['features'] if row['site_id'] not in held_sites]} for bundle in bundles]
         scaler = build_scaler(environment_rows(scaler_bundles), names, cutoff)

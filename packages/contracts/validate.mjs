@@ -25,7 +25,8 @@ import sampleSchema from "./json-schema/source-sample.schema.json" with { type: 
 import dashboardSchema from "./json-schema/dashboard.schema.json" with { type: "json" };
 import releaseSchema from "./json-schema/release.schema.json" with { type: "json" };
 import latestSchema from "./json-schema/latest.schema.json" with { type: "json" };
-for (const schema of [predictionSchema, sampleSchema, dashboardSchema, releaseSchema, latestSchema]) ajv.addSchema(schema);
+import experimentalTransferSchema from "./json-schema/experimental-transfer.schema.json" with { type: "json" };
+for (const schema of [predictionSchema, sampleSchema, experimentalTransferSchema, dashboardSchema, releaseSchema, latestSchema]) ajv.addSchema(schema);
 export const validatePublicDashboard = ajv.compile(dashboardSchema);
 export const validatePublicRelease = ajv.compile(releaseSchema);
 export const validateLatest = ajv.compile(latestSchema);

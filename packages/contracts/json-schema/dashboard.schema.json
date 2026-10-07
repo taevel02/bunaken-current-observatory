@@ -21,7 +21,8 @@
     "schema_version": {
       "enum": [
         "1.0",
-        "1.1"
+        "1.1",
+        "1.2"
       ]
     },
     "generated_at": {
@@ -214,6 +215,9 @@
       "items": {
         "$ref": "https://bunaken-current-observatory.example/schemas/source-sample.schema.json"
       }
+    },
+    "experimental_transfer": {
+      "$ref": "https://bunaken-current-observatory.example/schemas/experimental-transfer.schema.json"
     }
   },
   "allOf": [
@@ -221,7 +225,10 @@
       "if": {
         "properties": {
           "schema_version": {
-            "const": "1.1",
+            "enum": [
+              "1.1",
+              "1.2"
+            ],
             "type": "string"
           }
         }
@@ -241,6 +248,34 @@
           ],
           "properties": {
             "environment_samples": {}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.2",
+            "type": "string"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "experimental_transfer"
+        ],
+        "properties": {
+          "experimental_transfer": {}
+        }
+      },
+      "else": {
+        "not": {
+          "required": [
+            "experimental_transfer"
+          ],
+          "properties": {
+            "experimental_transfer": {}
           }
         }
       }

@@ -32,6 +32,7 @@
     "typescript7": "npm:typescript@7.0.2"
   },
   "imports": {
-    "#server/*": "./src/server/*"
+    "#server/*": "./src/server/*",
+    "#public/*": "./src/public/*"
   }
 }

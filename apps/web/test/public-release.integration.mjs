@@ -38,10 +38,12 @@ test("generated release reaches the production reader with integrity and stale g
   assertPublic(payload);
   const hooks = registerHooks({
     resolve(specifier, context, next) {
+      if (specifier === "@config/site-transfer.json") return { url: "bunaken-test:site-transfer", format: "module", shortCircuit: true };
       if (specifier === "@config/source-registry.json") return { url: "bunaken-test:source-registry", format: "module", shortCircuit: true };
       return next(specifier, context);
     },
     load(url, context, next) {
+      if (url === "bunaken-test:site-transfer") return { format: "module", shortCircuit: true, source: `export default ${readFileSync(resolve(root, "config/site-transfer.json"), "utf8")}` };
       if (url === "bunaken-test:source-registry") return { format: "module", shortCircuit: true, source: `export default ${readFileSync(resolve(root, "config/source-registry.json"), "utf8")}` };
       return next(url, context);
     },
@@ -76,7 +78,17 @@ test("generated release reaches the production reader with integrity and stale g
     const cleanFiles = files;
     files = new Map([["latest.json", Buffer.from(JSON.stringify({ ...pointer, manifest_sha256: hash(badManifest) }))], [prefix + "manifest.json", badManifest], [prefix + "dashboard.json.gz", badBytes]]);
     assert.equal((await loadPublicRelease()).status, "unavailable"); files = cleanFiles;
-    Date.now = () => Date.parse(payload.source_generated_at) + 37 * 3600000;
+    if (payload.experimental_transfer) {
+      const tampered=globalThis.structuredClone(payload);
+      const numeric=tampered.experimental_transfer.predictions.find(item=>item.prediction.pci!==null);
+      assert.ok(numeric, "generated fixture must exercise a numeric transfer");
+      numeric.donor_site_count=1;
+      const bytes=gzipSync(JSON.stringify(tampered));
+      const info=Buffer.from(JSON.stringify({...manifest,files:[{path:"dashboard.json.gz",sha256:hash(bytes)}]}));
+      files=new Map([["latest.json",Buffer.from(JSON.stringify({...pointer,manifest_sha256:hash(info)}))],[prefix+"manifest.json",info],[prefix+"dashboard.json.gz",bytes]]);
+      assert.equal((await loadPublicRelease()).status,"unavailable");files=cleanFiles;
+    }
+    Date.now = () => Math.max(Date.parse(payload.source_generated_at) + 37 * 3600000, Date.parse(payload.generated_at)) + 1;
     assert.equal((await loadPublicRelease()).status, "stale");
     Date.now = () => Date.parse(payload.generated_at) - 1;
     assert.equal((await loadPublicRelease()).status, "unavailable");

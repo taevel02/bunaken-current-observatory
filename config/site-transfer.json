@@ -2,10 +2,10 @@
   "version": "site-transfer-v1",
   "base_model_version": "weighted-analog-v1.3",
   "minimum_sites": 3,
-  "minimum_n_eff_sites": 2.0,
-  "minimum_n_eff_days": 2.0,
+  "minimum_n_eff_sites": 2,
+  "minimum_n_eff_days": 2,
   "maximum_site_share": 0.5,
-  "spatial_block_km": 3.0,
+  "spatial_block_km": 3,
   "groups": {
     "tide": {"weight": 0.30, "features": ["tide_rate_m_per_hour", "tide_excursion_m"]},
     "ocean": {"weight": 0.35, "features": ["current_speed_m_s"]},

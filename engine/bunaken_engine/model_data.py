@@ -264,6 +264,8 @@ def replay_root(context, root=ROOT):
         if archives.is_dir(): shutil.copytree(archives,replay/'config/model-configurations')
         for key,name in [('model','model.json'),('features','features.json'),('geometry','geometry.json'),('sources','source-registry.json')]:
             (replay/'config'/name).write_bytes(canonical(configuration[key]))
+        if (root/'config/site-transfer.json').is_file():
+            shutil.copyfile(root/'config/site-transfer.json', replay/'config/site-transfer.json')
         (replay/'packages/contracts/data/sites.json').write_bytes(canonical(configuration['sites']))
         yield replay
 

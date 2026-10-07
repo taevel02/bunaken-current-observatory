@@ -10,7 +10,7 @@ class TransferTest(unittest.TestCase):
     def fixture(self):
         target, candidates, scaler = setup()
         target['site_id'] = 'mikes-point'
-        for site, row in zip(('fukui', 'mandolin', 'lekuan-two'), candidates):
+        for site, row in zip(('fukui', 'mandolin', 'lekuan-2'), candidates):
             row['site_id'] = site
         return target, candidates, scaler
 
@@ -81,7 +81,7 @@ class TransferValidationTest(unittest.TestCase):
         from test_model_data import observation
         history = []
         for day in (1, 2, 3, 4):
-            for index, site in enumerate(('mandolin', 'fukui', 'lekuan-two', 'alung-banua')):
+            for index, site in enumerate(('mandolin', 'fukui', 'lekuan-2', 'alung-banua')):
                 history.append(observation(id=f'4f6f6c58-84a8-4dd5-b882-{day:010d}{index:02d}', site_id=site,
                     start_at=f'2026-09-{day:02d}T00:00:00Z', end_at=f'2026-09-{day:02d}T01:00:00Z',
                     created_at=f'2026-09-{day:02d}T02:00:00Z', updated_at=f'2026-09-{day:02d}T02:00:00Z'))
@@ -121,3 +121,24 @@ class TransferValidationTest(unittest.TestCase):
                 self.assertTrue(set(fold['training_ids']).isdisjoint(fold['test_ids']))
                 test_days = {row['day'] for row in report['rows'] if row['id'] in fold['test_ids']}
                 self.assertTrue(all(day < min(test_days) for day in fold['training_days']))
+
+    def test_archived_context_uses_frozen_model_and_geometry(self):
+        import shutil
+        import tempfile
+        from pathlib import Path
+        from bunaken_engine.registry import ROOT,read_json
+        from bunaken_engine.snapshots import canonical,digest
+        from bunaken_engine.validation import evaluate_transfer
+        context=self.context()
+        expected=evaluate_transfer(context,mode='spatial_block_forward',operational=False)
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            shutil.copytree(ROOT/'config',root/'config');shutil.copytree(ROOT/'packages/contracts',root/'packages/contracts')
+            archive=root/'config/model-configurations'/f"{digest(canonical(context['configuration']))}.json"
+            archive.write_bytes(canonical(context['configuration']))
+            geometry=read_json(root/'config/geometry.json')
+            for point in geometry['sites']:point['lat']=0;point['lon']=0
+            (root/'config/geometry.json').write_bytes(canonical(geometry))
+            model=read_json(root/'config/model.json');model['version']='synthetic-changed-model'
+            (root/'config/model.json').write_bytes(canonical(model))
+            self.assertEqual(expected,evaluate_transfer(context,mode='spatial_block_forward',operational=False,root=root))
