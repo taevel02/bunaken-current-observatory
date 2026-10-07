@@ -62,6 +62,7 @@ test("login, session, CSRF rotation and logout work over HTTP", async (t) => {
   await mkdir(join(temporaryRoot, "config"), { recursive: true });
   await cp(resolve(appDirectory, "../../config/source-registry.json"), join(temporaryRoot, "config", "source-registry.json"));
   await cp(resolve(appDirectory, "../../config/site-transfer.json"), join(temporaryRoot, "config", "site-transfer.json"));
+  await cp(resolve(appDirectory, "../../config/public-release-limits.json"), join(temporaryRoot, "config", "public-release-limits.json"));
   await cp(resolve(appDirectory,"../../docs/research/evidence-2026-10-05"),join(temporaryRoot,"docs/research/evidence-2026-10-05"),{recursive:true});
   await symlink(join(appDirectory, "node_modules"), join(isolatedApp, "node_modules"), "dir");
   const port = await availablePort();

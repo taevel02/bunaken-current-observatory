@@ -28,6 +28,7 @@ test("research editing, revision reload, pending retry and responsive preview", 
  await fs.cp(app,isolated,{recursive:true,filter:src=>!src.includes('/node_modules')&&!src.includes('/.next')&&!path.basename(src).startsWith('.env')});
  await fs.mkdir(path.join(root,'config'),{recursive:true});await fs.copyFile(path.join(repo,'config/source-registry.json'),path.join(root,'config/source-registry.json'));await fs.symlink(path.join(app,'node_modules'),path.join(isolated,'node_modules'),'dir');
 await fs.copyFile(path.join(repo,'config/site-transfer.json'),path.join(root,'config/site-transfer.json'));
+await fs.copyFile(path.join(repo,'config/public-release-limits.json'),path.join(root,'config/public-release-limits.json'));
  await fs.cp(path.join(repo,'docs/research/evidence-2026-10-05'),path.join(root,'docs/research/evidence-2026-10-05'),{recursive:true});
  const listener=net.createServer();listener.listen(0,'127.0.0.1');await once(listener,'listening');const port=listener.address().port;listener.close();await once(listener,'close');const base=`http://127.0.0.1:${port}`;
  const password='synthetic-only browser verification';const hash=await argon2.hash(password,{type:argon2.argon2id,memoryCost:19456,timeCost:2,parallelism:1});
