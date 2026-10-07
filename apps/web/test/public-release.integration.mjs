@@ -90,7 +90,10 @@ test("generated release reaches the production reader with integrity and stale g
     const cleanFiles = files;
     files = new Map([["latest.json", Buffer.from(JSON.stringify({ ...pointer, manifest_sha256: hash(badManifest) }))], [prefix + "manifest.json", badManifest], [prefix + "dashboard.json.gz", badBytes]]);
     assert.equal((await loadPublicRelease()).status, "unavailable"); files = cleanFiles;
-    if (payload.experimental_transfer) {
+    if (payload.experimental_transfer && process.env.BUNAKEN_EXPECT_TRANSFER_ABSTENTION === "true") {
+      assert.ok(payload.experimental_transfer.predictions.length > 0);
+      assert.ok(payload.experimental_transfer.predictions.every(item => item.prediction.pci === null));
+    } else if (payload.experimental_transfer) {
       const tampered=globalThis.structuredClone(payload);
       const numeric=tampered.experimental_transfer.predictions.find(item=>item.prediction.pci!==null);
       assert.ok(numeric, "generated fixture must exercise a numeric transfer");
