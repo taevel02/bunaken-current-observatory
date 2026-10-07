@@ -117,3 +117,17 @@ class TransferReleaseTest(unittest.TestCase):
         with patch('subprocess.run',side_effect=[SimpleNamespace(stdout='a'*40),SimpleNamespace(stdout=' M engine/bunaken_engine/transfer.py')]):
             with self.assertRaisesRegex(StorageError,'release_transfer_code_mismatch'):store.publish_release(files,mock.head)
         self.assertEqual(mock.ref_calls,[])
+
+    def test_mismatched_manifest_version_or_generation_time_cannot_replace_latest(self):
+        from bunaken_engine.git_store import GitDataStore,StorageError
+        from test_git_store import GitMock
+        for field,value in [('schema_version','1.2'),('generated_at','2026-01-01T00:00:00Z')]:
+            mock=GitMock();store=GitDataStore('synthetic','synthetic','synthetic',requester=mock.request)
+            _,files=build_release(mock.head)
+            pointer=json.loads(files['web/latest.json']);prefix=f"web/releases/{pointer['release_id']}"
+            manifest=json.loads(files[prefix+'/manifest.json']);manifest[field]=value
+            files[prefix+'/manifest.json']=canonical(manifest)
+            pointer['manifest_sha256']=digest(files[prefix+'/manifest.json']);files['web/latest.json']=canonical(pointer)
+            with patch.object(store,'current_observations',return_value=[]):
+                with self.assertRaisesRegex(StorageError,'release_integrity_invalid'):store.publish_release(files,mock.head)
+            self.assertEqual(mock.ref_calls,[])

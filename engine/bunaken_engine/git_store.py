@@ -171,7 +171,7 @@ class GitDataStore:
         validate('release',manifest)
         from bunaken_engine.public_release import validate_payload
         validate_payload(payload)
-        if manifest['release_id'] != pointer['release_id'] or manifest['source_data_commit_sha'] != expected_head or manifest['status'] != 'published' or manifest['schema_version'] not in {'1.1','1.2'} or pointer['manifest_sha256'] != digest(files[prefix+'/manifest.json']) or manifest['files'] != [dict(path='dashboard.json.gz',sha256=digest(files[prefix+'/dashboard.json.gz']))]:
+        if manifest['release_id'] != pointer['release_id'] or manifest['source_data_commit_sha'] != expected_head or manifest['status'] != 'published' or manifest['schema_version'] not in {'1.1','1.2'} or manifest['schema_version'] != payload['schema_version'] or manifest['generated_at'] != payload['generated_at'] or pointer['manifest_sha256'] != digest(files[prefix+'/manifest.json']) or manifest['files'] != [dict(path='dashboard.json.gz',sha256=digest(files[prefix+'/dashboard.json.gz']))]:
             raise StorageError('release_integrity_invalid')
         if payload.get('experimental_transfer'):
             import subprocess
