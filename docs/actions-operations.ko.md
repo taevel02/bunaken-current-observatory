@@ -57,14 +57,18 @@ uv run --env-file .env --env-file apps/web/.env.local --project engine --locked 
 
 1. 검증된 코드 커밋을 main에 반영하고 두 CI job의 성공을 확인한다. main push는 연결된 Vercel 배포를 유발할 수 있다.
 2. `environmental-data` 보호 환경과 위 설정을 등록한다. 처음에는 required reviewer를 유지한다.
-3. `ops/workflows/data-entrypoint.yml`을 data의 `.github/workflows/data-entrypoint.yml`에 설치한다. 다른 파일·관측을 변경하지 않는 non-force commit을 사용한다. `uses`와 `code_commit`은 `565f613e3bf8753e615fac5ef333867f5d1e442f`로 일치한다. 이 SHA가 원격 main 이력에 있어야 한다. `@main`으로 바꾸지 않는다.
-4. Actions → Trusted environmental pipeline → Run workflow. main을 선택하고 `operation=collect`, `code_commit=565f613e3bf8753e615fac5ef333867f5d1e442f`, date는 비워 WITA 내일을 수집한다. 새 snapshot·release를 공개 저장하는 실행이다.
+3. `ops/workflows/data-entrypoint.yml`을 data의 `.github/workflows/data-entrypoint.yml`에 설치한다. 다른 파일·관측을 변경하지 않는 non-force commit을 사용한다. `uses`와 `code_commit`은 `c201a2e8ac883330daf6f7b0e879170024385340`로 일치한다. 이 SHA가 원격 main 이력에 있어야 한다. `@main`으로 바꾸지 않는다.
+4. Actions → Trusted environmental pipeline → Run workflow. main을 선택하고 `operation=collect`, `code_commit=c201a2e8ac883330daf6f7b0e879170024385340`, date는 비워 WITA 내일을 수집한다. 새 snapshot·release를 공개 저장하는 실행이다.
 5. FES 파생값 hash·참조 증거 검증 성공, 19 Site 필수 소스·freshness, 저장 receipt/confirmation, release hash/schema, 공개 status를 실제로 확인한다. 학습 환경이 아직 data에 없으면 numeric label 결합이 부족할 수 있다. 로컬 backfill은 원격 모델에 자동 전달되지 않는다. 초기 역사 환경 연결은 별도 실제 데이터 작업으로 확인한다.
 6. 검수 후 required reviewer를 해제해 main/data branch 정책 아래 예약·관측 push 실행을 자동화한다. 두 예약 수집, 관측 push, seal 결과를 각각 확인해야 P7-04/05를 완료로 표시한다.
 
 Actions 자체가 비용·소스 요청 제한·전송 시간을 면제하지 않는다. hosted runner에서 아직 측정하지 않은 전체 실행 시간과 Linux 참조 빌드 성공을 로컬 테스트 결과로 대체하지 않는다.
 
 ## 실패와 복구
+
+수집은 성공했으나 웹 발행이 실패했다면 새 수집을 먼저 실행하지 않는다. Run workflow에서 `operation=collect`, 원래 `date_wita`, 기존 `resume_run_id`와 위 trusted code SHA를 입력한다. 기존 manifest·artifact·모델 재현·receipt를 검증해 다시 읽고 웹 패키지 발행을 이어간다. 원래 source 생성·저장 시각은 유지한다. 해당 ID가 없으면 `stored_snapshot_missing`으로 종료하며 provider 재수집은 하지 않는다. 재개에서는 FES cache fetch도 생략한다.
+
+2026-10-07 실행 `37632725013`은 원래 run `a1e67d63-8470-56d4-8642-ac054663c69b`/WITA target `2026-10-08`을 재사용해 웹 release 발행에 성공했다. 39.56MB JSON은 공유 `config/public-release-limits.json`의 50MB 해제 제한 안에 있으며 gzip 541,696 bytes는 기존 1.25MB 압축 제한 안에 있다. publisher·Git storage·웹 reader는 같은 설정을 읽는다. 더 긴 기간·추가 자료가 한도를 넘으면 파일 분할을 설계하며 제한을 제거하지 않는다.
 
 같은 Actions run을 재실행하면 repository/run ID로 결정한 snapshot UUID를 재사용한다. 저장된 동일 snapshot은 다시 수집해서 변경하지 않는다. 새 입력을 다시 계산하려면 새 run으로 실행한다. 공개 latest는 검증된 새 release를 원자적으로 저장한 후에 바뀐다. 실패 시 기존 자료를 유지한다. 영구적인 과거 forecast를 늦은 실행으로 복구하거나 공식 cutoff 이전에 저장한 것으로 기록하지 않는다.
 

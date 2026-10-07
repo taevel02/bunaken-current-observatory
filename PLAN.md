@@ -40,7 +40,21 @@ GitHub Actions의 main 검증 두 job은 보고서 reader 및 문서 갱신 comm
 
 실제 같은 날 남은 133개 시간 슬롯의 로컬 실험 분석에서 19 Site·108개 숫자를 산출하고 25개는 날짜 근거 부족으로 보류했다. 기존 공급 snapshot은 2026-10-07만 포함하므로 10-08 자료를 만들지 않았다. 이 숫자는 공식 D+1 forecast가 아니며 data branch에 발행하지 않았다. [실험 계약과 진단 결과](docs/site-transfer.ko.md)를 따른다. 기존 보고서 v1.0.1은 그대로 보존한다.
 
-현재 trusted entrypoint template은 검토 코드 `565f613e3bf8753e615fac5ef333867f5d1e442f`로 갱신했다. 원격 push·CI·entrypoint 설치·새 소스 수집/웹 패키지 발행·Vercel 검수는 P7에서 수행해야 실험 결과가 서비스에 반영된다. 로컬 구현·검증과 production 운영을 구분한다.
+현재 trusted entrypoint template은 검토 코드 `c201a2e8ac883330daf6f7b0e879170024385340`로 갱신했다. Actions 환경 설정·main push를 확인했고, 실행 `37632725013`에서 기존 immutable snapshot 재개와 웹 release 발행을 완료했다. 수집 6개 소스·39,083 sample, release `591d61f3-d567-49aa-afdf-b31a93164b39`, source data head `b1e44cafbe55b80312ecbea72108847802fe00b7`다. 웹 reader에서 공개 패키지 hash/schema·19 Site·관측 24건·2,128 슬롯·결측·크기 경계를 검증했다. 복구된 snapshot의 실제 저장 시각을 새 수집 시각으로 바꾸지 않았다.
+
+발행 JSON은 39,557,177 bytes, gzip은 541,696 bytes다. 기존 10MB 해제 제한의 실패를 회귀 테스트로 재현하고 공유 설정의 50MB 해제/1.25MB 압축 제한으로 수정했다. GitHub 422는 ref 갱신 경계에서만 branch conflict로 분류한다. 미래 전용 snapshot은 현재 cutoff의 학습 context에 포함하지 않으며, 재개 ID 누락은 새 수집으로 대체하지 않는다. 최종 로컬 engine 111개, provider 12개, 웹/계약/HTTP 63개 및 실제 공개 reader·합성 numeric reader 각각 1개 통과. 최신 수정 코드의 신규 수집은 아직 실제 실행 검증하지 않았다.
+
+현재 baseline/experimental 숫자는 모두 0개다. 발행 snapshot의 model context는 환경 학습 bundle 0개이며, 로컬 역사 환경 자료가 원격 data에 자동 복사되는 것은 아니다. 다음 순서를 따른다.
+
+| 순서 | 작업 | 완료 기준 |
+|---|---|---|
+| 1 | 실제 과거 관측 구간의 허용된 환경 backfill을 Git-confirmed data bundle로 연결 | 실제 저장·provenance·관측별 결합·학습 적격/제외 사유 검증. backfill을 당시 forecast로 표기하지 않음 |
+| 2 | 최신 trusted code로 신규 수집→모델 갱신→release 재실행 | 미래 전용 bundle 제외·Git 저장·baseline/experimental gate·각 Site 결측 사유 확인. 숫자 제공을 강제하지 않음 |
+| 3 | 실제 release의 로컬 1920px/360px·Site 선택·ko/en 화면 검수 | 사용자 화면 확인. reader 검증과 브라우저 검수는 구분 |
+| 4 | D+1 cutoff·seal의 실제 저장 시각 선택 검증 | 늦은 재실행 제외 및 과거 snapshot 불변 보존 |
+| 5 | P7 production·자동 관측 연결·복구·사용량 검수 | data entrypoint 설치, Vercel 환경/WAF/branch 보호·예약 운영·backup 측정 |
+
+`data` branch의 `.github/workflows/data-entrypoint.yml`은 원격 조회에서 미설치로 확인됐다. production Vercel 검수와 최초 신규 수집 성공까지 완료한 것으로 표기하지 않는다. 연구 v1.0.1 및 frozen 결과는 이번 환경 package 발행으로 변경하지 않았다.
 
 ### 2.1 남은 작업과 추천 순서 (2026-10-05, 당시 상태)
 
