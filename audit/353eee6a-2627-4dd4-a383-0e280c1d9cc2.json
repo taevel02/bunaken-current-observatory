@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "id": "353eee6a-2627-4dd4-a383-0e280c1d9cc2",
+  "actor_alias": "권태훈",
+  "action": "correct",
+  "observation_id": "3b12bfbf-fa3f-4433-af9c-81b19efacb5a",
+  "previous_revision": 1,
+  "new_revision": 2,
+  "created_at": "2026-10-07T00:05:28.000Z",
+  "parent_commit_sha": "85189a85fae3189db798b39b6264096a4c22d900"
+}
