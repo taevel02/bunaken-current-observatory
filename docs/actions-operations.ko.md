@@ -21,10 +21,12 @@ GitHub 저장소 `taevel02/bunaken-current-observatory`에서 Settings → Envir
 
 | 종류 | 이름 | 입력 근거 |
 |---|---|---|
-| Environment Secret | GITHUB_WRITE_TOKEN | 기존 웹 저장용 fine-grained PAT. 선택 저장소 Contents 쓰기. workflow 설치용 권한과 분리 |
+| Environment Secret | DATA_WRITE_TOKEN | 기존 웹 저장용 fine-grained PAT. 선택 저장소 Contents 쓰기. workflow 설치용 권한과 분리 |
 | Environment Secret | COPERNICUSMARINE_SERVICE_USERNAME / COPERNICUSMARINE_SERVICE_PASSWORD | 로컬 `.env`의 실제 계정 |
 | Environment variable | OPEN_METEO_USAGE_MODE | `noncommercial`. API 키 미등록 |
 | Environment variable | MODEL_OBSERVER_ID / MODEL_RUBRIC_VERSION | 실제 공개 관측의 observer/rubric. 로그인 ID 사용 금지 |
+
+`DATA_WRITE_TOKEN`은 실행 시 `GITHUB_WRITE_TOKEN` 환경변수로 전달한다. GitHub Secret 이름은 `GITHUB_`로 시작할 수 없다. 비밀번호 Secret은 정상 이름을 우선 사용하고 현재 등록된 `COPERNICUSMARINE__SERVICE_PASSWORD`도 호환한다.
 
 Secrets는 CLI stdin 또는 설정 화면으로 등록한다. 평문을 명령 인자·문서·로그에 넣지 않는다. `.env`와 웹 `.env.local`은 자동 전달되지 않는다. 로컬 FES 경로도 runner에 전달하지 않는다. 상업 모드로 바꿀 때만 별도 API 키가 필요하다.
 

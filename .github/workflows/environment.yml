@@ -29,7 +29,7 @@ on:
         type: string
         required: true
     secrets:
-      GITHUB_WRITE_TOKEN:
+      DATA_WRITE_TOKEN:
         required: false
       COPERNICUSMARINE_SERVICE_USERNAME:
         required: false
@@ -82,7 +82,7 @@ jobs:
         env:
           GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.event.repository.name }}
-          GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN }}
+          GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
         run: |
           uv run --project engine --locked python -m bunaken_engine.fes_cache fetch --directory "$RUNNER_TEMP/fes-derived"
           echo "FES_DERIVED_ROOT=$RUNNER_TEMP/fes-derived" >> "$GITHUB_ENV"
@@ -90,9 +90,9 @@ jobs:
         env:
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-          GITHUB_WRITE_TOKEN: ${{ secrets.GITHUB_WRITE_TOKEN }}
+          GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
-          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD || secrets.COPERNICUSMARINE__SERVICE_PASSWORD }}
           OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
           OPEN_METEO_USAGE_MODE: ${{ vars.OPEN_METEO_USAGE_MODE }}
           MODEL_OBSERVER_ID: ${{ vars.MODEL_OBSERVER_ID }}
