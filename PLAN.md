@@ -40,7 +40,7 @@ GitHub Actions의 main 검증 두 job은 보고서 reader 및 문서 갱신 comm
 
 실제 같은 날 남은 133개 시간 슬롯의 로컬 실험 분석에서 19 Site·108개 숫자를 산출하고 25개는 날짜 근거 부족으로 보류했다. 기존 공급 snapshot은 2026-10-07만 포함하므로 10-08 자료를 만들지 않았다. 이 숫자는 공식 D+1 forecast가 아니며 data branch에 발행하지 않았다. [실험 계약과 진단 결과](docs/site-transfer.ko.md)를 따른다. 기존 보고서 v1.0.1은 그대로 보존한다.
 
-현재 trusted entrypoint template은 검토 코드 `f41ffeb190591efdc127749fbaa137dc7c76b09b`로 갱신했다. 원격 push·CI·entrypoint 설치·새 소스 수집/웹 패키지 발행·Vercel 검수는 P7에서 수행해야 실험 결과가 서비스에 반영된다. 로컬 구현·검증과 production 운영을 구분한다.
+현재 trusted entrypoint template은 검토 코드 `565f613e3bf8753e615fac5ef333867f5d1e442f`로 갱신했다. 원격 push·CI·entrypoint 설치·새 소스 수집/웹 패키지 발행·Vercel 검수는 P7에서 수행해야 실험 결과가 서비스에 반영된다. 로컬 구현·검증과 production 운영을 구분한다.
 
 ### 2.1 남은 작업과 추천 순서 (2026-10-05, 당시 상태)
 
