@@ -11,6 +11,7 @@ import test from "node:test";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const hash = (raw) => createHash("sha256").update(raw).digest("hex");
+const releaseLimits = JSON.parse(readFileSync(resolve(root, "config/public-release-limits.json")));
 
 test("generated release reaches the production reader with integrity and stale guards", { skip: !process.env.BUNAKEN_PUBLIC_RELEASE_DIR }, async () => {
   const directory = resolve(process.env.BUNAKEN_PUBLIC_RELEASE_DIR);
@@ -23,8 +24,8 @@ test("generated release reaches the production reader with integrity and stale g
   const payload = JSON.parse(gunzipSync(compressed));
   assert.equal(hash(manifestBytes), pointer.manifest_sha256);
   assert.equal(hash(compressed), manifest.files[0].sha256);
-  assert.ok(compressed.length <= 1_250_000);
-  assert.ok(gunzipSync(compressed).length <= 10_000_000);
+  assert.ok(compressed.length <= releaseLimits.compressed_bytes);
+  assert.ok(gunzipSync(compressed).length <= releaseLimits.decompressed_bytes);
   assert.equal(payload.sites.length, 19);
   assert.ok(payload.observations.length > 0);
   assert.ok(payload.predictions.length > 0);
@@ -39,11 +40,13 @@ test("generated release reaches the production reader with integrity and stale g
   const hooks = registerHooks({
     resolve(specifier, context, next) {
       if (specifier === "@config/site-transfer.json") return { url: "bunaken-test:site-transfer", format: "module", shortCircuit: true };
+      if (specifier === "@config/public-release-limits.json") return { url: "bunaken-test:release-limits", format: "module", shortCircuit: true };
       if (specifier === "@config/source-registry.json") return { url: "bunaken-test:source-registry", format: "module", shortCircuit: true };
       return next(specifier, context);
     },
     load(url, context, next) {
       if (url === "bunaken-test:site-transfer") return { format: "module", shortCircuit: true, source: `export default ${readFileSync(resolve(root, "config/site-transfer.json"), "utf8")}` };
+      if (url === "bunaken-test:release-limits") return { format: "module", shortCircuit: true, source: `export default ${JSON.stringify(releaseLimits)}` };
       if (url === "bunaken-test:source-registry") return { format: "module", shortCircuit: true, source: `export default ${readFileSync(resolve(root, "config/source-registry.json"), "utf8")}` };
       return next(url, context);
     },
@@ -65,6 +68,15 @@ test("generated release reaches the production reader with integrity and stale g
     assert.equal(loaded.status, sourceAge > 36 * 3600000 ? "stale" : "available");
     assert.equal(loaded.releaseId, pointer.release_id);
     assert.deepEqual(loaded.data, payload);
+    const cleanPackage = files;
+    const minimumPadding = Math.max(0, 12_000_000 - gunzipSync(compressed).length);
+    for (const [padding, expected] of [[minimumPadding, loaded.status], [releaseLimits.decompressed_bytes + 1, "unavailable"]]) {
+      const padded = gzipSync(Buffer.concat([Buffer.alloc(padding, 32), gunzipSync(compressed)]));
+      const paddedManifest = Buffer.from(JSON.stringify({ ...manifest, files: [{ path: "dashboard.json.gz", sha256: hash(padded) }] }));
+      files = new Map([["latest.json", Buffer.from(JSON.stringify({ ...pointer, manifest_sha256: hash(paddedManifest) }))], [prefix + "manifest.json", paddedManifest], [prefix + "dashboard.json.gz", padded]]);
+      assert.equal((await loadPublicRelease()).status, expected);
+    }
+    files = cleanPackage;
     for (const path of [prefix + "manifest.json", prefix + "dashboard.json.gz"]) {
       const prior = files.get(path); files.set(path, Buffer.concat([prior, Buffer.from("tampered")]));
       assert.equal((await loadPublicRelease()).status, "unavailable"); files.set(path, prior);

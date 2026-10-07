@@ -43,7 +43,7 @@ uv run --project engine --locked python -m bunaken_engine.public_release \
 
 release 1.1은 `web/releases/{uuid}/manifest.json`, `dashboard.json.gz`, `web/latest.json` 세 파일이다. gzip의 압축 바이트 hash, JSON Schema, 19 Site metadata, 허용 소스·단위·재배포 조건, snapshot 일치, anchor 복원 상태를 검사한다. 원격 발행은 source head의 현재 observation revision 전체를 대조하며 일부 기록을 빠뜨리는 패키지를 거부한다.
 
-압축 파일은 1,250,000byte 이하, 해제 JSON은 10,000,000byte 이하로 제한한다. 최신 pointer를 먼저 바꾸지 않고 세 파일을 원자적 Git commit과 non-force ref 갱신으로 반영한다. head 경쟁·관측 변경이면 실패하며 이전 latest를 보존한다. 같은 후보의 응답 유실 재시도는 이미 저장된 바이트를 확인한다.
+압축 파일은 1,250,000byte 이하, 해제 JSON은 50,000,000byte 이하로 제한한다. 최신 pointer를 먼저 바꾸지 않고 세 파일을 원자적 Git commit과 non-force ref 갱신으로 반영한다. head 경쟁·관측 변경이면 실패하며 이전 latest를 보존한다. 같은 후보의 응답 유실 재시도는 이미 저장된 바이트를 확인한다.
 
 P7 운영 연결 후 CLI의 `--publish`를 명시한 경우에만 공개 저장한다. `.env`를 읽는 발행 명령은 `uv run --env-file .env ...` 형태다. output 경로를 유지하고 같은 명령으로 재시도한다. 저장소/PAT 설정과 source_data_commit에 해당하는 원격 데이터가 필요하다. 이미 존재하는 local output의 publish는 그 후보를 재사용한다.
 

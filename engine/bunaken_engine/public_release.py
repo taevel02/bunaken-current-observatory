@@ -43,7 +43,8 @@ def build_release(source_commit, *, manifest_path=None, observations=None, root=
     release_id=release_id or str(uuid4())
     prefix=f'web/releases/{release_id}'
     raw=gzip.compress(canonical(payload),mtime=0)
-    if len(raw)>1_250_000 or len(canonical(payload))>10_000_000:
+    limits = read_json(root/'config/public-release-limits.json')
+    if len(raw)>limits['compressed_bytes'] or len(canonical(payload))>limits['decompressed_bytes']:
         raise SnapshotError('release_size_exceeded')
     release=dict(release_id=release_id,schema_version=payload['schema_version'],generated_at=payload['generated_at'],source_data_commit_sha=source_commit,snapshot_ids=snapshot_ids,files=[dict(path='dashboard.json.gz',sha256=digest(raw))],status='published')
     validate('release',release,root)

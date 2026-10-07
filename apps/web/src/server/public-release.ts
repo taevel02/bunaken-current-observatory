@@ -5,6 +5,7 @@ import { cache } from "react";
 import { validateLatest, validatePublicRelease, validatePublicDashboard } from "@bunaken/contracts/validate";
 import sourceRegistry from "@config/source-registry.json";
 import transferConfig from "@config/site-transfer.json";
+import releaseLimits from "@config/public-release-limits.json";
 import { canonicalTransfer, validTransfer } from "#public/transfer-guard.mjs";
 import type { Dashboard } from "@/src/public/model";
 
@@ -26,7 +27,7 @@ export const loadPublicRelease = cache(async () => {
         const { done, value } = await reader.read();
         if (done) break;
         size += value.length;
-        if (size > 1_250_000) throw new Error("release_unavailable");
+        if (size > releaseLimits.compressed_bytes) throw new Error("release_unavailable");
         chunks.push(value);
       }
     } finally { await reader.cancel(); }
@@ -44,7 +45,7 @@ export const loadPublicRelease = cache(async () => {
     if (manifest.release_id !== pointer.release_id || manifest.status !== "published" || !(["1.1","1.2"].includes(manifest.schema_version)) || manifest.files.length !== 1 || manifest.files[0].path !== "dashboard.json.gz") throw new Error("release_invalid");
     const raw = await read(prefix + "dashboard.json.gz");
     if (hash(raw) !== manifest.files[0].sha256) throw new Error("release_invalid");
-    const payloadInput = JSON.parse(gunzipSync(raw,{maxOutputLength:10_000_000}).toString("utf8"));
+    const payloadInput = JSON.parse(gunzipSync(raw,{maxOutputLength:releaseLimits.decompressed_bytes}).toString("utf8"));
     if (!validatePublicDashboard(payloadInput)) throw new Error("release_invalid");
     const payload = payloadInput as Dashboard;
     if (payload.schema_version !== manifest.schema_version || payload.generated_at !== manifest.generated_at || payload.tides.some((row: { variable: string; unit: string }) => row.variable !== "tide_height" || row.unit !== "m") || (payload.anchor_similarity.value !== null && !payload.anchor_similarity.environment_restored)) throw new Error("release_invalid");

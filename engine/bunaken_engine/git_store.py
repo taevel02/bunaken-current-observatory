@@ -163,10 +163,12 @@ class GitDataStore:
         manifest = json.loads(files[prefix+'/manifest.json'])
         import gzip
         compressed=files[prefix+'/dashboard.json.gz']
-        if len(compressed)>1_250_000:raise StorageError('release_size_exceeded')
+        from bunaken_engine.registry import ROOT, read_json
+        limits = read_json(ROOT/'config/public-release-limits.json')
+        if len(compressed)>limits['compressed_bytes']:raise StorageError('release_size_exceeded')
         with gzip.GzipFile(fileobj=BytesIO(compressed)) as stream:
-            raw=stream.read(10_000_001)
-        if len(raw)>10_000_000:raise StorageError('release_size_exceeded')
+            raw=stream.read(limits['decompressed_bytes'] + 1)
+        if len(raw)>limits['decompressed_bytes']:raise StorageError('release_size_exceeded')
         payload = json.loads(raw)
         validate('release',manifest)
         from bunaken_engine.public_release import validate_payload

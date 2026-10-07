@@ -156,7 +156,7 @@ Release manifest는 release_id, schema_version, generated_at, source_data_commit
 
 P4 신규 웹 release는 schema 1.1과 `dashboard.json.gz` 하나를 사용한다. gzip은 mtime=0으로 생성하고 압축 바이트의 SHA-256을 manifest에 넣는다. latest schema 1.0은 release UUID와 manifest hash를 가진다. dashboard schema 1.1은 해당 release의 19 Site metadata·예측·조석·환경 sample·현재 관측 revision 전체·출처·anchor 상태를 연결한다. 1.1의 environment_samples는 같은 snapshot에서 공개 allowlist를 통과한 비조석 SourceSample 원문이며 필수 배열이다. 기존 dashboard 1.0은 환경 배열 없는 형상으로 읽는다. source_status 실패 사유는 sources.reason_codes에 보존하고 저장 시 snapshot과 대조한다. 웹 reader도 현재 source registry의 공개 허용 변수·dataset·product·unit을 검사한다. source_data_commit_sha의 현재 관측 집합과 저장된 snapshot이 일치해야 발행한다. 세 파일을 한 commit으로 쓰며 실패하면 latest를 먼저 바꾸지 않는다. timeout 후 같은 후보 파일로 재시도하면 이미 반영된 성공을 확인한다.
 
-압축 파일은 1,250,000byte, 해제된 JSON은 10,000,000byte 이하로 제한한다. 웹은 latest를 60초 재검증하고 immutable 자산을 공유 캐시한다. 해제 크기를 제한하고 pointer→manifest→gzip hash와 JSON Schema를 모두 검사한다. Site 표시도 같은 release metadata를 사용한다.
+압축 파일은 1,250,000byte, 해제된 JSON은 50,000,000byte 이하로 제한한다. 웹은 latest를 60초 재검증하고 immutable 자산을 공유 캐시한다. 해제 크기를 제한하고 pointer→manifest→gzip hash와 JSON Schema를 모두 검사한다. Site 표시도 같은 release metadata를 사용한다.
 
 release generated_at과 원본 snapshot의 source_generated_at을 구분한다. 새 포장으로 source age를 초기화하지 않는다. P4의 forecast_kind는 experimental이며 공식 D+1이라고 표시하지 않는다. 숫자 모델은 P5에서 구현할 때까지 publisher가 pci!=null을 거부한다. 공식 seal 선택과 운영 발행 연결은 P7 검수 대상이다.
 
