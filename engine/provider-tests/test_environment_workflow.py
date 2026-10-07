@@ -16,7 +16,7 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         steps = job['steps']
         prepare = next(step for step in steps if step.get('name') == 'Fetch verified tidal ephemeris')
         self.assertEqual(prepare['if'],"env.OPERATION == 'collect'")
-        self.assertEqual(prepare['env']['GITHUB_WRITE_TOKEN'],'${{ secrets.GITHUB_WRITE_TOKEN }}')
+        self.assertEqual(prepare['env']['GITHUB_WRITE_TOKEN'],'${{ secrets.DATA_WRITE_TOKEN }}')
         self.assertIn('fes_cache fetch',prepare['run'])
         self.assertIn('FES_DERIVED_ROOT=',prepare['run'])
         self.assertIn('$GITHUB_ENV',prepare['run'])
@@ -29,7 +29,15 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         invocation = entry['jobs']['environment']
         self.assertRegex(invocation['with']['code_commit'],r'^[0-9a-f]{40}$')
         self.assertEqual(invocation['uses'].rsplit('@',1)[1],invocation['with']['code_commit'])
-        self.assertEqual(set(invocation['secrets']),set(data['on']['workflow_call']['secrets']))
+        declared = data['on']['workflow_call']['secrets']
+        self.assertTrue(set(invocation['secrets']).issubset(declared))
+        self.assertTrue(all(not name.startswith('GITHUB_') for name in declared))
+        self.assertEqual(invocation['secrets']['DATA_WRITE_TOKEN'], '${{ secrets.DATA_WRITE_TOKEN }}')
+        self.assertEqual(invocation['secrets']['COPERNICUSMARINE_SERVICE_PASSWORD'],
+                         '${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD || secrets.COPERNICUSMARINE__SERVICE_PASSWORD }}')
+        for name, specification in declared.items():
+            if specification['required'] == 'true':
+                self.assertIn(name, invocation['secrets'])
 
     def test_schedule_serializes_collection_without_delaying_seal(self):
         root = Path(__file__).resolve().parents[2]
