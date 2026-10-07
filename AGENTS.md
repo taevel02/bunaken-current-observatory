@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 개발 지침
 
-이 파일은 저장소 루트에 두는 개발 에이전트와 기여자의 작업 지침이다. 제품 요구사항의 정본은 같은 디렉터리의 `PRD.md` v1.9이다. 2026-09-27 결정에 따라 외부 OAuth와 비공개 저장소를 사용하지 않는다. 기본 작업·보고 언어는 한국어다. 제품은 한국어 우선이며 영어를 함께 지원한다.
+이 파일은 저장소 루트에 두는 개발 에이전트와 기여자의 작업 지침이다. 제품 요구사항의 정본은 같은 디렉터리의 `PRD.md` v1.10이다. 2026-09-27 결정에 따라 외부 OAuth와 비공개 저장소를 사용하지 않는다. 기본 작업·보고 언어는 한국어다. 제품은 한국어 우선이며 영어를 함께 지원한다.
 
 이 문서와 PRD는 구현 계획이다. 존재하지 않는 코드·명령·배포·테스트 결과를 있다고 보고하지 않는다. 첫 구현에서 실제 구조와 실행 명령을 만든 후 README와 이 문서의 명령 안내를 함께 갱신한다.
 
@@ -44,7 +44,7 @@ PCI는 관찰자별 무차원 전체 체감 강도다. v1의 `overall_pci`는 �
 
 초기 엔진은 Weighted Analog다. 초기 weight는 Tide 0.30, Ocean 0.35, Thermal 0.15, Weather 0.10, Depth 0.10이다. Site/Zone multiplier는 환경 거리 이후 적용한다. quality와 provenance도 별도 가중치다. 숫자는 config와 model version에 두고 과학적으로 확정된 상수라고 쓰지 않는다.
 
-숫자 PCI는 PRD의 모든 gate를 통과한 경우만 반환한다. 최소 조건은 적격 numeric label 3개, 서로 다른 관측일 3일, N_eff 2 이상, 유효 analog 3개, 같은 Site 기록 1개, 충분한 환경 feature다. 같은 날 세 번의 다이빙을 독립적인 세 날로 세지 않는다. 표시 불가면 null과 reason code를 반환한다. PCI 한 개로 새로운 예측 숫자를 만들지 않는다.
+숫자 PCI는 PRD의 모든 gate를 통과한 경우만 반환한다. 최소 조건은 적격 numeric label 3개, 서로 다른 관측일 3일, N_eff 2 이상, 유효 analog 3개, 같은 Site 기록 1개, 충분한 환경 feature다. 같은 날 세 번의 다이빙을 독립적인 세 날로 세지 않는다. 2026-10-07 사용자 승인 `site-transfer-v1`만 별도 실험 예외를 적용한다. 목표 Site label을 제외하고 donor Site 3개·3일·3 analog, N_eff/N_eff_days/N_eff_sites 각각 2 이상, 최대 Site 기여 50% 이하를 요구한다. 기본 PCI에 대입하거나 학습 label로 재사용하지 않으며 항상 experimental/very_low·unvalidated로 표시한다. 표시 불가면 null과 reason code를 반환한다. PCI 한 개로 새로운 예측 숫자를 만들지 않는다.
 
 Support는 N_eff뿐 아니라 날짜·Site/Zone coverage와 검증을 고려한다. 관측 confidence, 데이터 support, 예측 불확실성, 안전성은 서로 다르다. 검증되지 않은 신뢰구간·확률을 생성하지 않는다. 데이터 건수에 따라 GAM을 자동 승격하지 않는다.
 

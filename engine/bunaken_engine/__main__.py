@@ -67,6 +67,11 @@ def parser():
     evaluation.add_argument('--mode',choices=['forward','leave_one_day_out'],default='forward')
     evaluation.add_argument('--operational',action='store_true',help='requires Git-verified actual storage evidence; never backfill performance')
     evaluation.add_argument('--output',type=Path,required=True)
+    transfer=commands.add_parser('validate-transfer',help='experimental cross-Site validation; no remote write')
+    transfer.add_argument('--context',type=Path,required=True)
+    transfer.add_argument('--mode',choices=['forward','leave_one_site_out','spatial_block_forward'],default='forward')
+    transfer.add_argument('--operational',action='store_true')
+    transfer.add_argument('--output',type=Path,required=True)
     enrichment=commands.add_parser('enrich',help='collect missing actual-dive environments and build analysis inputs; never publish')
     inputs=enrichment.add_mutually_exclusive_group(required=True)
     inputs.add_argument('--observations',type=Path)
@@ -125,6 +130,12 @@ def main(argv=None):
             write_files(args.output,files)
             receipt=publish_bundle(store,manifest,files,root=root) if store else None
             result=dict(run_id=run_id,status=manifest["status"],samples=len(manifest["samples"]),source_status=manifest["source_status"],saved_to_public_repository=receipt is not None,storage_commit=receipt["storage_commit"] if receipt else None)
+        elif args.command=='validate-transfer':
+            from bunaken_engine.validation import evaluate_transfer
+            report=evaluate_transfer(read_json(args.context),mode=args.mode,operational=args.operational,root=root)
+            args.output.parent.mkdir(parents=True,exist_ok=True)
+            with args.output.open('x') as output: json.dump(report,output,ensure_ascii=False,indent=2)
+            result=dict(mode=report['mode'],operational_forecast=report['operational_forecast'],**report['metrics'])
         elif args.command=='enrich':
             head=subprocess.run(['git','rev-parse','HEAD'],cwd=root,capture_output=True,text=True,check=True).stdout.strip()
             dirty=subprocess.run(['git','status','--porcelain'],cwd=root,capture_output=True,text=True,check=True).stdout.strip()

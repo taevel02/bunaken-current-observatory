@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.1\
-작성일: 2026-10-05\
-기준: [PRD.md](PRD.md) v1.9 · [AGENTS.md](AGENTS.md)\
+버전: 2.2\
+작성일: 2026-10-07\
+기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -331,7 +331,7 @@ forecast snapshot provenance=1.00, 사후 analysis backfill=0.70이다. 불완�
 
 ### 8.2 숫자와 Support
 
-숫자는 최종 후보에서 numeric label>=3, 서로 다른 WITA 날짜>=3, analog>=3, N_eff>=2, 같은 Site 관측>=1, 필수 source/coverage/time range 조건을 모두 충족할 때만 반환한다. 같은 날짜 세 개는 gate를 통과하지 못한다.
+기본 모델 숫자는 최종 후보에서 numeric label>=3, 서로 다른 WITA 날짜>=3, analog>=3, N_eff>=2, 같은 Site 관측>=1, 필수 source/coverage/time range 조건을 모두 충족할 때만 반환한다. 같은 날짜 세 개는 gate를 통과하지 못한다.
 
 | 조건 | prediction_status | support |
 |---|---|---|
@@ -344,6 +344,12 @@ forecast snapshot provenance=1.00, 사후 analysis backfill=0.70이다. 불완�
 상위 조건부터 평가한다. Medium은 전진 forecast 검증 test일>=10, baseline MAE 개선, 큰 오차 악화 없음이 필요하다. High는 test일>=20, 목표 Site test일>=5, Site baseline 개선 및 사전 오차 허용기준이 필요하다. 큰 오차 비교 기준과 허용 오차가 미설정이면 해당 승격을 비활성화하고 Low를 유지한다. 단순 건수로 모델을 승격하지 않는다.
 
 대표 reason code는 insufficient_numeric_labels, insufficient_distinct_days, insufficient_effective_support, no_same_site_analog, missing_required_features, insufficient_feature_coverage, unverified_geometry, stale_required_source, outside_source_horizon, pending_enrichment, legacy_label_scope, zero_weight다. 모든 실패 원인을 배열로 남기고 UI는 우선 원인과 상세를 제공한다.
+
+### 8.2.1 별도 Site 전이 실험
+
+`config/site-transfer.json`의 `site-transfer-v1`은 target Site와 모든 Zone label을 제외한다. Tide rate/excursion, 18m current speed, modelled temperature, wave/swell height/period를 비교한다. 독립 지도축의 방향 projection은 전이 feature로 쓰지 않는다. similarity·K·quality·provenance는 baseline 설정을 사용한다. Site별 round robin으로 최대 K를 선택하고 각 raw weight를 그 Site/날짜의 관측 수와 그 Site의 기여 날짜 수로 나눈다. 최소 3개 donor Site·3일·3 analog, N_eff 및 날짜/Site 유효수 각각 2 이상, 최대 Site 기여 0.5를 요구한다. 물리 source·coverage 0.8·18m·시간 gate를 유지하며 항상 experimental/very_low로 표시한다. 수직 evidence는 전이하지 않는다.
+
+전진 검증과 별도 whole-Site holdout, 고정 3km 지리 블록의 전진 검증을 수행한다. held-out Site/블록의 label과 환경 scaler 행을 제외한다. whole-Site holdout은 미래 날짜를 포함하는 진단이며 D+1 성능으로 표기하지 않는다. 결과에는 분모·abstention·matched donor median baseline·fold ID/날짜/Site·config/context hash를 기록한다. 자동 정확도 승격이나 PCI label 생성은 금지한다. 상세는 [Site 전이 실험](docs/site-transfer.ko.md)을 따른다.
 
 ### 8.3 수직 근거와 anchor
 

@@ -1,11 +1,13 @@
 # 부나켄 조류 관측과 예측 서비스 제품 요구사항
 
-문서 버전: 1.9\
-작성일: 2026-10-05
+문서 버전: 1.10\
+작성일: 2026-10-07
 제품 가칭: Bunaken Current Observatory  
 기본 언어: 한국어 `ko` · 추가 언어: 영어 `en`  
 서비스 기준 시간대: `Asia/Makassar` · WITA · UTC+08:00  
 상태: 구현 기준 문서. 실제 자료의 로컬 수집·재계산·검증과 코드 CI는 수행했다. production 운영 연결·공식 D+1 예측력·연구 원고 발행은 별도 검수 대상이다.
+
+1.10 변경: 사용자 승인 Site 간 PCI 실험 `site-transfer-v1`을 기존 모델과 별도로 제공한다. 여러 다른 Site의 실제 Overall label과 목표 Site의 환경을 비교하며 항상 experimental/very_low, validation_status=unvalidated로 표시한다. 기존 같은 Site gate와 발행 연구 결과는 보존한다. 상세 계약은 [Site 전이 실험](docs/site-transfer.ko.md)을 따른다.
 
 1.9 변경: 검증된 FES 조석 파생값을 기간·좌표·코드 hash에 묶어 재사용한다. 연구 발행은 네 원고·단일 results·검토 상태·불변 release 계약을 적용한다. 숫자 표는 results 참조로 생성하고 철회된 보고서는 홈페이지 본문을 숨긴다. 모델·PCI 정의와 관측 schema는 변경하지 않는다.
 
@@ -298,13 +300,15 @@ provenance 초기값은 당시 실제 보존된 forecast snapshot 1.00, 사후 a
 
 ### 6.2 숫자 표시 gate와 Support
 
-전체 numeric 기록 수만으로 숫자를 표시하지 않는다. 아래 조건을 모두 만족해야 한다.
+기본 `weighted-analog-v1.3`은 전체 numeric 기록 수만으로 숫자를 표시하지 않는다. 아래 조건을 모두 만족해야 한다.
 
 1. 의미가 확인되고 품질 검사를 통과한 overall numeric label 3개 이상.
 2. 최종 analog에 서로 다른 WITA 관측일이 3일 이상 포함됨.
 3. 해당 목표에서 `N_eff >= 2`, 유효 analog 3개 이상, 같은 Site 기록 1개 이상.
 4. 최소 similarity와 필수 feature·coverage 충족, 예측 시각이 공급 자료 범위 안에 있음.
 5. 동일 관찰자·호환 rubric의 학습 기록만 사용함.
+
+2026-10-07 사용자 승인 실험 예외: `site-transfer-v1`은 목표 Site label을 제외하고 최소 3개 donor Site, 3일, analog 3개, N_eff/N_eff_days/N_eff_sites 각각 2 이상, 한 Site 최종 기여 50% 이하를 요구한다. 나머지 source·coverage·수심·cutoff gate는 유지한다. 기본 모델 PCI에 자동 대입하지 않고 별도 실험 선택 화면에서만 제공한다. 전이 출력은 학습 label로 재사용하지 않는다.
 
 같은 날 세 번 기록한 것을 독립적인 세 날로 취급하지 않는다. 하루 3회씩 한 달이면 약 90행이 생기지만 성능 또는 Site별 support를 보장하지 않는다.
 
