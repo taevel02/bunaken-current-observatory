@@ -28,7 +28,35 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 기능 개발과 관측 축적은 서로 다른 일정이다. 출시일까지 label이 부족해도 cold-start 상태로 서비스할 수 있다. 숫자 PCI나 높은 Support를 출시 조건으로 강제하지 않는다. 각 단계의 기간은 실제 데이터 접근성·구현 인력·테스트 결과를 확인한 뒤 추정한다.
 
-### 2.2 최신 상태 (2026-10-07)
+### 2.3 최신 상태 (2026-10-08, P7 이전 1–4 완료)
+
+2026-10-07 사용자 추가 관측 2건 확인: Ron’s Point 12:04–13:00 / Overall 0.46, Lekuan 1 14:29–15:27 / Overall 0.27. 두 기록 모두 대표 수심 18m·실측 수온 28°C다. 최신 관측 26건·10일을 실제 환경과 결합하여 numeric Overall 학습 후보 26건, 제외 0건을 확인했다. scaler 3,040행은 환경 비교 구간이며 관측 수가 아니다. 원래 저장된 관측 revision은 변경하지 않았다.
+
+| 순서 | 상태 | 실행 근거 |
+|---|---|---|
+| 1 과거 환경 연결 | done | 허용 파생 sample 57,684개·4 backfill bundle, 실제 Git commit/receipt/confirmation 확인. 사후 자료를 당시 forecast로 표기하지 않음 |
+| 2 신규 수집·모델·공개 패키지 | done | trusted code `f972f350756e22d270490504fcf519e56ebac782`, Actions `37643279296` 성공. 6개 소스·39,083 sample, release `97755bc3-b7eb-4549-b9e0-7c79c458ac42` |
+| 3 실제 패키지 화면 | done | 실제 release reader 및 Chrome 1920×1080/360×1080, ko/en·19 Site·26건·Site/모델/유속/조석 전환·가로 넘침 검사 통과. production Vercel 검증과 구분 |
+| 4 D+1 cutoff·seal | done | Actions `37644104431` 성공. 10/8 seal은 10/7 17:54:58 WITA 저장 확인 run 유지. 23:37:51 저장 신규 run은 20:00 cutoff 이후이므로 공식 seal 대체 불가 |
+
+공개 패키지는 7일 2,128슬롯 중 기본 numeric 1,099개, 별도 Site 전이 실험 numeric 2,124개다. 나머지는 null을 보존한다. 이는 숫자 제공 건수이며 예측 정확도 증명이 아니다. 모두 experimental/very_low 제한을 유지한다. JSON 40,037,242 bytes / gzip 739,263 bytes이며 hash/schema·크기 경계를 검증했다. 보고서 v1.0.1의 frozen 결과·결론은 변경하지 않았다.
+
+manifest 압축 저장·실제 bytes hash·receipt 1.0/1.1 호환을 구현하고, 미래 전용 학습 bundle은 검증된 cutoff의 후보에서 제외하기 전에 불필요한 replay를 피하도록 정리했다. engine 114개·provider 12개·계약 10개, lint·actionlint·production build·실제 reader·실제 브라우저 검증 통과. 코드 리뷰에서 신규 차단 결함 없음. 구현/저장/보안/구성 경계 리뷰 완료. optional favicon 404는 화면 오류와 분리해 검증 로그에 기록했다.
+
+남은 P7 권장 순서:
+
+| 순서 | 작업 | 완료 기준 |
+|---|---|---|
+| 1 | 최신 고정 SHA의 data entrypoint 설치·관측 push 자동 연결·예약 수집/seal 확인 | 관측 저장→재계산→공개 release 한 chain, 늦은 run 제외 및 무한 실행 없음 |
+| 2 | Vercel production 환경·preview 격리·main 보호·WAF·Origin·세션 철회 검증 | 실제 production 요청과 구배포 차단 증거 |
+| 3 | 환경 비교표 공통 공급 시각 표시 정리 | 현재 12:00 WITA 비교는 6시간 자료 u/v가 없어 null. 다른 시각 대체 시 명시하고 모든 Site 같은 시각 사용 |
+| 4 | Git backup 복원·장애 복구·사용량 및 지연 측정 | 저장 p95·반영 지연·모바일 LCP·source age 실측 |
+| 5 | 학습 context 규모 최적화·장기 운영 검증 | 전체 역사 중복 내장 구조를 불변 참조/범위로 개선, 압축 8MiB·해제 256MiB 제한 및 한 달 부하 확인 |
+| 병행 | 전향적 현장 검증 | 실제 사전 확보 forecast와 다음 날 PCI 비교. baseline·제공률·결측·오차 함께 보고 |
+
+trusted entrypoint template은 위 `f972f35` 전체 SHA로 갱신했다. 원격 data entrypoint 설치와 production 배포는 P7에 남는다. 상세 저장·발행·seal 근거는 [P7 이전 검증 기록](docs/pre-p7-verification-2026-10-08.ko.md)을 따른다.
+
+### 2.2 이전 상태 (2026-10-07)
 
 2026-10-05 아래 계획은 그 날짜의 기록으로 보존한다. P6 보고서 v1.0.1은 data branch published commit `399f35ed1321f8f6d320347715fb6c223cec4453`에 발행했다. manifest SHA-256은 `98d96faca5df37ec6764e453160198703aebe583ffbe57aad56c76ebaeb4a09b`이며, v1.0.0은 불변 보존 후 superseded 처리했다. main의 연구 reader/대시보드 구현 commit은 `dffe7b7a387551a7ebf3e09518adfc547e067245`다.
 
