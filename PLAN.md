@@ -3,7 +3,7 @@
 버전: 1.9\
 작성일: 2026-10-05\
 기준: [PRD.md](PRD.md) v1.9 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.1\
-상태: P0–P6 첫 연구 release 완료. P7 실제 운영·production 배포 검증은 남아 있다.
+상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
 
@@ -30,13 +30,13 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 ### 2.2 최신 상태 (2026-10-07)
 
-2026-10-05 아래 계획은 그 날짜의 기록으로 보존한다. 이후 P6 첫 보고서가 data branch에 발행됐다. code main dffe7b7a387551a7ebf3e09518adfc547e067245, data published commit 3d297e0eb94aff5989d3e92cee47aa92b2ad0874, version 1.0.0, manifest SHA-256 f5b93d725055b473dbb1302c6cb652c181debbd94d805239bf479593f4690376.
+2026-10-05 아래 계획은 그 날짜의 기록으로 보존한다. P6 보고서 v1.0.1은 data branch published commit `399f35ed1321f8f6d320347715fb6c223cec4453`에 발행했다. manifest SHA-256은 `98d96faca5df37ec6764e453160198703aebe583ffbe57aad56c76ebaeb4a09b`이며, v1.0.0은 불변 보존 후 superseded 처리했다. main의 연구 reader/대시보드 구현 commit은 `dffe7b7a387551a7ebf3e09518adfc547e067245`다.
 
 정정 데이터 cutoff 2026-10-07T00:05:28Z, model weighted-analog-v1.3, dataset SHA-256 958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c. 현재 공개 관측 24건·9일·19 Site다. official-condition forward는 0/24 제공, MAE null이며 corrected-head 당일 target PCI는 재생성하지 않았다. 새로운 환경 수집은 성공하지 않아 previously verified immutable historical bundle replay로만 계산했다. retrospective forward 및 LODO는 보고서에서 비운영 진단으로 구분했다.
 
-GitHub Actions의 main commit 두 job은 통과했다. production Vercel deployment와 실제 공개 route는 URL·deployment 상태를 확인할 증거가 없어 검증 미완료이며 P7에 남는다. 공개 data branch의 release는 발행됐지만 이를 production 홈페이지 반영 완료로 간주하지 않는다.
+GitHub Actions의 main 검증 두 job은 보고서 reader 및 문서 갱신 commit에서 통과했다. production Vercel deployment와 실제 공개 route는 deployment 증거가 없어 검증 미완료이며 P7에 남는다. data branch release 발행을 홈페이지 production 반영 완료로 간주하지 않는다.
 
-관측 수 내림차순 Site 표시는 구현했다. 저방문 Site의 PCI를 다른 Site 자료만으로 채우는 전이 모델은 구현하지 않았다. 근거가 없는 PCI를 조석처럼 주기 곡선으로 합성하지 않는다. Site별 조석·모델 유속은 별도 물리량 계열로 표시할 수 있고, Site 간 PCI 전이는 whole-Site holdout·spatial block·독립 날짜 및 matched baseline 검증을 갖춘 별도 모델 설계가 선행돼야 한다.
+대시보드 Site 목록은 공개 관측 수 내림차순으로 정렬한다. 보고서에도 최신 revision 기준 관측 수를 정렬해 싣는다. 저방문 Site의 PCI를 다른 Site 자료만으로 채우는 전이 모델은 구현하지 않았다. 근거 없는 PCI 점을 조석처럼 주기 곡선으로 합성하지 않는다. Site별 조석·모델 유속은 별도 물리량 계열로 표시할 수 있다. Site 간 PCI 전이는 별도 모델로 다루고 whole-Site holdout, spatial block, 독립 날짜, matched baseline으로 검증해야 한다. 모든 Site 그래프는 계산된 PCI가 있을 때만 점을 잇고 결측 구간에서 선을 끊어야 한다.
 
 ### 2.1 남은 작업과 추천 순서 (2026-10-05, 당시 상태)
 
@@ -194,10 +194,10 @@ P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_inpu
 - [x] P6-02 technical.ko/en, guide.ko/en을 같은 release에 연결한다.
 - [x] P6-03 단일 results.json과 manifest로 숫자·차트·표를 연결하고 네 원고 간 hash/version 불일치를 검사한다.
 - [x] P6-04 안전한 Markdown 미리보기, 발행 버튼, 이전 버전, 정정 이유를 구현한다.
-- [x] P6-05 첫 방법론 보고서는 데이터 부족과 미검증 상태를 명시한다. 존재하지 않는 성능·DOI·심사 이력을 생성하지 않는다. 2026-10-07 v1.0.0을 data branch에 발행했다.
+- [x] P6-05 첫 방법론 보고서는 데이터 부족과 미검증 상태를 명시한다. 존재하지 않는 성능·DOI·심사 이력을 생성하지 않는다. 2026-10-07 v1.0.0을 최초 발행했고, 같은 날 Muka Kampung 관측 수온 정정과 원고 문장 교정을 반영한 v1.0.1을 발행했다.
 - [x] P6-06 홈페이지에는 published만 노출하되 저장소 draft가 공개라는 사실을 편집 화면에 표시한다.
 
-구현 근거: research-release/results schema 1.0, /api/admin/research, /{locale}/admin/research, immutable research releases와 공개 reader. 2026-10-07에 한국어 정본·영어 번역·metadata/results를 같은 context로 검증해 네 문서를 published v1.0.0으로 data branch에 저장했다. 별도 분석의 fresh source recollection은 실패했고 production Vercel route 검증은 미완료다.
+구현 근거: research-release/results schema 1.0, /api/admin/research, /{locale}/admin/research, immutable research releases와 공개 reader. 2026-10-07에 한국어 정본·영어 번역·metadata/results를 같은 context로 검증해 네 문서를 v1.0.1로 발행했다. Muka Kampung 수온 28°C 정정이 반영된 data head를 사용한다. v1.0.1은 기술 원고의 거리 표현을 문장으로 고친 편집판이며 결과 수치·모델 버전·dataset hash는 동일하다. official-condition forward는 0/24, MAE null이다. production Vercel route 검증은 미완료다.
 
 완료 근거: RES-01–02, OPEN-03. 논문 작성·외부 학술지 제출은 별도 콘텐츠 작업이며 이 계획으로 자동 제출하지 않는다.
 
