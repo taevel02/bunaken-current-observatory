@@ -35,6 +35,8 @@ on:
         required: false
       COPERNICUSMARINE_SERVICE_PASSWORD:
         required: false
+      COPERNICUSMARINE__SERVICE_PASSWORD:
+        required: false
       OPEN_METEO_API_KEY:
         required: false
 permissions:
