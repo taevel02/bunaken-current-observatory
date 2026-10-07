@@ -3,7 +3,7 @@
 버전: 1.9\
 작성일: 2026-10-05\
 기준: [PRD.md](PRD.md) v1.9 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.1\
-상태: P0–P5와 P6 발행 기반 코드 구현 완료. 첫 원고 작성·검토·웹 발행, 실제 운영 연결과 외부 검수는 남아 있다.
+상태: P0–P6 첫 연구 release 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
 
@@ -28,7 +28,17 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 기능 개발과 관측 축적은 서로 다른 일정이다. 출시일까지 label이 부족해도 cold-start 상태로 서비스할 수 있다. 숫자 PCI나 높은 Support를 출시 조건으로 강제하지 않는다. 각 단계의 기간은 실제 데이터 접근성·구현 인력·테스트 결과를 확인한 뒤 추정한다.
 
-### 2.1 남은 작업과 추천 순서 (2026-10-05)
+### 2.2 최신 상태 (2026-10-07)
+
+2026-10-05 아래 계획은 그 날짜의 기록으로 보존한다. 이후 P6 첫 보고서가 data branch에 발행됐다. code main dffe7b7a387551a7ebf3e09518adfc547e067245, data published commit 3d297e0eb94aff5989d3e92cee47aa92b2ad0874, version 1.0.0, manifest SHA-256 f5b93d725055b473dbb1302c6cb652c181debbd94d805239bf479593f4690376.
+
+정정 데이터 cutoff 2026-10-07T00:05:28Z, model weighted-analog-v1.3, dataset SHA-256 958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c. 현재 공개 관측 24건·9일·19 Site다. official-condition forward는 0/24 제공, MAE null이며 corrected-head 당일 target PCI는 재생성하지 않았다. 새로운 환경 수집은 성공하지 않아 previously verified immutable historical bundle replay로만 계산했다. retrospective forward 및 LODO는 보고서에서 비운영 진단으로 구분했다.
+
+GitHub Actions의 main commit 두 job은 통과했다. production Vercel deployment와 실제 공개 route는 URL·deployment 상태를 확인할 증거가 없어 검증 미완료이며 P7에 남는다. 공개 data branch의 release는 발행됐지만 이를 production 홈페이지 반영 완료로 간주하지 않는다.
+
+관측 수 내림차순 Site 표시는 구현했다. 저방문 Site의 PCI를 다른 Site 자료만으로 채우는 전이 모델은 구현하지 않았다. 근거가 없는 PCI를 조석처럼 주기 곡선으로 합성하지 않는다. Site별 조석·모델 유속은 별도 물리량 계열로 표시할 수 있고, Site 간 PCI 전이는 whole-Site holdout·spatial block·독립 날짜 및 matched baseline 검증을 갖춘 별도 모델 설계가 선행돼야 한다.
+
+### 2.1 남은 작업과 추천 순서 (2026-10-05, 당시 상태)
 
 P0–P5의 완료 표시는 코드·계약 검증 완료를 뜻한다. P6는 미구현이며 P7은 운영 설정·실제 실행 검증이 남아 있다. 아래 순서는 관측을 저장하면 환경을 결합하고 Analog를 다시 계산해 홈페이지까지 갱신하는 목표를 우선한다. P7의 수집·자동화 연결 일부를 P6보다 먼저 진행하고, P7 전체 출시 완료는 P6 이후에 판단한다.
 
@@ -184,10 +194,10 @@ P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_inpu
 - [x] P6-02 technical.ko/en, guide.ko/en을 같은 release에 연결한다.
 - [x] P6-03 단일 results.json과 manifest로 숫자·차트·표를 연결하고 네 원고 간 hash/version 불일치를 검사한다.
 - [x] P6-04 안전한 Markdown 미리보기, 발행 버튼, 이전 버전, 정정 이유를 구현한다.
-- [ ] P6-05 첫 방법론 보고서는 데이터 부족과 미검증 상태를 명시한다. 존재하지 않는 성능·DOI·심사 이력을 생성하지 않는다.
+- [x] P6-05 첫 방법론 보고서는 데이터 부족과 미검증 상태를 명시한다. 존재하지 않는 성능·DOI·심사 이력을 생성하지 않는다. 2026-10-07 v1.0.0을 data branch에 발행했다.
 - [x] P6-06 홈페이지에는 published만 노출하되 저장소 draft가 공개라는 사실을 편집 화면에 표시한다.
 
-구현 근거: research-release/results schema 1.0, /api/admin/research, /{locale}/admin/research, immutable research releases와 공개 reader. 고정 근거 묶음·Astra 작성 지시는 docs/research/에 둔다. 연구 원고 작성·사람 검토·실제 웹 발행은 아직 수행하지 않았다.
+구현 근거: research-release/results schema 1.0, /api/admin/research, /{locale}/admin/research, immutable research releases와 공개 reader. 2026-10-07에 한국어 정본·영어 번역·metadata/results를 같은 context로 검증해 네 문서를 published v1.0.0으로 data branch에 저장했다. 별도 분석의 fresh source recollection은 실패했고 production Vercel route 검증은 미완료다.
 
 완료 근거: RES-01–02, OPEN-03. 논문 작성·외부 학술지 제출은 별도 콘텐츠 작업이며 이 계획으로 자동 제출하지 않는다.
 

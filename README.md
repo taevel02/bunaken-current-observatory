@@ -106,4 +106,4 @@ node --conditions=react-server --test apps/web/test/public-release.integration.m
 - 로컬 묶음 명령: `node apps/web/scripts/create-research-bundle.mjs --help`
 - 브라우저 검증: `BUNAKEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs node --conditions=react-server --test apps/web/test/research-browser.integration.mjs`
 
-실제 첫 보고서 원고·검토·발행은 별도 작업이다. 공개 목록은 20개 단위 metadata 조회이며 상세 페이지는 선택한 버전의 원고만 검증한다.
+첫 보고서 v1.0.0은 data branch에 발행했다. [공개 release 원문](https://github.com/taevel02/bunaken-current-observatory/tree/data/research/bunaken-pci-methodology-initial-observations/releases/1.0.0). 웹 경로는 `/{locale}/research/bunaken-pci-methodology-initial-observations/{technical|guide}`이며 production Vercel 배포 확인은 P7에 남았다. 공개 목록은 20개 단위 metadata 조회이며 상세 페이지는 선택한 버전의 원고만 검증한다.
