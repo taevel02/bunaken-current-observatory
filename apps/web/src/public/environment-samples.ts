@@ -21,3 +21,21 @@ export function noonSample(data: Dashboard, day: string, siteId: string, depth: 
   const matches = rows.filter(row => Date.parse(row.valid_time) === at);
   return matches.length === 1 && values.includes(matches[0]) ? matches[0] : null;
 }
+
+export function signalRows(data: Dashboard, day: string, siteId: string, depth: number | null, metric: "current" | "tide") {
+  if (metric === "tide") {
+    const provider=data.sources.find(item=>item.id==="fes-height");
+    const source=data.tides.filter(row=>row.site_id===siteId&&(row.zone_id??null)===null)
+      .filter(row=>Date.parse(row.valid_time)>=Date.parse(`${day}T00:00:00+08:00`)&&Date.parse(row.valid_time)<Date.parse(`${day}T00:00:00+08:00`)+86400000);
+    return source.map(row=>({at:row.valid_time,value:provider?.public_export_allowed&&!provider.reason_codes.length&&
+      !row.quality_flags.some(flag=>rejected.has(flag)||flag==='fes_undefined'||flag==='fes_extrapolation_rejected')?row.value:null}));
+  }
+  const east=environmentSamples(data,day,siteId,depth,"uo","copernicus-currents","m/s");
+  const north=environmentSamples(data,day,siteId,depth,"vo","copernicus-currents","m/s");
+  const times=[...new Set([...east.rows,...north.rows].map(row=>Date.parse(row.valid_time)))].sort((a,b)=>a-b);
+  return times.map(at=>{
+    const u=east.rows.filter(row=>Date.parse(row.valid_time)===at),v=north.rows.filter(row=>Date.parse(row.valid_time)===at);
+    return {at:new Date(at).toISOString(),value:u.length===1&&v.length===1&&east.values.includes(u[0])&&north.values.includes(v[0])?
+      Math.hypot(u[0].value as number,v[0].value as number):null};
+  });
+}

@@ -35,7 +35,7 @@ export function EnvironmentOverview({data,day,siteId,depth,locale,moon,status}:{
   <dl className="my-1 grid min-w-0 grid-cols-1 gap-x-5 sm:grid-cols-2">{groups.map(group=><div key={group.variable} className="flex min-w-0 items-center justify-between gap-3 border-b border-[#e2e9e5] py-1 text-sm"><dt>{t.metrics[group.variable]}</dt><dd className="m-0 flex shrink-0 items-center gap-2 tabular-nums">
    {group.min===null?<span className="text-xs text-[#49625c]">{group.unavailable}</span>:<>
     {group.unit==='degree'?<span>{t.directionSeries}</span>:<span>{group.min.toFixed(2)}{group.max!==group.min?`–${group.max?.toFixed(2)}`:''} {group.unit}</span>}
-    <svg viewBox="0 0 100 24" className="h-6 w-20" role="img" aria-label={`${t.metrics[group.variable]}: ${t.samplePoints}`}><line x1="1" x2="99" y1="23" y2="23" stroke="#c8d6d0"/>{group.values.map((row,i)=><circle key={i} cx={1+(Date.parse(row.valid_time)-start)/86400000*98} cy={21-((row.value as number)-(group.min as number))/Math.max(.001,(group.max as number)-(group.min as number))*18} r="1.8" fill="#145f53"><title>{witaTime(row.valid_time)} · {row.value} {group.unit}</title></circle>)}</svg>
+    <svg viewBox="0 0 100 24" className="h-6 w-20" role="img" aria-label={`${t.metrics[group.variable]}: ${t.samplePoints}`}><line x1="1" x2="99" y1="23" y2="23" stroke="#c8d6d0"/>{group.values.map((row,i)=><circle key={i} cx={1+(Date.parse(row.valid_time)-start)/86400000*98} cy={21-((row.value as number)-(group.min as number))/Math.max(.001,(group.max as number)-(group.min as number))*18} r="1.8" fill="#145f53"><title>{`${witaTime(row.valid_time)} · ${row.value} ${group.unit}`}</title></circle>)}</svg>
    </>}
   </dd></div>)}</dl>
 
