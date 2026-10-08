@@ -137,7 +137,12 @@ def main(argv=None):
             result=dict(run_id=run_id,status=manifest["status"],samples=len(manifest["samples"]),source_status=manifest["source_status"],saved_to_public_repository=receipt is not None,storage_commit=receipt["storage_commit"] if receipt else None)
         elif args.command=='validate-transfer':
             from bunaken_engine.validation import evaluate_transfer
-            report=evaluate_transfer(read_json(args.context),mode=args.mode,operational=args.operational,root=root)
+            context=read_json(args.context)
+            if args.operational and args.mode != 'leave_one_site_out':
+                from bunaken_engine.model_input import verify_context_storage
+                store=store_from_env()
+                verify_context_storage(store,context,store.head(),root=root)
+            report=evaluate_transfer(context,mode=args.mode,operational=args.operational,root=root)
             args.output.parent.mkdir(parents=True,exist_ok=True)
             with args.output.open('x') as output: json.dump(report,output,ensure_ascii=False,indent=2)
             result=dict(mode=report['mode'],operational_forecast=report['operational_forecast'],**report['metrics'])
@@ -180,7 +185,8 @@ def main(argv=None):
                 write_files(args.output.parent,{args.output.name:canonical(report)})
                 result=dict(mode=report['mode'],operational_forecast=report['operational_forecast'],**report['metrics'])
         elif args.command=="scaler":
-            data=read_json(args.input)
+            from bunaken_engine.snapshot_io import load_manifest
+            data=load_manifest(args.input)
             if isinstance(data,dict):
                 data=historical_rows(args.input,root=root)
             registry=read_json(root/"config/features.json")
