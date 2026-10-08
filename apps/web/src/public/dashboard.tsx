@@ -51,7 +51,7 @@ export function DashboardView({locale,day,siteId,state,detail=false,moon=null,mo
   const sample=noonSample(state.data,day,id,depth,variable,source,unit);
   return sample?.value===null||!sample?t.noValue:sample.value.toFixed(unit==='degree'?0:2);
  };
- const status=state.status==='stale'?t.stale:state.status==='unavailable'?t.unavailable:t.modelPending;
+ const status=state.status==='stale'?t.stale:state.status==='unavailable'?t.unavailable:state.status==='available'?t.dataAvailable:t.modelPending;
  const signalSites=detail||siteId?registry.filter(site=>site.id===chartSite?.id):orderedSummaries.map(({site})=>site);
  const signalSeries=signalSites.map(site=>({id:site.id,name:name(site),rows:state.status==='available'&&signal!=='pci'?
   signalRows(state.data,day,site.id,site.reference_depth_m,signal).filter(row=>state.data.valid_start&&state.data.valid_end&&Date.parse(row.at)>=Date.parse(state.data.valid_start)&&Date.parse(row.at)<=Date.parse(state.data.valid_end)):[]}));
@@ -72,7 +72,7 @@ export function DashboardView({locale,day,siteId,state,detail=false,moon=null,mo
 
  </div>
  <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[#c8d6d0] pb-0 text-sm text-[#49625c]">
-  <strong className="font-medium text-[#18302d]">{status}</strong><span>{t.experimental} · WITA · {commonDepth===null?t.siteDepthVaries:`${t.depth} ${commonDepth}m`}</span>{state.status==='stale'&&<span>{t.generated}: {stamp(state.data.generated_at)}</span>}
+  <strong className="font-medium text-[#18302d]">{status}</strong><span>{t.experimental} · {t.forecastUnvalidated} · WITA · {commonDepth===null?t.siteDepthVaries:`${t.depth} ${commonDepth}m`}</span><span>{t.generated}: {stamp(state.data.generated_at)}</span>{state.reason==='date_history_unavailable'&&<span>{t.dateHistoryUnavailable}</span>}{state.reason==='outside_source_horizon'&&<span>{t.dateUnavailable}</span>}
 
  </div>
  <section className="min-w-0 border-b border-[#c8d6d0] pb-1">
