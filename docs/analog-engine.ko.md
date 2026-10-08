@@ -96,3 +96,25 @@ snapshot과 공개 release를 같은 고정 입력·UUID·생성 시각으로 �
 Git 조회는 해당 snapshot의 고정 storage commit에서 참조 파일을 읽는다. 로컬 재생은 output root의 `environment-inputs/` 파일을 함께 보존해야 한다. 단독 manifest만 복사하면 참조 누락으로 실패한다. 기존 plain/gzip manifest는 계속 읽고 기존 run 재시도는 원래 encoding을 유지한다. 참조의 누락·변조·중복·경로 이탈·중첩 context를 거부하며, 신규 쓰기와 읽기 모두 참조 10,000개 상한을 적용한다. 개별 파일의 256MiB 해제/8MiB 압축 상한은 유지한다.
 
 이 변경은 저장 encoding만 바꾸며 관측·환경 시간 범위를 잘라내지 않는다. 과거 입력은 계속 재현한다. 참조 수와 실행 시 메모리·재검증 비용은 이력에 따라 증가하므로 운영 사용량 측정은 별도로 필요하다. 자동 튜닝·승격이나 연구 결론 자동 발행은 추가하지 않는다.
+
+## 관측별 기여율·요인 진단
+
+`audit-model`은 이미 고정한 model context로 사후 진단 JSON을 만든다. 모델 설정 변경·튜닝 결과 선택·승격·외부 저장은 하지 않는다.
+
+```sh
+uv run --project engine --locked python -m bunaken_engine audit-model \
+  --context .local/model-context.json \
+  --observations .local/observations.json \
+  --source-data-commit <40-character-public-data-commit> \
+  --output .local/model-weight-audit.json
+```
+
+`--observations`는 현재 공개 revision 배열이며 생략하면 frozen context의 관측만 사용한다. cutoff 뒤에 추가·수정한 관측은 pending으로 표시하고 기존 모델 후보로 소급하지 않는다. source-data-commit은 입력 출처 표기이며 이 명령 자체가 원격 Git confirmation을 확인했다는 뜻이 아니다. 실제 운영 storage 검증은 `validate-transfer --operational` 또는 공개 발행 경로에서 별도로 수행한다.
+
+기본 진단은 전체 WITA 날짜를 제외한 재구성이다. 고정 cutoff의 환경 scaler와 다른 날짜 후보를 사용하므로 미래 날짜가 포함될 수 있다. `operational_forecast=false`이며 D+1 정확도로 쓰지 않는다. 별도 retrospective forward는 이전 날짜와 당시 수정·환경 availability 제한을 적용하되 사후 target 환경을 허용한다. 이 역시 운영 예측 성능이 아니다.
+
+실험은 현재 설정, 각 환경 그룹의 거리 weight=0, 동일 그룹 weight, sigma=0.5/2.0, 이웃 수=5/10의 10가지다. mandatory Tide/Ocean 자료와 numeric gate는 유지하며 weight=0은 그 소스 없이 운영할 수 있다는 뜻이 아니다. 그룹 weight는 정규화한다. 전체 MAE·제공률·matched baseline과 현재 모델/실험 모두 제공한 공통 관측의 paired MAE를 함께 읽는다. 예측을 적게 제공해 낮아진 MAE만으로 후보를 선택하지 않는다.
+
+관측별 보고에는 environment distance 및 group별 제곱 거리, Site·품질·출처 계수, 최종 normalized weight, PCI 기여량, 날짜/Site별 집중도를 남긴다. PCI는 정답 label로만 사용하며 이웃 거리·가중치의 입력이 아니다. 제곱 거리 분해는 물리적 영향력·인과적 feature importance가 아니다. 현재 18m 비교 registry에 없는 달 위상·전체 조석 주기 고저차·10–30m 차이는 이 실험에서도 새로 추가하지 않는다.
+
+이 결과는 자동 튜닝의 후보 평가 도구 기반이다. training 내부 시간 분할·이후 날짜 holdout·실제 D+1 비교를 통과하기 전 가중치나 모델을 승격하지 않는다. 연구 release v1.0.1의 불변 결과도 자동 변경하지 않는다.

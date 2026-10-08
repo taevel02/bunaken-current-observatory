@@ -3,6 +3,7 @@ import argparse
 import gzip
 import json
 import os
+import re
 from pathlib import Path
 import sys
 import subprocess
@@ -83,6 +84,11 @@ def parser():
     enrichment.add_argument('--rubric',required=True)
     enrichment.add_argument('--code-commit',required=True)
     enrichment.add_argument('--output',type=Path,required=True)
+    audit=commands.add_parser('audit-model',help='read-only retrospective neighbor/factor diagnostics; never tune or publish')
+    audit.add_argument('--context',type=Path,required=True)
+    audit.add_argument('--observations',type=Path)
+    audit.add_argument('--source-data-commit')
+    audit.add_argument('--output',type=Path,required=True)
     scaler=commands.add_parser("scaler",help="fit median/IQR to environment-only rows available at cutoff")
     scaler.add_argument("--input",type=Path,required=True)
     scaler.add_argument("--cutoff",required=True)
@@ -184,6 +190,15 @@ def main(argv=None):
                 report=evaluate(observations,bundles,args.observer,args.rubric,mode=args.mode,operational=args.operational,root=root)
                 write_files(args.output.parent,{args.output.name:canonical(report)})
                 result=dict(mode=report['mode'],operational_forecast=report['operational_forecast'],**report['metrics'])
+        elif args.command=='audit-model':
+            from bunaken_engine.model_audit import audit
+            if args.source_data_commit and not re.fullmatch('[0-9a-f]{40}',args.source_data_commit):
+                raise ValueError('invalid_source_data_commit')
+            report=audit(read_json(args.context),root=root,
+                         current_observations=read_json(args.observations) if args.observations else None,
+                         source_data_commit=args.source_data_commit)
+            write_files(args.output.parent,{args.output.name:canonical(report)})
+            result={key:report[key] for key in ('kind','eligible_candidates','distinct_days','current_observations','operational_forecast','promotion')}
         elif args.command=="scaler":
             from bunaken_engine.snapshot_io import load_manifest
             data=load_manifest(args.input)

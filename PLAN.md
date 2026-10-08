@@ -357,3 +357,11 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 - 최신 공개 source snapshot `12ab5b5b-e1f0-59cc-88af-811903b2c95a` 저장 transport 실험: 원 manifest JSON 169,559,136byte → 참조 manifest 35,942,474byte(압축 524,834byte), 공유 입력 6개 압축 합계 3,013,083byte. 확장 결과 원본 완전 일치. 새 source 수집·remote 발행은 하지 않았다.
 - 격리 worktree 엔진 120개 테스트 및 실제 모델 replay/public export 통합 8개 통과. architecture/security·4개 adversarial angle을 검토했다. 다음 단계는 frozen 관측/context 기반 요인·기여율 진단이다.
 - 실제 GitHub trusted code pin·예약 연결과 production 검증은 P7에 남는다. 로컬 수정이 원격 workflow의 실행 코드를 자동 변경하지 않는다.
+
+### P7 전 실제 모델 가중치 진단 완료 (2026-10-08)
+
+- `audit-model`로 고정 context·현재 공개 revision을 읽고 10개 요인/weight/sigma/K 실험 및 관측별 기여율을 계산했다. source data head는 `baaac4797f19b75a303be53d00585398a7c6ecfe`, 현재 관측은 29건. frozen model 후보는 26건·10일이며 오늘 추가 3건을 소급하지 않았다.
+- 결과와 주장별 근거는 [2026-10-08 모델 진단](docs/research/evidence-2026-10-08-model-audit/README.ko.md)에 보존한다. 기본 날짜 제외 진단 21/26, MAE 약 0.06857로 Site 중앙값과 사실상 비슷하다. 같은 제공 표본에서는 조류 weight 제거·sigma 축소·이웃 수 축소의 개선이 확인되지 않았다. weight 변경·자동 승격을 하지 않았다.
+- 사후 시간 순서 검증은 2/29 제공·1일뿐이며 D+1 성능으로 쓰지 않는다. 실제 Git confirmation·공식 cutoff 운영 검증은 별도다. numeric gate·필수 자료 조건은 모든 실험에서 유지했다.
+- 장기 반복 실행 병목도 개선했다. Site/Zone별 availability 인덱싱으로 실제 동일 7,296행 생성이 약 38.30초 → 0.077초가 되었으며 전체 바이트/SHA-256이 동일했다. 이 측정은 해당 함수의 로컬 실행이며 전체 pipeline 지연 목표 달성 주장이 아니다.
+- 엔진 125개 테스트 통과. 저장 참조·legacy replay·라이선스·시간 누수·진단 공통 표본 비교 검증 포함. 다음은 P7 운영 예약·trusted code pin·D+1 예측-실측 매칭이며 자동 튜닝·승격은 이후 검증 기준 확정 후 별도 단계다.
