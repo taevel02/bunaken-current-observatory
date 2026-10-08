@@ -116,4 +116,6 @@ test("selected article ignores missing unrelated historical manuscripts",async()
  assert.equal(result.status,'available');assert.equal(result.items.length,1);assert.equal(manuscriptRequests,4);
  const catalog=await loadResearchLibrary({owner:'synthetic',repo:'fixture',catalog:true,fetchImpl});
  assert.equal(catalog.items.length,1);assert.equal(catalog.partial,true);assert.equal(manuscriptRequests,4);
+ const latestCatalog=await loadResearchLibrary({owner:"synthetic",repo:"fixture",catalog:true,latestPublished:true,fetchImpl});
+ assert.equal(latestCatalog.items.length,1);assert.equal(latestCatalog.partial,false);assert.equal(latestCatalog.items[0].display_state,"published");assert.equal(manuscriptRequests,4);
 });

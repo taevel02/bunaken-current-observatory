@@ -48,5 +48,5 @@ export function EnvironmentOverview({data,day,siteId,depth,locale,moon,status}:{
 export function MoonSummary({moon,locale}:{moon:Moon;locale:Locale}) {
  const t=messages[locale].public.environment;
  const phase=moon?t.phases[moon.phase as keyof typeof t.phases]:null;
- return <div className="flex min-w-0 items-center gap-2 text-sm">{moon&&<MoonDisk moon={moon} label={`${phase} · ${Math.round(moon.illumination*100)}%`}/>}<div><strong className="font-semibold">{t.moon}: </strong>{moon?`${phase} · ${t.illuminated} ${Math.round(moon.illumination*100)}%`:t.moonUnavailable}<span className="block text-xs text-[#49625c]">{t.moonHelp} · <a className="text-[#155f53] underline" href="https://aa.usno.navy.mil/data/api">USNO</a></span></div></div>;
+ return <div className="flex min-w-0 items-center gap-2 text-sm">{moon&&<MoonDisk moon={moon} label={`${phase} · ${Math.round(moon.illumination*100)}%`}/>}<div><strong className="font-semibold">{t.moon}: </strong>{moon?`${phase} · ${t.illuminated} ${Math.round(moon.illumination*100)}%`:t.moonUnavailable}</div></div>;
 }

@@ -2,7 +2,7 @@
 
 버전: 1.10\
 작성일: 2026-10-07\
-기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.4\
+기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.5\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -27,6 +27,12 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 | P7 | 운영 연결과 출시 | P1–P6 | 출시 검수·복구·운영 문서 완료 |
 
 기능 개발과 관측 축적은 서로 다른 일정이다. 출시일까지 label이 부족해도 cold-start 상태로 서비스할 수 있다. 숫자 PCI나 높은 Support를 출시 조건으로 강제하지 않는다. 각 단계의 기간은 실제 데이터 접근성·구현 인력·테스트 결과를 확인한 뒤 추정한다.
+
+### 2.5 공개 작업 화면 통합 (2026-10-08)
+
+사용자 승인 왼쪽 Site 표·오른쪽 선택 Site PCI/모델 조류/조석 구성. 공개 canonical은 `/`와 `/research`, 언어/필터/원고 버전 query 유지. 이전 public 경로는 redirect. 관리자/API·관측 revision·예측 모델·seal·원고 결과는 보존한다. 불필요한 메인 도움말·Site 상세 이동 제거, 조류 actual sample과 공통 공급 시각 유지. DESIGN.md에 기존 palette/글자/44px 조작/반응형 기준 기록.
+
+배포 전 코드 검수·simplify는 독립 refactor commit으로 진행한다. 장기 환경 context 중복 누적·크기 제한과 엔진 CLI gzip scaler/operational transfer 증거 검증은 별도 배포 검토사항으로 추적한다. 기존 production 운영 설정·WAF·data entrypoint·장기 부하/복구 검증은 계속 P7 잔여다.
 
 ### 2.4 로컬 날짜 조회·상태·환경 표 보정 (2026-10-08)
 

@@ -5,7 +5,7 @@ import { validateResearchRelease } from "@bunaken/contracts/validate";
 import { RESEARCH_DOCUMENTS, validateResearchBundle, ResearchError } from "@bunaken/contracts/research";
 import { researchHash, validateResearchIndex } from "#server/research-transaction.mjs";
 
-export async function loadResearchLibrary({owner=process.env.GITHUB_OWNER,repo=process.env.GITHUB_REPO,fetchImpl=globalThis.fetch,slug,version,catalog=false,offset=0}={}) {
+export async function loadResearchLibrary({owner=process.env.GITHUB_OWNER,repo=process.env.GITHUB_REPO,fetchImpl=globalThis.fetch,slug,version,catalog=false,offset=0,latestPublished=false}={}) {
   if (!owner || !repo || !/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(repo)) return {status:"unavailable",items:[],withdrawn:[]};
   const deadline=Date.now()+15000;let total=0;
   async function read(url) {
@@ -32,9 +32,9 @@ export async function loadResearchLibrary({owner=process.env.GITHUB_OWNER,repo=p
     catch(error) { if(error instanceof ResearchError && error.code==="research_not_found") return {status:"empty",items:[],withdrawn:[]};throw error; }
     const items=[];
     const withdrawn=index.items.filter(row=>row.state==="withdrawn").map(row=>({slug:row.slug,version:row.version}));
-    const candidates=index.items.filter(row=>["published","superseded"].includes(row.state)&&(!slug||row.slug===slug)&&(version?row.version===version:!slug||row.state==="published")).reverse();
+    const candidates=index.items.filter(row=>(latestPublished?row.state==="published":["published","superseded"].includes(row.state))&&(!slug||row.slug===slug)&&(version?row.version===version:!slug||row.state==="published")).reverse();
     const start=catalog&&Number.isSafeInteger(offset)&&offset>=0?offset:0;
-    const selected=catalog?candidates.slice(start,start+20):candidates.slice(0,20);
+    const selected=latestPublished?candidates.slice(0,1):catalog?candidates.slice(start,start+20):candidates.slice(0,20);
     const next_offset=catalog&&start+20<candidates.length?start+20:null;
     let partial=false;
     for (const row of selected) {

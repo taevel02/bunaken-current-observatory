@@ -1,11 +1,13 @@
 # 부나켄 조류 관측과 예측 서비스 제품 요구사항
 
-문서 버전: 1.10\
+문서 버전: 1.11\
 작성일: 2026-10-07
 제품 가칭: Bunaken Current Observatory  
 기본 언어: 한국어 `ko` · 추가 언어: 영어 `en`  
 서비스 기준 시간대: `Asia/Makassar` · WITA · UTC+08:00  
 상태: 구현 기준 문서. 실제 자료의 로컬 수집·재계산·검증과 코드 CI는 수행했다. production 운영 연결·공식 D+1 예측력·연구 원고 발행은 별도 검수 대상이다.
+
+1.11 변경: 2026-10-08 사용자 승인 공개 UI는 `/` 대시보드와 `/research` 원고 열람으로 통합한다. 언어·날짜·Site·모델·원고 독자·버전은 query로 유지한다. 메인은 왼쪽 Site 비교표·오른쪽 선택 Site의 PCI/모델 조류/조석 2분할이며 모바일은 세로 배치다. Site 상세 이동·그래프 읽는 법·반복 도움말은 제거한다. 실제 환경 자료·생성 시각·실험/미검증·결측 상태는 유지한다. 공개 관측 JSON은 data branch에 보존하고 PCI 기준은 관리자 입력 도움말 및 연구 원고에서 설명한다. 이전 공개 URL은 root/research로 redirect하며 관리자·API는 기존 자체 인증 계약을 유지한다. 이 변경이 아래 기존 공개 페이지 분류를 대체한다.
 
 1.10 변경: 사용자 승인 Site 간 PCI 실험 `site-transfer-v1`을 기존 모델과 별도로 제공한다. 여러 다른 Site의 실제 Overall label과 목표 Site의 환경을 비교하며 항상 experimental/very_low, validation_status=unvalidated로 표시한다. 기존 같은 Site gate와 발행 연구 결과는 보존한다. 상세 계약은 [Site 전이 실험](docs/site-transfer.ko.md)을 따른다.
 

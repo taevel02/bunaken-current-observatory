@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.4\
+버전: 2.5\
 작성일: 2026-10-08\
-기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md)\
+기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -473,3 +473,11 @@ WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 �
 - 메인·Site 상세 모두 같은 날짜 선택 함수를 사용한다. 무인자 공개 status/관측 조회는 최신 package 호환 유지. 선택 package의 생성 시각을 항상 표시한다. 과거 package의 관측도 당시 package 범위이며 최신 revision 전체를 과거 forecast에 혼합하지 않는다. 공개 experimental package 조회와 공식 D+1 seal은 구분하며 seal을 교체하지 않는다.
 - 자료 연결 정상은 `공개 자료 연결됨`, 현장 성능은 `현장 예측력 미검증`으로 독립 표시한다. 자료 없음·stale·환경/label 부족은 해당 상태를 보존한다.
 - 환경 비교표는 등록 Site 전체의 u/v·바람 방향·파고에 공통으로 존재하는 실제 공급 시각 중 정오에 가장 가까운 시각을 선택하고 WITA로 명시한다. 동률은 이른 시각이다. 모든 Site/열은 같은 시각이며 개별 Site 최근접 시각 대체나 보간을 하지 않는다. 중복·금지 quality·stale·범위 밖·결측 값은 null 유지한다. 공통 시각이 없으면 그 사유를 표시한다. graph의 원시각 자료와 PCI gate는 변경하지 않는다.
+
+### 공개 작업 화면 통합 (2026-10-08)
+
+공개 canonical 경로는 `/`와 `/research`다. lang=ko/en, date/site/model, audience=guide/technical, slug/version query를 escaping한 URL로 보존한다. 이전 locale/Site/연구 세부 URL은 의미에 맞는 canonical 경로로 redirect한다. 관리자/API 경로의 인증·CSRF·no-store는 유지한다.
+
+메인은 공통 날짜/모델/달(확보 시)/생성 상태 헤더와 왼쪽 Site 표·오른쪽 선택 Site 그래프 2열이다. Site 링크는 같은 `/`의 query를 변경한다. 등록 Site와 최신 package 관측 수를 기준으로 정렬하며 특정 Site/날짜/관측 건수를 하드코딩하지 않는다. PCI·Copernicus 모델 조류 속력·FES 조석은 각각 무차원/m/s/m 단위와 실제 시각으로 표시한다. 현재 Site 수준 18m/6km/reference_geometry·numeric gate·null·결측 구간 단절 계약은 바꾸지 않는다. 공통 공급 시각의 동향 u/북향 v·바람 방향·파고를 표에 보존한다.
+
+메인의 graph 읽기/help/details는 제거하고 필요한 미제공 reason만 유지한다. 기본 PCI와 Site 간 실험은 명시 선택, support는 실제 prediction metadata에서 결정한다. 원고 페이지는 최신 published metadata 한 개를 선택한 뒤 해당 release의 네 문서/results를 검증한다. 미선택 과거 문서 오류 때문에 최신 원고를 숨기지 않는다. 원고 자체와 frozen 연구 결과는 수정하지 않는다. legacy URL로 이전 version도 열람 가능하다.

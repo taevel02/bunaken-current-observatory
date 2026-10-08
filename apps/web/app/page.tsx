@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { DashboardPage, type DashboardQuery } from "@/src/public/dashboard-page";
 
-export default function RootPage() {
-  redirect("/ko");
+export default async function RootPage({searchParams}: {searchParams: Promise<DashboardQuery>}) {
+  return <DashboardPage query={await searchParams}/>;
 }
