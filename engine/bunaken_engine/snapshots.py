@@ -140,7 +140,8 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
         if manifest.get('schema_version') != '1.2' or manifest.get('model_context_sha256') != digest(canonical(manifest['model_context'])):
             raise SnapshotError('model_context_hash_mismatch')
         reproduced, scaler_hash = forecast_context(manifest['model_context'], features, manifest, root=root)
-        if reproduced != forecast or scaler_hash != manifest['scaler_version']:
+        from bunaken_engine.replay_precision import replay_equal
+        if not replay_equal(reproduced,forecast) or scaler_hash != manifest['scaler_version']:
             raise SnapshotError('model_forecast_reproduction_mismatch')
     encoded_features=gzip.compress(canonical(features),mtime=0)
     encoded_forecast=gzip.compress(canonical(forecast),mtime=0)

@@ -342,9 +342,12 @@ def _forecast_context(context, features, manifest, *, root):
                 if usable_geometry(point):
                     window = extract_window(usable, point, at.isoformat(), (at+timedelta(hours=1)).isoformat())
                     row = dict(site_id=point['site_id'], zone_id=point.get('id'), **window)
-                    if lookup.get((point['site_id'], point.get('id'), at)) != row:
+                    from bunaken_engine.replay_precision import replay_equal
+                    stored=lookup.get((point['site_id'], point.get('id'), at))
+                    if not replay_equal(stored,row):
                         raise ValueError('model_feature_reproduction_mismatch')
-                    reproduced.append(row)
+                    reproduced.append(stored)
+                    window={key:value for key,value in stored.items() if key not in {'site_id','zone_id'}}
                 targets.append(dict(site_id=point['site_id'], zone_id=point.get('id'), **window))
     if len(reproduced) != len(features): raise ValueError('unexpected_model_feature_window')
     return predict_context(context, targets, manifest['status'] == 'succeeded', manifest['snapshot_id'], root=root)

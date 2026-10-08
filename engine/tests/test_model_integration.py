@@ -248,4 +248,18 @@ class ModelIntegrationTest(unittest.TestCase):
         verify_context_storage(store,context,'a'*40,root=self.root)
 
 
+    def test_cross_platform_roundoff_replay_without_accepting_material_changes(self):
+        context=model_context(self.observations,self.bundles,'synthetic-observer','synthetic-rubric','2026-09-04T02:00:00Z',root=self.root)
+        with patch('bunaken_engine.pipeline.utc_now',return_value='2026-09-04T03:00:00Z'):
+            manifest,files=collect_run('2026-09-05','a'*40,days=1,root=self.root,collector=self.collector(2,'2026-09-04T03:00:00Z'),model=context)
+        features=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('features.json.gz'))))
+        forecast=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('forecast.json.gz'))))
+        features[0]['values']['wind_along_m_s']+=1e-14
+        manifest['artifact_hashes']['features.json.gz']=digest(gzip.compress(canonical(features),mtime=0))
+        self.assertTrue(make_bundle(manifest,features,forecast,root=self.root))
+        features[0]['values']['wind_along_m_s']+=1e-6
+        manifest['artifact_hashes']['features.json.gz']=digest(gzip.compress(canonical(features),mtime=0))
+        with self.assertRaisesRegex(ValueError,'model_feature_reproduction_mismatch'):
+            make_bundle(manifest,features,forecast,root=self.root)
+
 if __name__=='__main__': unittest.main()
