@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.11\
-작성일: 2026-10-08\
-기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.6\
+버전: 1.12\
+작성일: 2026-10-09\
+기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.7\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -365,3 +365,28 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 - 사후 시간 순서 검증은 2/29 제공·1일뿐이며 D+1 성능으로 쓰지 않는다. 실제 Git confirmation·공식 cutoff 운영 검증은 별도다. numeric gate·필수 자료 조건은 모든 실험에서 유지했다.
 - 장기 반복 실행 병목도 개선했다. Site/Zone별 availability 인덱싱으로 실제 동일 7,296행 생성이 약 38.30초 → 0.077초가 되었으며 전체 바이트/SHA-256이 동일했다. 이 측정은 해당 함수의 로컬 실행이며 전체 pipeline 지연 목표 달성 주장이 아니다.
 - 엔진 125개 테스트 통과. 저장 참조·legacy replay·라이선스·시간 누수·진단 공통 표본 비교 검증 포함. 다음은 P7 운영 예약·trusted code pin·D+1 예측-실측 매칭이며 자동 튜닝·승격은 이후 검증 기준 확정 후 별도 단계다.
+
+
+### P7-01–09 구현 및 운영 검증 (2026-10-09)
+
+구현과 실제 production acceptance를 구분한다. 아래 구현은 완료했으며 계정 권한·실제 배포가 필요한 항목은 완료 처리하지 않는다. 실행 절차는 [P7 운영 안내](docs/p7-launch.ko.md).
+
+| ID | 구현 완료 | 실제 확인·남은 의존 |
+|---|---|---|
+| P7-01 | production 환경 검사, preview 관리자 fail closed, Node 24·Vercel 설정 | 실제 Vercel 프로젝트·Production 환경변수 필요 |
+| P7-02 | main/data ruleset 적용 도구, non-force 저장, trusted pin 고정 | GitHub Administration 인증 필요; 기존 storage PAT 권한 확대 금지 |
+| P7-03 | canonical origin·인증·CSRF·WAF smoke 도구 | 실제 HTTPS URL·WAF 5분/10회·옛 deployment 차단 필요 |
+| P7-04 | WITA 07:17/19:17 collect·20:17 seal, 누락 상태·수동 match | 원격 예약 run 및 protected environment 설정 실증 필요 |
+| P7-05 | 관측 push entrypoint·collect/release/D+1 비교 한 chain | 원격 설치와 실제 관측 push 이후 run 확인 필요 |
+| P7-06 | code/data/local main bundle·mirror 복원·fsck·ref 검증 | 실제 복원 성공; 장기 보관 위치 선택 필요 |
+| P7-07 | p95/LCP/source age/사용량 측정 입력·검사 도구 | production 측정은 미실시; 빈 표본을 성공으로 판단하지 않음 |
+| P7-08 | ko/en·계약·라이선스·cold-start 회귀 및 build | 실제 production 모바일·표시 검수 필요 |
+| P7-09 | deployment 구성·검증 명령·운영 증거 및 발행 절차 | 실제 Vercel 등록·배포·HTTPS 검증 필요 |
+
+- trusted engine/workflow pin: `bf50ec9af2301505886cdd99c71214ad44253721`. main 최신 SHA와 별도로 검증된 불변 코드를 사용한다.
+- 공식 D+1 비교는 cutoff 이전 실제 Git 저장 receipt·seal·원본 forecast를 확인한다. Overall만 사용하며 시간으로 슬롯을 선택한다. Peak·사후 backfill·관찰자/rubric 불일치·null을 수치 성능으로 변환하지 않는다. withdrawal·날짜 정정·동시 실행을 반영한다.
+- 실제 frozen forecast Linux/macOS 재현의 약 1e-15 삼각함수 반올림 차이를 확인했다. feature/계산 결과에만 1e-12 tolerance를 적용하고 원본 bytes·hash·config identity는 정확 비교한다.
+- 로컬 실제 공개 이력 대조: 11일·29개 현재 관측, 숫자 비교 0개. 공식 seal 없는 과거 날짜 또는 당시 numeric gate 미충족이 원인이다. 새 matcher가 과거 운영 forecast를 만들어내지 않는다.
+- 격리 worktree 검증: 엔진 133개, 웹·계약·HTTP 71개, 운영 도구 2개 통과. lint·TypeScript 7·actionlint·Webpack production build 통과. macOS Turbopack은 port-binding EPERM으로 미검증이며 Linux CI 결과를 별도로 확인한다.
+- 실제 bundle 14,772,394 bytes, mirror 복원·fsck·세 ref 일치 확인. ignored 환경변수·원 atlas·미커밋 파일은 포함하지 않는다.
+- 자동 튜닝·모델 승격·연구 release v1.0.1 변경은 이번 구현에 포함하지 않는다. 실제 D+1 비교 축적 이후 별도 승인 기준으로 진행한다.

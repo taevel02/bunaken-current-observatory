@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.6\
+버전: 2.7\
 작성일: 2026-10-08\
 기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
@@ -487,3 +487,10 @@ WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 �
 ### 불변 환경 입력 참조 encoding (2026-10-08)
 
 신규 model snapshot의 저장 JSON은 `encoding=snapshot-environment-references-v1`, `manifest`, `training_bundle_references`, `expanded_manifest_sha256`만 갖는 envelope를 지원한다. manifest의 model context에서는 training_bundles를 빈 배열로 두고, 순서가 보존된 참조마다 `environment-inputs/<sha256>.json.gz` 경로와 저장 바이트 SHA-256을 기록한다. decoder는 고정 Git commit 또는 로컬 output에서 입력 파일을 읽고 hash·경로·중복·개별 크기·10,000개 상한을 검사한 뒤 원 manifest를 복원하여 expanded hash와 기존 schema·licence·forecast replay를 검증한다. 참조 파일에는 이미 검증된 environment-only bundle만 허용한다. 기존 저장 encoding·snapshot/model schema와 계산 의미는 유지하며 과거 input을 자동 삭제하지 않는다.
+
+### P7 운영 비교·배포 계약 (2026-10-09)
+
+- collect/seal 뒤 같은 chain에서 공식 D+1 comparison을 저장한다. `validation/d1/<date>/<input SHA-256>.json`은 새 `d1-comparison` allowlist schema를 따른다. 같은 입력의 동시 재시도는 첫 확인된 bytes를 재사용한다. 관측 revision·철회·날짜 이동은 새 불변 comparison으로 반영한다.
+- 공식 seal의 run/manifest/storage commit과 실제 receipt confirmation을 대조한다. cutoff 이후 저장·backfill·현재 재계산 PCI를 공식 예측으로 바꾸지 않는다. observer/rubric별 지표를 분리하고 실제 다이빙과 60분 슬롯의 근사 시간 차이를 저장한다.
+- 수치 재생의 플랫폼 roundoff는 absolute/relative 1e-12 범위에서만 허용한다. 원본 hash·설정·scaler identity·gate·문자열·구조는 정확히 검사한다. 원본 저장 파일과 과거 예측은 변경하지 않는다.
+- Vercel preview/development 관리자 인증은 enabled 값과 무관하게 차단한다. Production Secret은 preview/외부 PR과 분리하고 data Git 배포를 비활성화한다. 실제 production WAF·Origin·옛 deployment 차단은 외부 운영 acceptance로 확인한다.
