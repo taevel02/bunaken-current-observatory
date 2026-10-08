@@ -11,6 +11,7 @@ main schedule 또는 data observations push
   → 실제 환경 수집·data 관측/환경으로 모델 구성
   → snapshot·receipt·confirmation 저장
   → 패키지 검증·새 release·latest 원자적 저장
+  → 공식 seal 기반 D+1 comparison·revision 갱신
 ```
 
 수집 job은 repository 범위에서 직렬화하고 seal은 별도 concurrency group을 사용한다. 새 push가 겹치면 GitHub는 대기 실행을 최신 요청으로 교체할 수 있다. 관측 자체의 Git 저장은 취소하지 않으며 실행 시 최신 data head를 읽는다. branch 경쟁은 엔진의 non-force 저장 조건으로 처리한다. 이 concurrency를 웹 저장 동시성 제어로 설명하지 않는다.
@@ -57,8 +58,8 @@ uv run --env-file .env --env-file apps/web/.env.local --project engine --locked 
 
 1. 검증된 코드 커밋을 main에 반영하고 두 CI job의 성공을 확인한다. main push는 연결된 Vercel 배포를 유발할 수 있다.
 2. `environmental-data` 보호 환경과 위 설정을 등록한다. 처음에는 required reviewer를 유지한다.
-3. `ops/workflows/data-entrypoint.yml`을 data의 `.github/workflows/data-entrypoint.yml`에 설치한다. 다른 파일·관측을 변경하지 않는 non-force commit을 사용한다. `uses`와 `code_commit`은 `f972f350756e22d270490504fcf519e56ebac782`로 일치한다. 이 SHA가 원격 main 이력에 있어야 한다. `@main`으로 바꾸지 않는다.
-4. Actions → Trusted environmental pipeline → Run workflow. main을 선택하고 `operation=collect`, `code_commit=f972f350756e22d270490504fcf519e56ebac782`, date는 비워 WITA 내일을 수집한다. 새 snapshot·release를 공개 저장하는 실행이다.
+3. `ops/workflows/data-entrypoint.yml`을 data의 `.github/workflows/data-entrypoint.yml`에 설치한다. 다른 파일·관측을 변경하지 않는 non-force commit을 사용한다. `uses`와 `code_commit`은 `bf50ec9af2301505886cdd99c71214ad44253721`로 일치한다. 이 SHA가 원격 main 이력에 있어야 한다. `@main`으로 바꾸지 않는다.
+4. Actions → Trusted environmental pipeline → Run workflow. main을 선택하고 `operation=collect`, `code_commit=bf50ec9af2301505886cdd99c71214ad44253721`, date는 비워 WITA 내일을 수집한다. 새 snapshot·release를 공개 저장하는 실행이다.
 5. FES 파생값 hash·참조 증거 검증 성공, 19 Site 필수 소스·freshness, 저장 receipt/confirmation, release hash/schema, 공개 status를 실제로 확인한다. 학습 환경이 아직 data에 없으면 numeric label 결합이 부족할 수 있다. 로컬 backfill은 원격 모델에 자동 전달되지 않는다. 초기 역사 환경 연결은 별도 실제 데이터 작업으로 확인한다.
 6. 검수 후 required reviewer를 해제해 main/data branch 정책 아래 예약·관측 push 실행을 자동화한다. 두 예약 수집, 관측 push, seal 결과를 각각 확인해야 P7-04/05를 완료로 표시한다.
 
@@ -84,3 +85,7 @@ Actions 자체가 비용·소스 요청 제한·전송 시간을 면제하지 �
 ### FES 재사용 전환 확인
 
 2026-10-05 검증된 파생 조석을 data commit `4e3ae9aff4bb89c774677ae5921ce9922e70247e`에 불변 저장하고 원격 재조회 검증을 통과했다. 원 atlas와 AVISO credential은 hosted 수집에 필요 없다. 현재 entrypoint template의 전달 secret은 reusable workflow 선언과 일치한다. 실제 원격 설치·dispatch는 아직 수행하지 않았다. 7일 수집의 유효 target date 종료는 2026-11-28이므로 11월 중순 새 파생 기간을 준비한다.
+
+## P7 연결 갱신 (2026-10-09)
+
+현재 trusted pin은 `bf50ec9af2301505886cdd99c71214ad44253721`이다. main 예약과 data entrypoint 모두 이 코드에 고정한다. `operation=match`는 공급 재수집 없이 공식 D+1 대조를 수행한다. collect/seal 뒤에도 같은 chain에서 대조하므로 별도 GITHUB_TOKEN push 실행에 의존하지 않는다. `validation/d1/` 저장은 observation push filter에 포함하지 않아 재귀 실행하지 않는다. 배포·보호 설정과 실제 검수는 [P7 운영 안내](p7-launch.ko.md)를 따른다.
