@@ -39,6 +39,7 @@ export function DashboardView({locale, day, siteId, state, moon = null, modelMod
   const supportRanks = ["insufficient", "very_low", "low", "medium", "high"];
   const support = numericRows.length ? supportRanks[Math.min(...numericRows.map(row => Math.max(0, supportRanks.indexOf(row.support))))] : "insufficient";
   const reasons = [...new Set(curveRows.flatMap(row => row.reason_codes))];
+  const credits = [...new Map(state.data.sources.map(source => [source.attribution + source.license_url, source])).values()];
   const generated = state.data.generated_at ? new Intl.DateTimeFormat(locale, {timeZone: "Asia/Makassar", dateStyle: "short", timeStyle: "short"}).format(new Date(state.data.generated_at)) : t.noGenerated;
 
   return <>
@@ -85,5 +86,6 @@ export function DashboardView({locale, day, siteId, state, moon = null, modelMod
         {(["current", "tide"] as const).map(metric => <div key={metric} className="border-b border-[#c8d6d0] py-2"><div className="mb-1 flex justify-between gap-2"><h3 className="m-0 text-base font-semibold">{metric === "current" ? t.currentCurve : t.tide}</h3><span className="text-sm">{metric === "current" ? "m/s" : "m"}</span></div><SignalChart series={signals(metric)} day={day} metric={metric} locale={locale} compact/></div>)}
       </section>
     </div>
+    {credits.length > 0 && <footer className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-[#c8d6d0] pt-2 text-xs leading-5 text-[#49625c]" aria-label={t.source}>{credits.map(source => <a key={source.id} href={/^https:\/\//.test(source.license_url) ? source.license_url : undefined} title={source.attribution} rel="noopener noreferrer" className="underline underline-offset-2">{source.attribution.split(";")[0]}{source.attribution.includes("CC BY 4.0") ? " · CC BY 4.0" : ""}</a>)}</footer>}
   </>;
 }

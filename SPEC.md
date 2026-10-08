@@ -481,3 +481,5 @@ WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 �
 메인은 공통 날짜/모델/달(확보 시)/생성 상태 헤더와 왼쪽 Site 표·오른쪽 선택 Site 그래프 2열이다. Site 링크는 같은 `/`의 query를 변경한다. 등록 Site와 최신 package 관측 수를 기준으로 정렬하며 특정 Site/날짜/관측 건수를 하드코딩하지 않는다. PCI·Copernicus 모델 조류 속력·FES 조석은 각각 무차원/m/s/m 단위와 실제 시각으로 표시한다. 현재 Site 수준 18m/6km/reference_geometry·numeric gate·null·결측 구간 단절 계약은 바꾸지 않는다. 공통 공급 시각의 동향 u/북향 v·바람 방향·파고를 표에 보존한다.
 
 메인의 graph 읽기/help/details는 제거하고 필요한 미제공 reason만 유지한다. 기본 PCI와 Site 간 실험은 명시 선택, support는 실제 prediction metadata에서 결정한다. 원고 페이지는 최신 published metadata 한 개를 선택한 뒤 해당 release의 네 문서/results를 검증한다. 미선택 과거 문서 오류 때문에 최신 원고를 숨기지 않는다. 원고 자체와 frozen 연구 결과는 수정하지 않는다. legacy URL로 이전 version도 열람 가능하다.
+
+라이선스/출처 표기는 메인의 간결한 footer에 유지하며 상세 정책은 각 공급자 license URL로 연결한다. 도움말 제거가 필수 attribution 제거를 뜻하지 않는다.
