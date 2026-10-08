@@ -18,16 +18,20 @@ test('two pane workspace selects sites without leaving root and retains live env
    await page.waitForFunction(()=>[...document.querySelectorAll('[data-dashboard-workspace] svg[role="img"]')].every(svg=>Math.abs(svg.viewBox.baseVal.width-Math.max(280,Math.round(svg.getBoundingClientRect().width)))<=1));
    assert.equal(new URL(page.url()).pathname,'/');assert.equal(await page.locator('main tbody tr').count(),19);
    assert.equal(await page.locator('[data-dashboard-workspace] svg').count(),3);
+   const svgHeights=await page.locator('[data-dashboard-workspace] svg').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));assert.ok(svgHeights.every(height=>height===176));
    const graph=page.locator('[data-dashboard-workspace] section').nth(1);
+   const spacing=await graph.evaluate(section=>{const charts=[...section.querySelectorAll('svg')],titles=[...section.querySelectorAll('h3')];return {title:charts.map((chart,index)=>chart.getBoundingClientRect().top-titles[index].getBoundingClientRect().bottom),between:charts.slice(0,-1).map((chart,index)=>titles[index+1].getBoundingClientRect().top-chart.getBoundingClientRect().bottom)};});assert.ok(spacing.title.every(gap=>Math.abs(gap-8)<=1));assert.ok(spacing.between.every(gap=>gap>=16));
    assert.equal(await graph.locator('svg').first().locator('circle').count(),expected.numeric);
    assert.equal(await page.getByText(messages.dataAvailable,{exact:true}).count(),1);
+   const heights=await page.locator('form input[type=date],form select,form button').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));assert.ok(heights.every(height=>height===44));
+   if(width===1920){const metadata=await page.locator('header [role=status]').boundingBox();const menu=await page.locator('header nav a').first().boundingBox();assert.ok(metadata.x+metadata.width<=menu.x);const button=await page.locator('form button').boundingBox();const dates=await page.getByRole('navigation',{name:messages.date,exact:true}).boundingBox();assert.ok(dates.x>=button.x+button.width&&dates.x-button.x-button.width<=32);}
    assert.equal(await page.getByText(messages.modelPending,{exact:true}).count(),0);
    assert.equal(await page.locator('main details').count(),0);
    const row=page.locator('main tbody tr').filter({has:page.locator(`a[href*="site=${expected.site}"]`)});
    assert.equal(await row.locator('td').nth(3).textContent(),expected.u.toFixed(2));assert.equal(await row.locator('td').nth(4).textContent(),expected.v.toFixed(2));
    assert.ok(await graph.locator('svg').nth(1).locator('circle').count()>0);assert.ok(await graph.locator('svg').nth(2).locator('path').count()>0);
    const tableBounds=await page.locator('[data-dashboard-workspace] section').first().boundingBox(),graphBounds=await graph.boundingBox();
-   if(width===1920)assert.ok(graphBounds.x>tableBounds.x+tableBounds.width);else assert.ok(graphBounds.y>tableBounds.y);
+   if(width===1920){assert.ok(graphBounds.x>tableBounds.x+tableBounds.width);const footer=await page.locator("footer").boundingBox();assert.ok(footer.y+footer.height<=1080,"source credits must fit the desktop viewport");}else assert.ok(graphBounds.y>tableBounds.y);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    if(expected===oracle[0])await page.screenshot({path:`${directory}/${locale}-${width}-overview.png`,fullPage:true});
   }

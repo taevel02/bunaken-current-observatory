@@ -32,7 +32,6 @@ export function DashboardView({locale, day, siteId, state, moon = null, modelMod
     const row = sampleAt(state.data, day, at, site.id, site.reference_depth_m, variable, source, unit);
     return row?.value === null || !row ? t.noValue : row.value.toFixed(unit === "degree" ? 0 : 2);
   };
-  const status = state.status === "available" ? t.dataAvailable : state.status === "stale" ? t.stale : state.status === "unavailable" ? t.unavailable : t.modelPending;
   const curveRows = rows.filter(row => row.site_id === selected.id);
   const signals = (metric: "current" | "tide") => [{id: selected.id, name: name(selected), rows: state.status === "available" ? signalRows(state.data, day, selected.id, selected.reference_depth_m, metric).filter(row => state.data.valid_start && state.data.valid_end && Date.parse(row.at) >= Date.parse(state.data.valid_start) && Date.parse(row.at) <= Date.parse(state.data.valid_end)) : []}];
   const numericRows = curveRows.filter(row => row.pci !== null);
@@ -40,27 +39,26 @@ export function DashboardView({locale, day, siteId, state, moon = null, modelMod
   const support = numericRows.length ? supportRanks[Math.min(...numericRows.map(row => Math.max(0, supportRanks.indexOf(row.support))))] : "insufficient";
   const reasons = [...new Set(curveRows.flatMap(row => row.reason_codes))];
   const credits = [...new Map(state.data.sources.map(source => [source.attribution + source.license_url, source])).values()];
-  const generated = state.data.generated_at ? new Intl.DateTimeFormat(locale, {timeZone: "Asia/Makassar", dateStyle: "short", timeStyle: "short"}).format(new Date(state.data.generated_at)) : t.noGenerated;
 
   return <>
     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-      <form className="flex min-w-0 flex-wrap items-center gap-2" method="get" action="/">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2"><form className="flex min-w-0 flex-wrap items-center gap-2" method="get" action="/">
         <input type="hidden" name="lang" value={locale}/><input type="hidden" name="site" value={selected.id}/>
-        <label className="flex items-center gap-2 whitespace-nowrap text-sm font-semibold">{t.date}<input className="min-h-11 rounded-md border border-[#9fb7ae] bg-white px-2 text-base" name="date" type="date" min={today} max={days[7]} defaultValue={day}/></label>
-        <label className="flex items-center gap-2 whitespace-nowrap text-sm font-semibold">{t.modelMode}<SelectControl name="model" defaultValue={modelMode}><option value="baseline">{t.baselineModel}</option><option value="transfer">{t.transferModel}</option></SelectControl></label>
-        <button className="min-h-11 rounded-md bg-[#145f53] px-4 font-semibold text-white active:translate-y-px">{t.apply}</button>
+        <label className="flex items-center gap-2 whitespace-nowrap text-sm font-semibold">{t.date}<input className="box-border h-11 rounded-md border border-[#9fb7ae] bg-white px-2 text-base" name="date" type="date" min={today} max={days[7]} defaultValue={day}/></label>
+        <label className="flex items-center gap-2 whitespace-nowrap text-sm font-semibold">{t.modelMode}<SelectControl className="h-11 min-h-11! py-2!" name="model" defaultValue={modelMode}><option value="baseline">{t.baselineModel}</option><option value="transfer">{t.transferModel}</option></SelectControl></label>
+        <button className="box-border h-11 rounded-md bg-[#145f53] px-4 font-semibold text-white active:translate-y-px">{t.apply}</button>
       </form>
       <nav className="flex flex-wrap gap-1" aria-label={t.date}>{days.map(date => <Link key={date} href={href(date)} aria-current={date === day ? "date" : undefined} className="inline-flex min-h-11 items-center rounded-md px-3 text-sm text-[#155f53] aria-[current=date]:bg-[#e8efec] active:translate-y-px">{date === today ? t.today : date === days[1] ? t.tomorrow : date.slice(5)}</Link>)}</nav>
-      {moon && <MoonSummary moon={moon} locale={locale}/>}
+      </div>{moon && <MoonSummary moon={moon} locale={locale}/>}
     </div>
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-[#49625c]" role="status">
-      <div className="flex flex-wrap gap-x-3"><strong className="font-medium text-[#18302d]">{status}</strong><span>{t.experimental} · {t.forecastUnvalidated} · WITA · {selected.reference_depth_m}m</span></div><span>{t.generated}: {generated}</span>
+    <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#49625c]">
+      <span>{t.experimental} · {t.forecastUnvalidated} · WITA · {selected.reference_depth_m}m</span>
       {state.reason === "date_history_unavailable" && <span>{t.dateHistoryUnavailable}</span>}{state.reason === "outside_source_horizon" && <span>{t.dateUnavailable}</span>}
     </div>
-    <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" data-dashboard-workspace>
-      <section className="min-w-0" aria-label={t.siteComparison}>
-        <div className="mb-2 flex min-h-11 flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{t.siteComparison}</h2><span className="text-sm text-[#49625c]">{at ? `${t.environmentAt} ${witaTime(at)} WITA` : t.environmentTimeUnavailable}</span></div>
-        <div className="max-h-[44dvh] min-w-0 overflow-auto border-y border-[#c8d6d0] focus-visible:outline-2 xl:max-h-[calc(100dvh-210px)]" role="region" aria-label={t.siteComparison} tabIndex={0}>
+    <div className="grid min-w-0 items-start gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" data-dashboard-workspace>
+      <section className="min-w-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col" aria-label={t.siteComparison}>
+        <div className="mb-1 flex min-h-8 flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{t.siteComparison}</h2><span className="text-sm text-[#49625c]">{at ? `${t.environmentAt} ${witaTime(at)} WITA` : t.environmentTimeUnavailable}</span></div>
+        <div className="max-h-[44dvh] min-w-0 overflow-auto border-y border-[#c8d6d0] focus-visible:outline-2 xl:max-h-none xl:min-h-0 xl:flex-1" role="region" aria-label={t.siteComparison} tabIndex={0}>
           <table className="w-full min-w-[760px] border-collapse text-left text-sm">
             <thead><tr>{[t.site, t.dataCount, t.morning, t.afternoon, `${t.eastwardCurrent} (m/s)`, `${t.northwardCurrent} (m/s)`, `${t.environment.metrics.wind_direction_10m} (°)`, `${t.environment.metrics.wave_height} (m)`].map((label, index) => <th key={label} scope="col" className={`sticky top-0 z-10 bg-[#e8efec] px-3 py-2 font-semibold ${index ? "text-right" : "left-0 z-20 text-left"}`}>{label}</th>)}</tr></thead>
             <tbody>{ordered.map(site => {
@@ -76,16 +74,17 @@ export function DashboardView({locale, day, siteId, state, moon = null, modelMod
           </table>
         </div>
       </section>
-      <section className="min-w-0" aria-label={t.selectedSite}>
-        <div className="mb-2 flex min-h-11 flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{name(selected)}</h2><span className="text-sm text-[#49625c]">{selected.reference_depth_m}m · WITA</span></div>
-        <div className="border-y border-[#c8d6d0] py-2"><div className="mb-1 flex justify-between gap-2"><h3 className="m-0 text-base font-semibold">{t.pciCurve}</h3><span className="text-sm tabular-nums">{numericRows.length}/16 · {t.supportLabels[support as keyof typeof t.supportLabels]}</span></div>
+      <section className="min-w-0 xl:h-full xl:min-h-0 xl:overflow-y-auto" aria-label={t.selectedSite}>
+        <div className="mb-1 flex min-h-8 flex-wrap items-center justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{name(selected)}</h2><span className="text-sm text-[#49625c]">{selected.reference_depth_m}m · WITA</span></div>
+        <div className="grid gap-4"><div className="border-t border-[#c8d6d0] pt-2"><div className="mb-2 flex justify-between gap-2"><h3 className="m-0 text-base font-semibold">{t.pciCurve}</h3><span className="text-sm tabular-nums">{numericRows.length}/16 · {t.supportLabels[support as keyof typeof t.supportLabels]}</span></div>
           {modelMode === "transfer" && <p className="my-1 text-sm text-[#705229]">{state.data.experimental_transfer ? t.transferNotice : t.transferPending}</p>}
           <PCIChart rows={curveRows} day={day} locale={locale} transfer={modelMode === "transfer"} siteName={name(selected)}/>
           {reasons.length > 0 && <p className="my-1 text-sm text-[#49625c]">{reasons.map(code => t.reasonLabels[code as keyof typeof t.reasonLabels] ?? t.unknownReason).join(" · ")}</p>}
         </div>
-        {(["current", "tide"] as const).map(metric => <div key={metric} className="border-b border-[#c8d6d0] py-2"><div className="mb-1 flex justify-between gap-2"><h3 className="m-0 text-base font-semibold">{metric === "current" ? t.currentCurve : t.tide}</h3><span className="text-sm">{metric === "current" ? "m/s" : "m"}</span></div><SignalChart series={signals(metric)} day={day} metric={metric} locale={locale} compact/></div>)}
+        {(["current", "tide"] as const).map(metric => <div key={metric} className="border-t border-[#c8d6d0] pt-2"><div className="mb-2 flex justify-between gap-2"><h3 className="m-0 text-base font-semibold">{metric === "current" ? t.currentCurve : t.tide}</h3><span className="text-sm">{metric === "current" ? "m/s" : "m"}</span></div><SignalChart series={signals(metric)} day={day} metric={metric} locale={locale} compact/></div>)}
+        </div>
       </section>
     </div>
-    {credits.length > 0 && <footer className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-[#c8d6d0] pt-2 text-xs leading-5 text-[#49625c]" aria-label={t.source}>{credits.map(source => <a key={source.id} href={/^https:\/\//.test(source.license_url) ? source.license_url : undefined} title={source.attribution} rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline underline-offset-2 active:translate-y-px">{source.attribution.split(";")[0]}{source.attribution.includes("CC BY 4.0") ? " · CC BY 4.0" : ""}</a>)}</footer>}
+    {credits.length > 0 && <footer className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-[#c8d6d0] pt-1 text-sm leading-5 text-[#49625c]" aria-label={t.source}>{credits.map(source => <a key={source.id} href={/^https:\/\//.test(source.license_url) ? source.license_url : undefined} title={source.attribution} rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-[#155f53] underline-offset-4 hover:underline active:translate-y-px">{source.attribution.split(";")[0]}{source.attribution.includes("CC BY 4.0") ? " · CC BY 4.0" : ""}</a>)}</footer>}
   </>;
 }

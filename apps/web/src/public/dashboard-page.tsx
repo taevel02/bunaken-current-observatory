@@ -20,7 +20,11 @@ export async function DashboardPage({query}: {query: DashboardQuery}) {
   const modelMode = query.model === "transfer" ? "transfer" : "baseline";
   const moon = await loadMoon(day, selected.lat, selected.lon);
   const preserved = "?" + new URLSearchParams({date: day, site: selected.id, model: modelMode, lang: locale});
-  return <PublicShell locale={locale} title={messages[locale].public.dashboard} query={preserved}>
+  const t = messages[locale].public;
+  const status = state.status === "available" ? t.dataAvailable : state.status === "stale" ? t.stale : state.status === "unavailable" ? t.unavailable : t.modelPending;
+  const generated = state.data.generated_at ? new Intl.DateTimeFormat(locale, {timeZone: "Asia/Makassar", dateStyle: "short", timeStyle: "short"}).format(new Date(state.data.generated_at)) : t.noGenerated;
+  const headerMeta = <div role="status" className="flex flex-wrap items-center gap-x-4 text-sm text-[#49625c]"><strong className="font-medium text-[#18302d]">{status}</strong><span>{t.generated}: {generated}</span></div>;
+  return <PublicShell workspace headerMeta={headerMeta} locale={locale} title={messages[locale].public.dashboard} query={preserved}>
     <DashboardView locale={locale} day={day} siteId={selected.id} state={state} moon={moon} modelMode={modelMode}/>
   </PublicShell>;
 }

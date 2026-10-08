@@ -32,8 +32,8 @@ export function PCIChart({ rows, series, day, locale, transfer = false, siteName
   });
   const validRows = groups.flatMap(site => [...site.valid]);
   const ceiling = Math.max(1.2, ...validRows.map(row => row.pci as number));
-  const height = width < 640 ? 224 : 288;
-  const left = 44, right = width - 16, bottom = height - 34;
+  const height = 176;
+  const left = 52, right = width - 16, bottom = height - 34;
   const x = (at: string) => left + (Date.parse(at) - start) / (end - start) * (right - left);
   const y = (value: number) => bottom - value / ceiling * (bottom - 24);
   const paths = groups.map(site => {
@@ -50,9 +50,8 @@ export function PCIChart({ rows, series, day, locale, transfer = false, siteName
   const expected = groups.length * 16;
 
   return <div ref={container} className="min-w-0">
-    <div className="relative"><svg viewBox={`0 0 ${width} ${height}`} className="block h-56 w-full sm:h-72" role="img" aria-label={`${t.pciCurve}: ${validRows.length}/${expected}`}>
-      {[0, .2, .4, .6, .8, 1].map(value => <g key={value}><line x1={left} x2={right} y1={y(value)} y2={y(value)} stroke="#dce5e0" strokeDasharray={value === 1 ? "4 4" : undefined} /><text x={left - 8} y={y(value) + 5} textAnchor="end" fontSize="14" fill="#49625c">{value.toFixed(1)}</text></g>)}
-      {ceiling > 1.2 && <text x={left - 8} y="24" textAnchor="end" fontSize="14" fill="#49625c">{ceiling.toFixed(1)}</text>}
+    <div className="relative"><svg viewBox={`0 0 ${width} ${height}`} className="block h-44 w-full" role="img" aria-label={`${t.pciCurve}: ${validRows.length}/${expected}`}>
+      {[0, .2, .4, .6, .8, 1, ceiling].map(value => <g key={value}><line x1={left} x2={right} y1={y(value)} y2={y(value)} stroke="#dce5e0" strokeDasharray={value === 1 ? "4 4" : undefined} /><text x={left - 8} y={y(value) + 5} textAnchor="end" fontSize="14" fill="#49625c">{value.toFixed(1)}</text></g>)}
       {[8, 10, 12, 14, 16].map(hour => <text key={hour} x={left + (hour - 8) / 8 * (right - left)} y={height - 6} textAnchor={hour === 8 ? "start" : hour === 16 ? "end" : "middle"} fontSize="14" fill="#49625c">{hour}:00</text>)}
       {paths.map(site => <g key={site.id} opacity={series && !site.selected ? .4 : 1}>
         {site.segments.map((points, index) => <path key={index} d={smoothPath(points)} fill="none" stroke="#145f53" strokeDasharray={transfer && (!series || series.length === 1) ? "6 4" : undefined} strokeWidth={site.selected ? 3 : 1.5}><title>{site.name}</title></path>)}
