@@ -1,3 +1,4 @@
+import { countSiteObservations } from "@/src/public/observation-counts";
 import { messages } from "@/i18n/messages";
 import { sites } from "@bunaken/contracts/sites";
 import { PublicShell } from "@/src/public/shell";
@@ -13,8 +14,7 @@ export async function DashboardPage({query}: {query: DashboardQuery}) {
   const day = validDay(query.date) && query.date >= today && query.date <= dayOffset(today, 7) ? query.date : dayOffset(today, 1);
   const state = await loadPublicRelease(day);
   const registry = state.data.sites.length ? state.data.sites : sites;
-  const counts = new Map<string, number>();
-  for (const row of state.data.observations) if (row.record_status !== "withdrawn") counts.set(row.site_id, (counts.get(row.site_id) ?? 0) + 1);
+  const counts = countSiteObservations(state.data.observations);
   const ordered = [...registry].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0));
   const selected = registry.find(site => site.id === query.site) ?? ordered[0];
   const modelMode = query.model === "transfer" ? "transfer" : "baseline";

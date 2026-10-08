@@ -1,3 +1,4 @@
+import { countSiteObservations } from "@/src/public/observation-counts";
 import Link from "next/link";
 import { messages } from "@/i18n/messages";
 import { sites } from "@bunaken/contracts/sites";
@@ -21,11 +22,7 @@ export function DashboardView({locale, day, siteId, state, moon = null, modelMod
   const inHorizon = (row: Prediction) => state.data.valid_start !== null && state.data.valid_end !== null && Date.parse(row.start_at) >= Date.parse(state.data.valid_start) && Date.parse(row.start_at) + 3600000 <= Date.parse(state.data.valid_end);
   const modelRows = modelMode === "transfer" ? state.data.experimental_transfer?.predictions.map(item => item.prediction) ?? [] : state.data.predictions;
   const rows = modelRows.filter(row => row.zone_id === null && witaDate(new Date(row.start_at)) === day).map(row => state.status === "available" && inHorizon(row) ? row : {...row, pci: null});
-  const counts = new Map<string, number>();
-  const counted = new Set<string>();
-  for (const row of state.data.observations) if (row.record_status !== "withdrawn" && !counted.has(row.id)) {
-    counted.add(row.id); counts.set(row.site_id, (counts.get(row.site_id) ?? 0) + 1);
-  }
+  const counts = countSiteObservations(state.data.observations, {distinctIds: true});
   const ordered = [...registry].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0));
   const at = comparisonTime(state.data, day, registry);
   const name = (site: typeof selected) => locale === "ko" ? site.name_ko : site.name_en;
