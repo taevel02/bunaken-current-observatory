@@ -5,12 +5,12 @@ import { SelectControl } from "@/src/ui/select-control";
 import { halfDay, witaDate, dayOffset, witaTime, type Locale, type Dashboard, type Prediction, type Moon } from "@/src/public/model";
 import { MoonSummary } from "@/src/public/environment-overview";
 import { SignalChart } from "@/src/public/signal-chart";
-import { comparisonTime, sampleAt, signalRows } from "@/src/public/environment-samples";
+import { comparisonColumns, comparisonTime, sampleAt, signalRows } from "@/src/public/environment-samples";
 import { PCIChart } from "@/src/public/pci-chart";
 import { publicUrl } from "@/src/public/urls";
 
 type State = {data: Dashboard; status: string; reason: string | null; releaseId: string | null};
-const columns = [["uo", "copernicus-currents", "m/s"], ["vo", "copernicus-currents", "m/s"], ["wind_direction_10m", "open-meteo-wind", "degree"], ["wave_height", "open-meteo-wave", "m"]] as const;
+
 export function DashboardView({locale, day, siteId, state, moon = null, modelMode = "baseline"}: {locale: Locale; day: string; siteId: string; state: State; moon?: Moon; modelMode?: "baseline" | "transfer"}) {
   const t = messages[locale].public;
   const registry = state.data.sites.length ? state.data.sites : sites;
@@ -72,7 +72,7 @@ export function DashboardView({locale, day, siteId, state, moon = null, modelMod
                 <th scope="row" className={`sticky left-0 z-10 px-3 text-left font-medium ${site.id === selected.id ? "bg-[#e8efec]" : "bg-white"}`}><Link href={href(day, site.id)} aria-current={site.id === selected.id ? "true" : undefined} className="flex min-h-11 items-center whitespace-nowrap text-base text-[#155f53] underline-offset-4 hover:underline active:translate-y-px">{name(site)}</Link></th>
                 <td className="px-3 text-right tabular-nums">{counts.get(site.id) ?? 0}</td>
                 {summaries.map((summary, index) => <td key={index} className="whitespace-nowrap px-3 text-right tabular-nums" title={`${summary.count}/8`}>{format(summary.median)}</td>)}
-                {columns.map(([variable, source, unit]) => <td key={variable} className="whitespace-nowrap px-3 text-right tabular-nums">{environmentValue(site, variable, source, unit)}</td>)}
+                {comparisonColumns.map(([variable, source, unit]) => <td key={variable} className="whitespace-nowrap px-3 text-right tabular-nums">{environmentValue(site, variable, source, unit)}</td>)}
               </tr>;
             })}</tbody>
           </table>

@@ -1,5 +1,8 @@
 import type { Dashboard, EnvironmentSample } from "@/src/public/model";
 
+export const comparisonColumns = [["uo", "copernicus-currents", "m/s"], ["vo", "copernicus-currents", "m/s"],
+  ["wind_direction_10m", "open-meteo-wind", "degree"], ["wave_height", "open-meteo-wave", "m"]] as const;
+
 const rejected = new Set(["geometry_unverified", "land_cell", "grid_distance_exceeded", "outside_depth_range", "outside_time_range", "unverified_geometry", "grid_too_far", "source_age_unknown", "source_time_in_future", "stale_required_source"]);
 
 export function environmentSamples(data: Dashboard, day: string, siteId: string, depth: number | null, variable: string, source: string, unit: string) {
@@ -17,9 +20,7 @@ export function environmentSamples(data: Dashboard, day: string, siteId: string,
 // Every column and Site uses one actual provider timestamp; no nearest-row substitution.
 export function comparisonTime(data: Dashboard, day: string, sites: {id: string; reference_depth_m: number | null}[]): string | null {
   let common: Set<string> | undefined;
-  const columns = [["uo", "copernicus-currents", "m/s"], ["vo", "copernicus-currents", "m/s"],
-    ["wind_direction_10m", "open-meteo-wind", "degree"], ["wave_height", "open-meteo-wave", "m"]];
-  for (const site of sites) for (const [variable, source, unit] of columns) {
+  for (const site of sites) for (const [variable, source, unit] of comparisonColumns) {
     const { rows } = environmentSamples(data, day, site.id, site.reference_depth_m, variable, source, unit);
     const times = new Set(rows.map(row => new Date(row.valid_time).toISOString()));
     common = common === undefined ? times : new Set([...common].filter(at => times.has(at)));
