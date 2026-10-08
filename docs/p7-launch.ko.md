@@ -30,7 +30,7 @@ python3 ops/configure_github.py --apply
 | Environment Variables | MODEL_OBSERVER_ID=`bunaken-observer-01`, MODEL_RUBRIC_VERSION=`pci-overall-v1`, OPEN_METEO_USAGE_MODE=`noncommercial` |
 | 불필요 | Open-Meteo API key, hosted runner용 AVISO 계정·원 atlas |
 
-현재 pin은 `bf50ec9af2301505886cdd99c71214ad44253721`이다. main 예약과 data entrypoint는 이 full SHA를 함께 사용한다. 고정 pin 설치·예약 활성화 상태를 원격에서 확인한다. required reviewer를 설정한 경우 운영 수집을 검수한 후 자동 예약 승인 정책을 결정한다. API가 401/403이면 이름만 기록하고 인증/권한을 운영자가 처리한다. 등록한 Secret 값을 조회·출력하지 않는다.
+현재 pin은 `c8d1de0667efef1be9d31c052e7bb59b6cfdaa1c`이다. main 예약과 data entrypoint는 이 full SHA를 함께 사용한다. 고정 pin 설치·예약 활성화 상태를 원격에서 확인한다. required reviewer를 설정한 경우 운영 수집을 검수한 후 자동 예약 승인 정책을 결정한다. API가 401/403이면 이름만 기록하고 인증/권한을 운영자가 처리한다. 등록한 Secret 값을 조회·출력하지 않는다.
 
 ## Vercel 최초 등록
 

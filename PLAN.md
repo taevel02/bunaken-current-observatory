@@ -383,7 +383,7 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 | P7-08 | ko/en·계약·라이선스·cold-start 회귀 및 build | 실제 production 모바일·표시 검수 필요 |
 | P7-09 | deployment 구성·검증 명령·운영 증거 및 발행 절차 | 실제 Vercel 등록·배포·HTTPS 검증 필요 |
 
-- trusted engine/workflow pin: `bf50ec9af2301505886cdd99c71214ad44253721`. main 최신 SHA와 별도로 검증된 불변 코드를 사용한다.
+- trusted engine/workflow pin: `c8d1de0667efef1be9d31c052e7bb59b6cfdaa1c`. main 최신 SHA와 별도로 검증된 불변 코드를 사용한다.
 - 공식 D+1 비교는 cutoff 이전 실제 Git 저장 receipt·seal·원본 forecast를 확인한다. Overall만 사용하며 시간으로 슬롯을 선택한다. Peak·사후 backfill·관찰자/rubric 불일치·null을 수치 성능으로 변환하지 않는다. withdrawal·날짜 정정·동시 실행을 반영한다.
 - 실제 frozen forecast Linux/macOS 재현의 약 1e-15 삼각함수 반올림 차이를 확인했다. feature/계산 결과에만 1e-12 tolerance를 적용하고 원본 bytes·hash·config identity는 정확 비교한다.
 - 로컬 실제 공개 이력 대조: 11일·29개 현재 관측, 숫자 비교 0개. 공식 seal 없는 과거 날짜 또는 당시 numeric gate 미충족이 원인이다. 새 matcher가 과거 운영 forecast를 만들어내지 않는다.
