@@ -387,6 +387,15 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 - 공식 D+1 비교는 cutoff 이전 실제 Git 저장 receipt·seal·원본 forecast를 확인한다. Overall만 사용하며 시간으로 슬롯을 선택한다. Peak·사후 backfill·관찰자/rubric 불일치·null을 수치 성능으로 변환하지 않는다. withdrawal·날짜 정정·동시 실행을 반영한다.
 - 실제 frozen forecast Linux/macOS 재현의 약 1e-15 삼각함수 반올림 차이를 확인했다. feature/계산 결과에만 1e-12 tolerance를 적용하고 원본 bytes·hash·config identity는 정확 비교한다.
 - 로컬 실제 공개 이력 대조: 11일·29개 현재 관측, 숫자 비교 0개. 공식 seal 없는 과거 날짜 또는 당시 numeric gate 미충족이 원인이다. 새 matcher가 과거 운영 forecast를 만들어내지 않는다.
-- 격리 worktree 검증: 엔진 133개, 웹·계약·HTTP 71개, 운영 도구 2개 통과. lint·TypeScript 7·actionlint·Webpack production build 통과. macOS Turbopack은 port-binding EPERM으로 미검증이며 Linux CI 결과를 별도로 확인한다.
+- 격리 worktree 검증: 엔진 134개, provider 12개, 웹·계약·HTTP 71개, 운영 도구 2개 통과. lint·TypeScript 7·actionlint·Webpack production build 통과. macOS Turbopack은 port-binding EPERM으로 미검증이며 Linux CI 결과를 별도로 확인한다.
 - 실제 bundle 14,772,394 bytes, mirror 복원·fsck·세 ref 일치 확인. ignored 환경변수·원 atlas·미커밋 파일은 포함하지 않는다.
 - 자동 튜닝·모델 승격·연구 release v1.0.1 변경은 이번 구현에 포함하지 않는다. 실제 D+1 비교 축적 이후 별도 승인 기준으로 진행한다.
+
+
+#### P7 원격 반영 증거
+
+- main 원자적 커밋 push 완료. data의 `.github/workflows/data-entrypoint.yml`과 루트·`apps/web/vercel.json` 설치 완료. 최종 entrypoint 설치 commit `76e2fa1`; 관측은 변경하지 않았다.
+- GitHub `Trusted environmental pipeline` state=`active` 확인. 다음 실제 예약 실행·관측 push 검증은 이후 run 증거로 확인한다. 예약 시각 도래 전에 실제 실행 성공을 주장하지 않는다.
+- 실제 공식 D+1 비교 11일·29건을 `30f09d0d434fa52e9c61e26e523ba00c671e7222`에 저장했다. 숫자 비교 0건과 누락/gate 사유를 보존했다. 원본 대형 blob 응답의 `IncompleteRead`를 재현하여 GET만 최대 3회 재시도하고 부분 bytes는 사용하지 않는다. POST/PATCH는 자동 재시도하지 않는다. 회귀 red/green·관련 10개 테스트 통과.
+- 실제 GitHub Administration 정책 적용 및 Actions dispatch는 HTTP 403. 저장 PAT에 추가 권한을 부여하지 않았으며 운영자 `gh auth login`이 필요하다. 실제 Vercel 프로젝트·HTTPS origin·WAF·옛 배포 차단·production 성능 측정은 아직 수행하지 않았다.
+- 원격 Linux CI `37825928973`, main `f8cf2f9ef63cada1bbc31af0314a86a2589c6098`: completed/success. 웹·엔진·provider 검증 모두 통과했다. 초기 mutable pin 기대 테스트 실패는 새 immutable 계약 회귀로 해소했다.
