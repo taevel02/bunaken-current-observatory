@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from datetime import timedelta
+from collections import defaultdict
 
 from bunaken_engine.features import extract_window, finite, instant, build_scaler
 from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry, load_sources, usable_geometry
@@ -193,14 +194,21 @@ def environment_rows(bundles):
     for bundle in bundles:
         manifest = bundle['manifest']
         if manifest['status'] != 'succeeded': continue
-        for feature in bundle['features']:
-            samples = [row for row in manifest['samples'] if row.get('site_id') == feature['site_id'] and row.get('zone_id') == feature['zone_id']]
-            if not samples: continue
-            availability=[manifest['created_at']] + [row['retrieved_at'] for row in samples]
+        samples_by_point = defaultdict(list)
+        for sample in manifest['samples']:
+            samples_by_point[(sample.get('site_id'),sample.get('zone_id'))].append(sample)
+        metadata = {}
+        for point,samples in samples_by_point.items():
+            availability = [manifest['created_at']] + [row['retrieved_at'] for row in samples]
             if bundle.get('storage_evidence'): availability.append(bundle['storage_evidence']['persisted_at'])
-            rows.append(dict(valid_time=feature['end_at'], retrieved_at=max(availability, key=instant),
-                issued_at=max((row['issued_at'] for row in samples if row.get('issued_at')), key=instant, default=None),
-                features=feature['values'], dataset=manifest['dataset_versions'], version=manifest['feature_version'], geometry_version=feature['geometry_version']))
+            metadata[point] = (max(availability,key=instant),
+                               max((row['issued_at'] for row in samples if row.get('issued_at')),key=instant,default=None))
+        for feature in bundle['features']:
+            point = (feature['site_id'],feature['zone_id'])
+            if point not in metadata: continue
+            retrieved,issued = metadata[point]
+            rows.append(dict(valid_time=feature['end_at'],retrieved_at=retrieved,issued_at=issued,
+                features=feature['values'],dataset=manifest['dataset_versions'],version=manifest['feature_version'],geometry_version=feature['geometry_version']))
     return rows
 
 
