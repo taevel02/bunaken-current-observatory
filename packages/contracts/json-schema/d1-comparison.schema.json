@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/d1-comparison.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rule",
+    "date_wita",
+    "input_sha256",
+    "code_commit",
+    "source_data_commit",
+    "generated_at",
+    "schema_version",
+    "official_snapshot",
+    "rows",
+    "cohort_metrics",
+    "limitations",
+    "excluded_observations"
+  ],
+  "properties": {
+    "rule": {
+      "type": "string"
+    },
+    "date_wita": {
+      "type": "string"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "code_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "source_data_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "official_snapshot": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "seal_sha256"
+          ],
+          "properties": {
+            "seal_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "run_id",
+            "storage_commit",
+            "manifest_sha256",
+            "persisted_at",
+            "seal_sha256",
+            "forecast_sha256",
+            "cutoff_at"
+          ],
+          "properties": {
+            "run_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "storage_commit": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "manifest_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "persisted_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "seal_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "forecast_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "cutoff_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "observation_sha256",
+          "day",
+          "site_id",
+          "zone_id",
+          "observation_start_at",
+          "observation_end_at",
+          "prediction_start_at",
+          "model_version",
+          "support",
+          "temporal_match",
+          "actual",
+          "pci",
+          "absolute_error",
+          "prediction_duration_minutes",
+          "midpoint_offset_minutes",
+          "global_baseline",
+          "site_baseline",
+          "revision",
+          "reason_codes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "observation_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "day": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          },
+          "zone_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observation_start_at": {
+            "type": "string"
+          },
+          "observation_end_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prediction_start_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "support": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "temporal_match": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actual": {
+            "type": "number",
+            "minimum": 0
+          },
+          "pci": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "absolute_error": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "prediction_duration_minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "midpoint_offset_minutes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "global_baseline": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "site_baseline": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "cohort_metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observer_id",
+          "rubric_version",
+          "metrics"
+        ],
+        "properties": {
+          "observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rubric_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "test_count",
+              "predicted_count",
+              "predicted_days",
+              "abstention_count",
+              "coverage",
+              "mae",
+              "global_baseline_mae",
+              "site_baseline_mae",
+              "large_error_threshold",
+              "large_error_rate",
+              "global_baseline_large_error_rate"
+            ],
+            "properties": {
+              "test_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "predicted_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "predicted_days": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "abstention_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "global_baseline_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "site_baseline_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "coverage": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "mae": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "global_baseline_mae": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "site_baseline_mae": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "large_error_threshold": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "large_error_rate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "global_baseline_large_error_rate": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "excluded_observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "observation_sha256",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "observation_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "reason": {
+            "enum": [
+              "observation_moved_day",
+              "inactive_or_model_excluded_label"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

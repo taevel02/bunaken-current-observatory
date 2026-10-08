@@ -184,6 +184,8 @@ def select_seal(target_date: str, receipts: list[dict], now: str) -> dict:
 
 
 def allowed_data_path(path: str) -> bool:
+    if re.fullmatch(r'validation/d1/\d{4}-\d{2}-\d{2}/[a-f0-9]{64}\.json', path):
+        return True
     if re.fullmatch(r'environment-inputs/[a-f0-9]{64}\.json\.gz', path):
         return True
     if re.fullmatch(r'tides/ephemerides/[a-f0-9]{64}/(?:manifest\.json|heights\.json\.gz)', path):

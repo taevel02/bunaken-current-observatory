@@ -16,7 +16,7 @@ test("registered Bunaken Sites have stable unique IDs and resolve display names"
   assert.equal(resolveSiteId("mikes-point"), "mikes-point");
   assert.equal(resolveSiteId("unregistered-site"), null);
 });
-const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "model-context", "environment-link", "prediction", "release", "error-envelope", "snapshot-receipt", "snapshot-confirmation", "seal"];
+const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "model-context", "environment-link", "prediction", "release", "error-envelope", "snapshot-receipt", "snapshot-confirmation", "seal", "d1-comparison"];
 const schemas = await Promise.all(schemaNames.map(async name => JSON.parse(await readFile(new URL(`json-schema/${name}.schema.json`, base), "utf8"))));
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 addFormats(ajv);
@@ -169,4 +169,13 @@ test("all schemas compile; locales expose the same translation keys and errors u
   assert.deepEqual(keys(ko), keys(en));
   const validateError = ajv.getSchema("https://bunaken-current-observatory.example/schemas/error-envelope.schema.json");
   assert.equal(validateError({ code: "revision_conflict", message_key: "errors.notFound", field_errors: {}, retryable: false, request_id: "req-1" }), true);
+});
+
+test("D+1 comparison allowlist rejects secret fields and preserves null forecasts", async () => {
+  const validate = ajv.getSchema("https://bunaken-current-observatory.example/schemas/d1-comparison.schema.json");
+  const record = await fixture("d1-comparison");
+  assert.ok(validate(record), JSON.stringify(validate.errors));
+  assert.equal(record.rows[0].pci, null);
+  record.rows[0].token = "synthetic-forbidden";
+  assert.equal(validate(record), false);
 });
