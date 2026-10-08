@@ -118,7 +118,7 @@ def main(argv=None):
                     feature_bytes=store.read(prefix+"/features.json.gz",head);forecast_bytes=store.read(prefix+"/forecast.json.gz",head)
                     if feature_bytes is None or forecast_bytes is None:
                         raise SnapshotError("incomplete_snapshot_bundle")
-                    files=make_bundle(manifest,json.loads(gzip.decompress(feature_bytes)),json.loads(gzip.decompress(forecast_bytes)),root=root,kind=args.kind,compress_manifest=stored_path.endswith('.gz'))
+                    files=make_bundle(manifest,json.loads(gzip.decompress(feature_bytes)),json.loads(gzip.decompress(forecast_bytes)),root=root,kind=args.kind,compress_manifest=stored_path.endswith('.gz'),reference_inputs=b'"encoding":"snapshot-environment-references-v1"' in gzip.decompress(existing) if stored_path.endswith('.gz') else False)
             if manifest is None:
                 if args.resume_only:
                     raise SnapshotError('stored_snapshot_missing')

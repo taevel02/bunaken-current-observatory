@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.5\
+버전: 2.6\
 작성일: 2026-10-08\
 기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
@@ -483,3 +483,7 @@ WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 �
 메인의 graph 읽기/help/details는 제거하고 필요한 미제공 reason만 유지한다. 기본 PCI와 Site 간 실험은 명시 선택, support는 실제 prediction metadata에서 결정한다. 원고 페이지는 최신 published metadata 한 개를 선택한 뒤 해당 release의 네 문서/results를 검증한다. 미선택 과거 문서 오류 때문에 최신 원고를 숨기지 않는다. 원고 자체와 frozen 연구 결과는 수정하지 않는다. legacy URL로 이전 version도 열람 가능하다.
 
 라이선스/출처 표기는 메인의 간결한 footer에 유지하며 상세 정책은 각 공급자 license URL로 연결한다. 도움말 제거가 필수 attribution 제거를 뜻하지 않는다.
+
+### 불변 환경 입력 참조 encoding (2026-10-08)
+
+신규 model snapshot의 저장 JSON은 `encoding=snapshot-environment-references-v1`, `manifest`, `training_bundle_references`, `expanded_manifest_sha256`만 갖는 envelope를 지원한다. manifest의 model context에서는 training_bundles를 빈 배열로 두고, 순서가 보존된 참조마다 `environment-inputs/<sha256>.json.gz` 경로와 저장 바이트 SHA-256을 기록한다. decoder는 고정 Git commit 또는 로컬 output에서 입력 파일을 읽고 hash·경로·중복·개별 크기·10,000개 상한을 검사한 뒤 원 manifest를 복원하여 expanded hash와 기존 schema·licence·forecast replay를 검증한다. 참조 파일에는 이미 검증된 environment-only bundle만 허용한다. 기존 저장 encoding·snapshot/model schema와 계산 의미는 유지하며 과거 input을 자동 삭제하지 않는다.

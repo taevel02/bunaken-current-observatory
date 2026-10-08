@@ -111,7 +111,7 @@ def collect_run(target_date: str, code_commit: str, *, days=7, run_id=None, kind
         manifest.update(schema_version='1.2', model_context=model, model_context_sha256=digest(canonical(model)))
         forecast, manifest['scaler_version'] = forecast_context(model, feature_rows, manifest, root=root)
         manifest['artifact_hashes']['forecast.json.gz'] = digest(gzip.compress(canonical(forecast), mtime=0))
-    return manifest,make_bundle(manifest,feature_rows,forecast,root=root,kind=kind,compress_manifest=model is not None)
+    return manifest,make_bundle(manifest,feature_rows,forecast,root=root,kind=kind,compress_manifest=model is not None,reference_inputs=model is not None)
 
 
 def publish_bundle(store, manifest, files, *, root=ROOT) -> dict:
@@ -183,7 +183,7 @@ def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
     if raw is None or digest(raw)!=receipt["manifest_sha256"] or store.read(receipt["manifest_path"],head)!=raw:
         raise SnapshotError("receipt_manifest_mismatch")
     from bunaken_engine.snapshot_io import decode_manifest
-    manifest=decode_manifest(raw)
+    manifest=decode_manifest(raw,input_reader=lambda path: store.read(path,receipt["storage_commit"]))
     validate("snapshot",manifest,root)
     prefix=bundle_path(manifest["date_wita"],manifest["run_id"],manifest["kind"])
     if receipt["manifest_path"] not in {prefix+"/manifest.json", prefix+"/manifest.json.gz"} or receipt["run_id"]!=manifest["run_id"] or receipt["kind"]!=manifest["kind"] or receipt["status"]!=manifest["status"]:

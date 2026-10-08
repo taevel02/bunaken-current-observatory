@@ -35,7 +35,7 @@ def data_inputs(store, cutoff, *, root=ROOT):
             # Neither completed dive intervals nor scaler windows can use a future-only horizon.
             if instant(receipt['valid_start']) >= instant(cutoff): continue
             manifest_raw = store.read(receipt['manifest_path'], receipt['storage_commit'])
-            manifest = decode_manifest(manifest_raw)
+            manifest = decode_manifest(manifest_raw,input_reader=lambda path: store.read(path,receipt["storage_commit"]))
             if manifest['status'] != 'succeeded': continue
             prefix = receipt['manifest_path'].rsplit('/', 1)[0]
             features = json.loads(gzip.decompress(store.read(prefix+'/features.json.gz', receipt['storage_commit'])))
@@ -91,7 +91,7 @@ def verify_context_storage(store, context, head, *, root=ROOT):
             raise SnapshotError('model_environment_storage_unverified')
         if instant(receipt['persisted_at']) > instant(context['cutoff']):
             raise SnapshotError('model_environment_stored_after_cutoff')
-        original=decode_manifest(store.read(receipt['manifest_path'],receipt['storage_commit']))
+        original=decode_manifest(store.read(receipt['manifest_path'],receipt['storage_commit']),input_reader=lambda path: store.read(path,receipt['storage_commit']))
         prefix=receipt['manifest_path'].rsplit('/', 1)[0]
         features=json.loads(gzip.decompress(store.read(prefix+'/features.json.gz',receipt['storage_commit'])))
         forecast=json.loads(gzip.decompress(store.read(prefix+'/forecast.json.gz',receipt['storage_commit'])))

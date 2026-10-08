@@ -20,7 +20,7 @@ def encode_manifest(manifest, *, compressed=False):
     return raw
 
 
-def decode_manifest(raw):
+def decode_manifest(raw, *, input_reader=None):
     if raw.startswith(b'\x1f\x8b'):
         if len(raw) > MAX_COMPRESSED_MANIFEST_BYTES:
             raise SnapshotError('snapshot_manifest_size_exceeded')
@@ -28,11 +28,22 @@ def decode_manifest(raw):
             raw = stream.read(MAX_MANIFEST_BYTES + 1)
     if len(raw) > MAX_MANIFEST_BYTES:
         raise SnapshotError('snapshot_manifest_size_exceeded')
-    return json.loads(raw)
+    document = json.loads(raw)
+    from bunaken_engine.environment_references import ENCODING, expand
+    if isinstance(document,dict) and document.get("encoding") == ENCODING:
+        return expand(document,input_reader)
+    return document
 
 
 def load_manifest(path):
-    return decode_manifest(path.read_bytes())
+    def read_input(relative):
+        # Inputs share the output root with snapshots/<date>/<run>/manifest.
+        for parent in path.parents:
+            candidate = parent / relative
+            if candidate.is_file():
+                return candidate.read_bytes()
+        return None
+    return decode_manifest(path.read_bytes(), input_reader=read_input)
 
 
 def read_stored_manifest(store, prefix, head):
@@ -40,5 +51,5 @@ def read_stored_manifest(store, prefix, head):
         path = prefix + '/' + name
         raw = store.read(path, head)
         if raw is not None:
-            return path, decode_manifest(raw), raw
+            return path, decode_manifest(raw,input_reader=lambda relative: store.read(relative,head)), raw
     return None, None, None

@@ -88,3 +88,11 @@ forward와 Leave-One-Day-Out은 각각 7개 날짜 fold·18개 test 관측에서
 snapshot과 공개 release를 같은 고정 입력·UUID·생성 시각으로 재생성하여 전체 파일 바이트 일치를 확인했다. 메모리상의 합성 revision으로 PCI 정정, 철회, 학습 제외 반영을 확인했고 실제 관측은 변경하지 않았다. 날짜별 test/training ID 분리와 forward 미래 날짜 배제도 확인했다. 상세 결과는 로컬 `.local/p3-integration-2026-10-05/integration.json`, `forward.json`, `lodo.json`에 보관한다. 원격 발행·배포·공식 D+1 seal은 수행하지 않았다.
 
 이 초기 결과 이후 공식 공급 갱신 시각·6km 내 바람·18m 전용 비교 범위를 검증했다. 최신 v1.3 결과는 PLAN의 후속 검증과 별도 로컬 final 산출물에 기록한다. 대표 수심 18m를 유지하므로 수심 변동을 만들지 않는다. 조석 phase 정의·coverage 분모·weight 변경이 필요하면 계약과 모델 버전을 함께 검토하고 재검증한다. 실제 숫자가 제공되지 않은 상태에서 예측 오차나 검증된 성능을 주장하지 않는다.
+
+## 환경 입력의 불변 참조 저장
+
+신규 모델 snapshot은 `snapshot-environment-references-v1` 저장 envelope를 사용한다. 계산 시의 model context와 모델 버전은 그대로 유지하며, 검증한 환경 bundle을 `environment-inputs/<compressed SHA-256>.json.gz`로 분리한다. envelope는 bundle 경로·저장 바이트 hash와 확장 후 manifest hash를 보존한다. 같은 입력 파일은 Git에서 한 번만 생성한다. 원 atlas·미허용 자료를 새로 저장하지 않는다.
+
+Git 조회는 해당 snapshot의 고정 storage commit에서 참조 파일을 읽는다. 로컬 재생은 output root의 `environment-inputs/` 파일을 함께 보존해야 한다. 단독 manifest만 복사하면 참조 누락으로 실패한다. 기존 plain/gzip manifest는 계속 읽고 기존 run 재시도는 원래 encoding을 유지한다. 참조의 누락·변조·중복·경로 이탈·중첩 context를 거부하며, 신규 쓰기와 읽기 모두 참조 10,000개 상한을 적용한다. 개별 파일의 256MiB 해제/8MiB 압축 상한은 유지한다.
+
+이 변경은 저장 encoding만 바꾸며 관측·환경 시간 범위를 잘라내지 않는다. 과거 입력은 계속 재현한다. 참조 수와 실행 시 메모리·재검증 비용은 이력에 따라 증가하므로 운영 사용량 측정은 별도로 필요하다. 자동 튜닝·승격이나 연구 결론 자동 발행은 추가하지 않는다.

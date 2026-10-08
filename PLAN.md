@@ -2,7 +2,7 @@
 
 버전: 1.10\
 작성일: 2026-10-07\
-기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.5\
+기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.6\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -349,3 +349,11 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 | CLI 확장 전 | gzip scaler 입력 | 같은 합성 빈 rows JSON은 scaler 성공, gzip JSON은 request_or_configuration_invalid 재현. manifest.json.gz를 read_json으로 먼저 읽어 decode 실패. 호환 decode와 plain/rows/backfill 경계 회귀 필요 |
 
 현재 UI·refactor는 위 엔진 동작을 변경하지 않았다. 새 연구 결론·모델 계산·실제 환경 재수집·production 배포는 수행하지 않았다. 기존 P7 WAF·운영 환경·예약·backup·사용량 검수도 남는다.
+
+### P7 전 엔진 수정·참조 저장 검증 (2026-10-08)
+
+- 운영 transfer CLI의 실제 Git observation history·receipt·원본 환경 검증 누락을 수정했다. gzip scaler rows/manifest decode를 통합했다. 두 회귀 테스트는 수정 전 실패, 수정 후 통과했다.
+- environment-only bundle을 content-addressed 파일로 분리하는 저장 envelope를 추가했다. 계산 입력·model version·과거 재현 의미는 유지한다. 누락·hash·경로·중첩·크기·참조 수 경계와 legacy 읽기를 검증했다.
+- 최신 공개 source snapshot `12ab5b5b-e1f0-59cc-88af-811903b2c95a` 저장 transport 실험: 원 manifest JSON 169,559,136byte → 참조 manifest 35,942,474byte(압축 524,834byte), 공유 입력 6개 압축 합계 3,013,083byte. 확장 결과 원본 완전 일치. 새 source 수집·remote 발행은 하지 않았다.
+- 격리 worktree 엔진 120개 테스트 및 실제 모델 replay/public export 통합 8개 통과. architecture/security·4개 adversarial angle을 검토했다. 다음 단계는 frozen 관측/context 기반 요인·기여율 진단이다.
+- 실제 GitHub trusted code pin·예약 연결과 production 검증은 P7에 남는다. 로컬 수정이 원격 workflow의 실행 코드를 자동 변경하지 않는다.

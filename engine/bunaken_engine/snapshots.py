@@ -80,9 +80,11 @@ def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT
     return result
 
 
-def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot", compress_manifest=False) -> dict[str,bytes]:
+def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot", compress_manifest=False, reference_inputs=None) -> dict[str,bytes]:
     """Validate every public field before constructing any Git blob."""
     context=manifest.get('model_context')
+    if reference_inputs is None:
+        reference_inputs = context is not None
     if context is not None:
         from bunaken_engine.model_data import trusted_configuration, current_configuration, replay_root
         validate('model-context',context,root)
@@ -97,7 +99,7 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
             if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']],[row['variable']]) for row in manifest['samples']):
                 raise SnapshotError('source_export_forbidden')
             with replay_root(context,root) as replay:
-                return make_bundle(manifest,features,forecast,root=replay,kind=kind,compress_manifest=compress_manifest)
+                return make_bundle(manifest,features,forecast,root=replay,kind=kind,compress_manifest=compress_manifest,reference_inputs=reference_inputs)
     if context is None and manifest['source_registry_hash'] != digest(canonical(read_json(root/'config/source-registry.json'))):
         from bunaken_engine.model_data import environment_configuration, replay_root
         configuration = environment_configuration(manifest, root)
@@ -105,7 +107,7 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
         if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']], [row['variable']]) for row in manifest['samples']):
             raise SnapshotError('source_export_forbidden')
         with replay_root({'configuration': configuration}, root) as replay:
-            return make_bundle(manifest, features, forecast, root=replay, kind=kind,compress_manifest=compress_manifest)
+            return make_bundle(manifest, features, forecast, root=replay, kind=kind,compress_manifest=compress_manifest,reference_inputs=reference_inputs)
     registry=load_sources(root)
     if manifest.get("kind") != kind:
         raise SnapshotError("run_kind_mismatch")
@@ -148,7 +150,12 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
     prefix=bundle_path(manifest["date_wita"],manifest["run_id"],kind)
     from bunaken_engine.snapshot_io import encode_manifest
     manifest_name = 'manifest.json.gz' if compress_manifest else 'manifest.json'
-    return {f"{prefix}/{manifest_name}":encode_manifest(manifest,compressed=compress_manifest),f"{prefix}/features.json.gz":encoded_features,f"{prefix}/forecast.json.gz":encoded_forecast}
+    inputs = {}
+    stored_manifest = manifest
+    if reference_inputs:
+        from bunaken_engine.environment_references import pack
+        stored_manifest, inputs = pack(manifest)
+    return {**inputs, f"{prefix}/{manifest_name}":encode_manifest(stored_manifest,compressed=compress_manifest),f"{prefix}/features.json.gz":encoded_features,f"{prefix}/forecast.json.gz":encoded_forecast}
 
 
 def seal_cutoff(target_date: str) -> datetime:
@@ -176,6 +183,8 @@ def select_seal(target_date: str, receipts: list[dict], now: str) -> dict:
 
 
 def allowed_data_path(path: str) -> bool:
+    if re.fullmatch(r'environment-inputs/[a-f0-9]{64}\.json\.gz', path):
+        return True
     if re.fullmatch(r'tides/ephemerides/[a-f0-9]{64}/(?:manifest\.json|heights\.json\.gz)', path):
         return True
     uuid=r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
