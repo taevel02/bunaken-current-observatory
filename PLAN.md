@@ -399,3 +399,5 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 - 실제 공식 D+1 비교 11일·29건을 `30f09d0d434fa52e9c61e26e523ba00c671e7222`에 저장했다. 숫자 비교 0건과 누락/gate 사유를 보존했다. 원본 대형 blob 응답의 `IncompleteRead`를 재현하여 GET만 최대 3회 재시도하고 부분 bytes는 사용하지 않는다. POST/PATCH는 자동 재시도하지 않는다. 회귀 red/green·관련 10개 테스트 통과.
 - 실제 GitHub Administration 정책 적용 및 Actions dispatch는 HTTP 403. 저장 PAT에 추가 권한을 부여하지 않았으며 운영자 `gh auth login`이 필요하다. 실제 Vercel 프로젝트·HTTPS origin·WAF·옛 배포 차단·production 성능 측정은 아직 수행하지 않았다.
 - 원격 Linux CI `37825928973`, main `f8cf2f9ef63cada1bbc31af0314a86a2589c6098`: completed/success. 웹·엔진·provider 검증 모두 통과했다. 초기 mutable pin 기대 테스트 실패는 새 immutable 계약 회귀로 해소했다.
+- 오늘 2026-10-09 공식 seal catch-up 복구 완료: data `8707b4cbadf94fc9b13f80eba8997574ac8289c0`, run `12ab5b5b-e1f0-59cc-88af-811903b2c95a`. receipt 전체를 실제 Git bytes·artifact·모델 재현·실제 저장 시각으로 검증하고 2026-10-08 WITA 20:00 이전 후보를 선택했다. 늦은 seal 작업이며 당시 예약 성공으로 표시하지 않는다. forecast는 새 계산·변경하지 않았다.
+- 운영 증거 반영 main `214c2cb6d5f5615e58b7002865143db7c2a914b9`, CI `37826507329`: completed/success.
