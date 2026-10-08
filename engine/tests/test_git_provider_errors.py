@@ -1,4 +1,5 @@
 from io import BytesIO
+from http.client import IncompleteRead
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
@@ -21,3 +22,16 @@ class GitProviderErrorsTest(unittest.TestCase):
                 with patch('bunaken_engine.git_store.urlopen', side_effect=error):
                     with self.assertRaisesRegex(StorageError, '^' + expected + '$'):
                         store.request(method, path)
+
+
+    def test_truncated_read_retries_only_get_and_never_uses_partial_bytes(self):
+        store=GitDataStore('synthetic','synthetic','synthetic')
+        error=IncompleteRead(b'private partial response',1)
+        with patch('bunaken_engine.git_store.urlopen',side_effect=[error,BytesIO(b'{"sha":"confirmed"}')]) as call:
+            self.assertEqual(store.request('GET','/git/blobs/'+'a'*40),{'sha':'confirmed'})
+            self.assertEqual(call.call_count,2)
+        for method,count in [('GET',3),('POST',1)]:
+            with patch('bunaken_engine.git_store.urlopen',side_effect=error) as call:
+                with self.assertRaisesRegex(StorageError,'^github_unavailable$'):
+                    store.request(method,'/git/blobs')
+                self.assertEqual(call.call_count,count)

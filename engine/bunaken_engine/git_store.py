@@ -1,5 +1,6 @@
 """Git Data API: immutable path allowlist, optimistic non-force commits, no local DB."""
 from io import BytesIO
+from http.client import IncompleteRead
 import base64
 import json
 import re
@@ -27,23 +28,28 @@ class GitDataStore:
             return self.requester(method,path,body)
         payload=None if body is None else json.dumps(body).encode()
         req=Request(self.base+path,data=payload,method=method,headers={"Authorization":f"Bearer {self.token}","Accept":"application/vnd.github.object+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"})
-        try:
-            with urlopen(req,timeout=30) as response:
-                return json.load(response)
-        except HTTPError as error:
-            code=error.code
-            error.close()
-            if code==404:
-                return None
-            if code in {409,422}:
-                if method == 'PATCH' and path == '/git/refs/heads/data':
-                    raise StorageError("branch_conflict") from None
-                operation = {'/git/blobs': 'blob', '/git/trees': 'tree', '/git/commits': 'commit'}.get(path)
-                reason = f'github_{operation}_validation_failed' if method == 'POST' and operation else 'github_validation_failed'
-                raise StorageError(reason) from None
-            raise StorageError("github_unavailable") from None
-        except (URLError,TimeoutError,ValueError):
-            raise StorageError("github_unavailable") from None
+        attempts = 3 if method == "GET" else 1
+        for attempt in range(attempts):
+            try:
+                with urlopen(req,timeout=30) as response:
+                    return json.load(response)
+            except HTTPError as error:
+                code=error.code
+                error.close()
+                if code==404:
+                    return None
+                if code in {409,422}:
+                    if method == 'PATCH' and path == '/git/refs/heads/data':
+                        raise StorageError("branch_conflict") from None
+                    operation = {'/git/blobs': 'blob', '/git/trees': 'tree', '/git/commits': 'commit'}.get(path)
+                    reason = f'github_{operation}_validation_failed' if method == 'POST' and operation else 'github_validation_failed'
+                    raise StorageError(reason) from None
+                raise StorageError("github_unavailable") from None
+            except (URLError,TimeoutError,ValueError):
+                raise StorageError("github_unavailable") from None
+            except IncompleteRead:
+                if attempt == attempts - 1:
+                    raise StorageError("github_unavailable") from None
 
     def head(self):
         result=self.request("GET","/git/ref/heads/data")
