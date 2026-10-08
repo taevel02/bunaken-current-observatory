@@ -2,7 +2,7 @@
 
 버전: 1.10\
 작성일: 2026-10-07\
-기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.3\
+기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.4\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙

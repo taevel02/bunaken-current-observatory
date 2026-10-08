@@ -1,7 +1,7 @@
 # Bunaken Current Observatory 기술 명세
 
 버전: 2.4\
-작성일: 2026-10-07\
+작성일: 2026-10-08\
 기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
