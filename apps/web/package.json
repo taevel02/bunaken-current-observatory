@@ -34,5 +34,8 @@
   "imports": {
     "#server/*": "./src/server/*",
     "#public/*": "./src/public/*"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

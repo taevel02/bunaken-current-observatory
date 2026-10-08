@@ -37,6 +37,8 @@ function hasValidSessionSecret(value) {
 
 /** Server-only configuration. Never import this module from client components. */
 export function getAdminAuthConfig(env = process.env) {
+  // Production credentials must not enable admin access on preview/development deployments.
+  if (env.VERCEL_ENV && env.VERCEL_ENV !== "production") return { enabled: false, reason: "disabled" };
   if (env.ADMIN_ENABLED === undefined || env.ADMIN_ENABLED === "false") {
     return { enabled: false, reason: "disabled" };
   }
