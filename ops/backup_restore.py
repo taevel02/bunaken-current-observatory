@@ -14,7 +14,7 @@ def git(root,*args):
 def backup_restore(repository,output):
     repository=Path(repository).resolve();output=Path(output).resolve()
     if output.exists(): raise ValueError('backup_output_exists')
-    refs=['refs/heads/main','refs/remotes/origin/data']
+    refs=['refs/remotes/origin/main','refs/remotes/origin/data','refs/heads/main']
     heads={ref:git(repository,'rev-parse',ref) for ref in refs}
     output.parent.mkdir(parents=True,exist_ok=True)
     start=time.perf_counter()
