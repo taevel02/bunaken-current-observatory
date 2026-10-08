@@ -12,9 +12,10 @@ test('today and following dates render real PCI, connected state and shared prov
  const browser=await chromium.launch({executablePath:process.env.BUNAKEN_BROWSER_EXECUTABLE,headless:true});const errors=[];
  try{for(const width of [1920,360])for(const locale of ['ko','en']){
   const messages=JSON.parse(await readFile(new URL('../i18n/'+locale+'.json',import.meta.url),'utf8')).public;
-  const page=await browser.newPage({viewport:{width,height:1080}});page.on('pageerror',e=>errors.push(e.message));
+  const page=await browser.newPage({viewport:{width,height:1080}});page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!m.location().url.endsWith('/favicon.ico'))errors.push(m.text());});
   for(const expected of oracle){
    const response=await page.goto(`${process.env.BUNAKEN_DASHBOARD_URL}/${locale}?date=${expected.day}&model=baseline`,{waitUntil:'networkidle'});assert.equal(response.status(),200);
+   await page.waitForFunction(()=>{const svg=document.querySelector('main section svg[role="img"]');return svg&&Math.abs(svg.viewBox.baseVal.width-Math.max(280,Math.round(svg.getBoundingClientRect().width)))<=1;});
    assert.equal(await page.locator('select[name="site"] option').count(),20);
    assert.equal(await page.locator('main section').first().locator('svg[role="img"] circle').count(),expected.numeric);
    assert.equal(await page.getByText(messages.dataAvailable,{exact:true}).count(),1);
