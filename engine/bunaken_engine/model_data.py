@@ -99,18 +99,25 @@ def eligible_candidates(observations, bundles, observer, rubric, cutoff, *, root
     candidates, excluded = [], {}
     for observation in latest_revisions(observations, cutoff=cutoff, root=root):
         reason = None
-        if observation['record_status'] not in {'active', 'corrected'}: reason = 'inactive_record'
-        elif observation['observer_id'] != observer or observation['rubric_version'] != rubric: reason = 'incompatible_observer_rubric'
-        elif not observation['use_for_model']: reason = 'model_use_disabled'
-        elif observation['label_scope'] != 'dive_overall' and observation['vertical']['direction'] == 'unknown': reason = 'legacy_label_scope'
-        elif instant(observation['updated_at']) > boundary: reason = 'revision_after_cutoff'
-        elif not finite(observation['representative_depth_m']): reason = 'missing_observation_depth'
+        if observation['record_status'] not in {'active', 'corrected'}:
+            reason = 'inactive_record'
+        elif observation['observer_id'] != observer or observation['rubric_version'] != rubric:
+            reason = 'incompatible_observer_rubric'
+        elif not observation['use_for_model']:
+            reason = 'model_use_disabled'
+        elif observation['label_scope'] != 'dive_overall' and observation['vertical']['direction'] == 'unknown':
+            reason = 'legacy_label_scope'
+        elif instant(observation['updated_at']) > boundary:
+            reason = 'revision_after_cutoff'
+        elif not finite(observation['representative_depth_m']):
+            reason = 'missing_observation_depth'
         if reason:
             excluded[observation['id']] = reason
             continue
-        try: geometry = resolve_geometry(observation['site_id'], observation['zone_id'], root)
+        try:
+            geometry = resolve_geometry(observation['site_id'], observation['zone_id'], root)
         except ValueError:
-            excluded[observation['id']]='unknown_site_or_zone'
+            excluded[observation['id']] = 'unknown_site_or_zone'
             continue
         if not usable_geometry(geometry):
             excluded[observation['id']] = 'unverified_geometry'
