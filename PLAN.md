@@ -32,7 +32,7 @@ PRD는 제품 목적과 범위, SPEC은 구현 계약, AGENTS는 개발 규칙, 
 
 사용자 승인 왼쪽 Site 표·오른쪽 선택 Site PCI/모델 조류/조석 구성. 공개 canonical은 `/`와 `/research`, 언어/필터/원고 버전 query 유지. 이전 public 경로는 redirect. 관리자/API·관측 revision·예측 모델·seal·원고 결과는 보존한다. 불필요한 메인 도움말·Site 상세 이동 제거, 조류 actual sample과 공통 공급 시각 유지. DESIGN.md에 기존 palette/글자/44px 조작/반응형 기준 기록.
 
-배포 전 코드 검수·simplify는 독립 refactor commit으로 진행한다. 장기 환경 context 중복 누적·크기 제한과 엔진 CLI gzip scaler/operational transfer 증거 검증은 별도 배포 검토사항으로 추적한다. 기존 production 운영 설정·WAF·data entrypoint·장기 부하/복구 검증은 계속 P7 잔여다.
+웹 67개·엔진 114개·합성 전이/미제공 및 연구 연결 실패 browser 회귀 통과. 실제 날짜 3개 × 1920/375/360px × ko/en 18개 화면 조합, Site 선택·원고 전환 검증. source array와 계산 조건 순서를 보존한 환경 비교 열·관측 집계 통합, 미사용 UI 제거, 적격 조건문 전개를 별도 refactor commit으로 완료했다. 장기 환경 context 중복 누적·크기 제한과 엔진 CLI gzip scaler/operational transfer 증거 검증은 별도 배포 검토사항으로 추적한다. 기존 production 운영 설정·WAF·data entrypoint·장기 부하/복구 검증은 계속 P7 잔여다.
 
 ### 2.4 로컬 날짜 조회·상태·환경 표 보정 (2026-10-08)
 
@@ -339,3 +339,13 @@ FES 파생 조석 54,891개(19 Site × 2,889 시각), gzip 498,284 bytes를 data
 trusted data entrypoint template은 검토된 코드 `490264b25362a60ad1425a686f7f83a4084ef898`에 고정했다. AVISO secret 전달은 제거했으며 원격 entrypoint 설치·Secrets·보호 환경·실제 실행은 P7에 남는다. 로컬 커밋만으로 원격 workflow가 바뀌지 않는다.
 
 P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HTTP·합성 연구 브라우저 2개, provider 12개, TypeScript 7·ESLint·격리 production build·actionlint 통과. 1920px·360px 확인, 최신 revision·timeout 동일 요청 복구·편집 후 검토 초기화·검토 내용 불변 발행 검증을 포함한다. 실제 원고 작성은 [Astra 지시문](docs/research/astra-authoring.ko.md)에 따라 진행한다. 원고·예측 snapshot의 실제 웹 발행과 production 검수는 수행하지 않았다.
+
+### 배포 전 리뷰에서 확인한 엔진 잔여 (2026-10-08)
+
+| 우선순위 | 항목 | 근거·완료 조건 |
+|---|---|---|
+| P7 전 | 운영 transfer 진단의 실제 Git 증거 확인 | `validate-transfer --operational` CLI는 context의 storage_evidence를 바로 사용한다. baseline CLI와 같은 receipt/Git 확인 및 미확인 evidence 거부 회귀 필요. 공개 release의 별도 storage 검증은 유지됨 |
+| 장기 자동 수집 전 | 모델 환경 이력 중복 누적 | 매 성공 run samples를 context에 내장하여 256MiB 해제/8MiB 압축 상한에 도달할 수 있음. 불변 source 참조·필요 범위 입력 정책과 기존 model 재현/시간 누수/부하 검증 필요. 모델 입력 의미가 바뀌므로 simplify로 처리하지 않음 |
+| CLI 확장 전 | gzip scaler 입력 | 같은 합성 빈 rows JSON은 scaler 성공, gzip JSON은 request_or_configuration_invalid 재현. manifest.json.gz를 read_json으로 먼저 읽어 decode 실패. 호환 decode와 plain/rows/backfill 경계 회귀 필요 |
+
+현재 UI·refactor는 위 엔진 동작을 변경하지 않았다. 새 연구 결론·모델 계산·실제 환경 재수집·production 배포는 수행하지 않았다. 기존 P7 WAF·운영 환경·예약·backup·사용량 검수도 남는다.

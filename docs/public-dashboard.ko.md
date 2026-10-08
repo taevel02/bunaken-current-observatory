@@ -2,6 +2,12 @@
 
 P4 화면은 ko/en, WITA 내일 기본값, 오늘부터 D+7, Site 비교·상세·조석·공개 관측·PCI 기준·방법론·자료 상태를 지원한다. Site 예측 기준 수심은 18m다. 현재 release는 experimental이며 공식 D+1 발행이 아니다. P5 모델·검증 gate는 구현되어 있으며 모든 적격 조건을 통과한 슬롯에만 숫자 PCI를 제공한다.
 
+## 최신 공개 동선 (2026-10-08)
+
+메인 `/`는 왼쪽 Site 비교표·오른쪽 선택 Site의 PCI/모델 조류/조석을 표시한다. lang=ko/en, date/site/model query를 보존한다. `/research`에서 audience=guide/technical로 원고를 전환하며 slug/version도 같은 경로의 query다. 이전 public URL은 redirect한다. 관리자/API는 기존 자체 인증을 유지한다.
+
+Site 표의 동향 u·북향 v·바람 방향·파고는 공통 실제 공급 시각이며 현재 14:00 WITA다. 숫자 PCI null과 source 결측은 유지한다. 메인의 그래프 해석/help/details는 제거했고, 필요한 결측 reason·생성 시각·실험 상태만 남긴다. 본문의 이전 페이지 구성 설명은 그 당시 기록이며 현재 UI는 이 절을 따른다. 검증 명령은 README의 2분할 공개 화면 검증을 사용한다.
+
 ## 로컬 확인
 
 웹의 서버 환경변수 `GITHUB_OWNER`, `GITHUB_REPO`가 공개 data branch 읽기 대상을 정한다. 읽기에 PAT를 사용하지 않는다. 아직 release가 없으면 연결 전 상태와 빈 자료를 보여준다. release 파일이 잘못되면 실제 값을 만든 것처럼 표시하지 않는다.

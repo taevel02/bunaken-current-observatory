@@ -30,7 +30,7 @@ pnpm test       # shared-schema contract tests in Node and Python
 pnpm build      # Next.js production build
 ```
 
-The public root redirects to `/ko`; `/en` serves English. The status API reports unavailable when no validated public release is configured. `.env.example` contains server-only placeholders; no credentials are required for local contract validation.
+The public dashboard uses `/` (Korean by default, `?lang=en` for English). Reports use `/research?audience=guide` or `/research?audience=technical`. Older public URLs redirect to these pages. The status API reports unavailable when no validated public release is configured. `.env.example` contains server-only placeholders; no credentials are required for local contract validation.
 
 ## Project layout
 
@@ -121,3 +121,19 @@ node --conditions=react-server --test apps/web/test/public-release.integration.m
 - 브라우저 검증: `BUNAKEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs BUNAKEN_BROWSER_EXECUTABLE=/absolute/path/to/chrome node --conditions=react-server --test apps/web/test/transfer-browser.integration.mjs`
 
 현재 24개 관측의 Site 제외·공간 블록 진단은 matched baseline보다 나쁘며 공식 조건 전진은 0/24 제공이다. 추정 기능 구현을 예측력 입증으로 해석하지 않는다. 기존 연구 보고서를 자동 개정·발행하지 않는다.
+
+### 2분할 공개 화면 검증
+
+실제 공개 package에서 생성한 oracle를 사용한다. 새로운 파일 경로를 지정하며 관측·모델·data branch를 수정하지 않는다. 공급 자료가 stale/결측이면 oracle 생성은 실패한다.
+
+```bash
+node --env-file=apps/web/.env.local --conditions=react-server \
+  apps/web/scripts/prepare-workspace-oracle.mjs /tmp/bunaken-workspace-oracle.json
+BUNAKEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright/index.mjs \
+BUNAKEN_BROWSER_EXECUTABLE=/absolute/path/to/browser \
+BUNAKEN_DASHBOARD_URL=http://localhost:3000 \
+BUNAKEN_WORKSPACE_ORACLE=/tmp/bunaken-workspace-oracle.json \
+node --conditions=react-server --test apps/web/test/dashboard-workspace.browser.integration.mjs
+```
+
+오늘/내일/모레, ko/en, 1920/375/360px에서 Site 선택·PCI/모델 조류/조석·환경 표·원고 전환·SVG 폭 적용을 확인한다. Playwright와 oracle 설정이 없으면 skip하며 검증 통과로 보고하지 않는다. 실제 production build 서버를 대상으로 실행한다. 원고 결과와 데이터 hash는 UI 변경으로 재작성하지 않는다.
