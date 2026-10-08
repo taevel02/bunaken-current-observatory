@@ -14,11 +14,25 @@ export function environmentSamples(data: Dashboard, day: string, siteId: string,
   return { rows, values, provider };
 }
 
-// A comparison uses the same actual timestamp for every Site, without nearest-cell/time substitution.
-export function noonSample(data: Dashboard, day: string, siteId: string, depth: number | null, variable: string, source: string, unit: string): EnvironmentSample | null {
+// Every column and Site uses one actual provider timestamp; no nearest-row substitution.
+export function comparisonTime(data: Dashboard, day: string, sites: {id: string; reference_depth_m: number | null}[]): string | null {
+  let common: Set<string> | undefined;
+  const columns = [["uo", "copernicus-currents", "m/s"], ["vo", "copernicus-currents", "m/s"],
+    ["wind_direction_10m", "open-meteo-wind", "degree"], ["wave_height", "open-meteo-wave", "m"]];
+  for (const site of sites) for (const [variable, source, unit] of columns) {
+    const { rows } = environmentSamples(data, day, site.id, site.reference_depth_m, variable, source, unit);
+    const times = new Set(rows.map(row => new Date(row.valid_time).toISOString()));
+    common = common === undefined ? times : new Set([...common].filter(at => times.has(at)));
+    if (!common.size) return null;
+  }
+  const noon = Date.parse(`${day}T12:00:00+08:00`);
+  return [...(common ?? [])].sort((a, b) => Math.abs(Date.parse(a) - noon) - Math.abs(Date.parse(b) - noon) || Date.parse(a) - Date.parse(b))[0] ?? null;
+}
+
+export function sampleAt(data: Dashboard, day: string, at: string | null, siteId: string, depth: number | null, variable: string, source: string, unit: string): EnvironmentSample | null {
+  if (!at) return null;
   const { rows, values } = environmentSamples(data, day, siteId, depth, variable, source, unit);
-  const at = Date.parse(`${day}T12:00:00+08:00`);
-  const matches = rows.filter(row => Date.parse(row.valid_time) === at);
+  const matches = rows.filter(row => Date.parse(row.valid_time) === Date.parse(at));
   return matches.length === 1 && values.includes(matches[0]) ? matches[0] : null;
 }
 

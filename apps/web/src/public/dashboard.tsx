@@ -6,7 +6,7 @@ import { halfDay, witaDate, dayOffset, type Locale, type Dashboard, type Predict
 import { TideChart } from "@/src/public/tide-chart";
 import { EnvironmentOverview, MoonSummary } from "@/src/public/environment-overview";
 import { SignalChart } from "@/src/public/signal-chart";
-import { noonSample, signalRows } from "@/src/public/environment-samples";
+import { comparisonTime, sampleAt, signalRows } from "@/src/public/environment-samples";
 import { PCIChart } from "@/src/public/pci-chart";
 
 type State={data:Dashboard;status:string;reason:string|null;releaseId:string|null};
@@ -46,9 +46,11 @@ export function DashboardView({locale,day,siteId,state,detail=false,moon=null,mo
  const curveRows:Prediction[]=state.status==='available'?rows.filter(row=>row.site_id===chartSite?.id&&inHorizon(row)):[];
  const series=detail||siteId?undefined:orderedSummaries.map(({site})=>site).map(site=>({id:site.id,name:name(site),selected:site.id===siteId,rows:state.status==='available'?rows.filter(row=>row.site_id===site.id&&inHorizon(row)):[]}));
  const siteHref=(slug:string)=>`/${locale}/sites/${slug}?${query(day,siteId)}`;
+ const comparisonAt=comparisonTime(state.data,day,registry);
+ const comparisonClock=comparisonAt?new Intl.DateTimeFormat(locale,{timeZone:"Asia/Makassar",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(comparisonAt)):null;
  const environmentValue=(id:string,depth:number|null,variable:string,source:string,unit:string)=>{
   if(state.status!=='available')return t.noValue;
-  const sample=noonSample(state.data,day,id,depth,variable,source,unit);
+  const sample=sampleAt(state.data,day,comparisonAt,id,depth,variable,source,unit);
   return sample?.value===null||!sample?t.noValue:sample.value.toFixed(unit==='degree'?0:2);
  };
  const status=state.status==='stale'?t.stale:state.status==='unavailable'?t.unavailable:state.status==='available'?t.dataAvailable:t.modelPending;
@@ -82,7 +84,7 @@ export function DashboardView({locale,day,siteId,state,detail=false,moon=null,mo
 
  </section>
  {!detail&&<section className="mt-3 min-w-0">
-  <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{t.siteComparison}</h2><span className="text-sm text-[#49625c]">{t.environmentAtNoon}</span></div>
+  <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2"><h2 className="m-0 text-lg font-semibold">{t.siteComparison}</h2><span className="text-sm text-[#49625c]">{comparisonClock?`${t.environmentAt} ${comparisonClock} WITA`:t.environmentTimeUnavailable}</span></div>
   <div className="max-h-[46dvh] min-w-0 overflow-auto border-y border-[#c8d6d0] focus-visible:outline-2" role="region" aria-label={t.siteComparison} tabIndex={0}>
    <table className="w-full min-w-[900px] border-collapse text-left text-sm"><thead><tr>{[t.site,t.dataCount,...(modelMode==='transfer'?[t.donorSites]:[]),...(commonDepth===null?[t.depth]:[]),t.morning,t.afternoon,`${t.environment.metrics.uo} (m/s)`,`${t.environment.metrics.vo} (m/s)`,`${t.environment.metrics.wind_direction_10m} (°)`,`${t.environment.metrics.wave_height} (m)`,t.details].map((text,index)=><th key={text} scope="col" className={`sticky top-0 z-10 bg-[#e8efec] px-4 py-2 font-semibold ${index>0?'text-right':'left-0 z-20'}`}>{text}</th>)}</tr></thead><tbody>{orderedSummaries.map(({site,morning,afternoon})=><tr key={site.id} className={`border-t border-[#dce5e0] ${site.id===siteId?'bg-[#e8efec]':''}`}>
     <th scope="row" className={`sticky left-0 z-10 min-w-44 p-0 px-4 text-left font-medium ${site.id===siteId?'bg-[#e8efec]':'bg-white'}`}><Link aria-current={site.id===siteId?'true':undefined} className="flex min-h-11 items-center whitespace-nowrap text-base text-[#155f53] underline-offset-4 hover:underline active:translate-y-px" href={`/${locale}?${query(day,site.id)}`}>{name(site)}</Link></th>
