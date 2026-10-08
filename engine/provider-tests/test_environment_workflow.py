@@ -46,7 +46,11 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         job = data['jobs']['environment']
         self.assertEqual(job['concurrency']['cancel-in-progress'],'false')
         self.assertIn("'seal'",job['concurrency']['group'])
-        self.assertEqual(job['env']['CODE_COMMIT'],'${{ inputs.code_commit || github.sha }}')
+        template = yaml.load((root/'ops/workflows/data-entrypoint.yml').read_text(),Loader=yaml.BaseLoader)
+        pin = template['jobs']['environment']['with']['code_commit']
+        self.assertRegex(pin, r'^[0-9a-f]{40}$')
+        self.assertEqual(job['env']['CODE_COMMIT'], "${{ inputs.code_commit || '" + pin + "' }}")
+        self.assertTrue(template['jobs']['environment']['uses'].endswith('@' + pin))
         self.assertIn("github.event.schedule == '17 12 * * *'",job['env']['OPERATION'])
         prepare = next(step for step in job['steps'] if step.get('name') == 'Fetch verified tidal ephemeris')
         self.assertNotIn('fes_atlas', prepare['run'])
