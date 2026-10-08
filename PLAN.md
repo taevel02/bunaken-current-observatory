@@ -1,7 +1,7 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.10\
-작성일: 2026-10-07\
+버전: 1.11\
+작성일: 2026-10-08\
 기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.6\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
@@ -342,13 +342,13 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 
 ### 배포 전 리뷰에서 확인한 엔진 잔여 (2026-10-08)
 
-| 우선순위 | 항목 | 근거·완료 조건 |
+| 상태 | 항목 | 완료 근거 |
 |---|---|---|
-| P7 전 | 운영 transfer 진단의 실제 Git 증거 확인 | `validate-transfer --operational` CLI는 context의 storage_evidence를 바로 사용한다. baseline CLI와 같은 receipt/Git 확인 및 미확인 evidence 거부 회귀 필요. 공개 release의 별도 storage 검증은 유지됨 |
-| 장기 자동 수집 전 | 모델 환경 이력 중복 누적 | 매 성공 run samples를 context에 내장하여 256MiB 해제/8MiB 압축 상한에 도달할 수 있음. 불변 source 참조·필요 범위 입력 정책과 기존 model 재현/시간 누수/부하 검증 필요. 모델 입력 의미가 바뀌므로 simplify로 처리하지 않음 |
-| CLI 확장 전 | gzip scaler 입력 | 같은 합성 빈 rows JSON은 scaler 성공, gzip JSON은 request_or_configuration_invalid 재현. manifest.json.gz를 read_json으로 먼저 읽어 decode 실패. 호환 decode와 plain/rows/backfill 경계 회귀 필요 |
+| 완료 | 운영 transfer 진단의 실제 Git 증거 확인 | 실제 observation history·receipt·원본 projection·cutoff 검증 연결. 회귀 red/green 통과 |
+| 완료 | 모델 환경 이력 중복 누적 | SHA-256 불변 environment-input 참조 저장, 확장 hash·legacy replay·실제 snapshot roundtrip 확인. 실행 시 전체 이력 메모리·사용량 측정은 P7에 남음 |
+| 완료 | gzip scaler 입력 | bounded plain/gzip decode 통합. 수정 전 실패·수정 후 동등 rows 회귀 통과 |
 
-현재 UI·refactor는 위 엔진 동작을 변경하지 않았다. 새 연구 결론·모델 계산·실제 환경 재수집·production 배포는 수행하지 않았다. 기존 P7 WAF·운영 환경·예약·backup·사용량 검수도 남는다.
+위 항목은 초기 UI·refactor 리뷰에서 확인했고 아래 후속 엔진 작업으로 해소했다. P7 WAF·운영 환경·예약·backup·사용량 검수는 남는다. 연구 release v1.0.1은 변경하지 않았다.
 
 ### P7 전 엔진 수정·참조 저장 검증 (2026-10-08)
 
