@@ -10,13 +10,13 @@ import { canonicalTransfer, validTransfer } from "#public/transfer-guard.mjs";
 import type { Dashboard } from "@/src/public/model";
 
 const hash = (raw: string | Uint8Array) => createHash("sha256").update(raw).digest("hex");
-export const loadPublicRelease = cache(async () => {
+export const loadPublicRelease = cache(async (day?: string) => {
   const empty: Dashboard = { forecast_kind: "experimental", sites: [], source_generated_at: null, schema_version: "1.0", generated_at: null, valid_start: null, valid_end: null, predictions: [], tides: [], observations: [], sources: [], anchor_similarity: { value: null, environment_restored: false, validated: false, reason_codes: ["anchor_environment_unavailable"] } };
   const owner = process.env.GITHUB_OWNER, repo = process.env.GITHUB_REPO;
   if (!owner || !repo || !/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(repo)) return { data: empty, releaseId: null, status: "unavailable", reason: "no_release_configured" };
   const base = `https://raw.githubusercontent.com/${owner}/${repo}/data/web/`;
-  async function read(path: string) {
-    const response = await fetch(base + path, { ...(path === "latest.json" ? { next: { revalidate: 60 } } : { cache: "force-cache" as const }), signal: AbortSignal.timeout(10000), redirect: "error" });
+  async function read(path: string, ref = "data") {
+    const response = await fetch(base.replace("/data/web/", `/${ref}/web/`) + path, { ...(path === "latest.json" && ref === "data" ? { next: { revalidate: 60 } } : { cache: "force-cache" as const }), signal: AbortSignal.timeout(10000), redirect: "error" });
     if (!response.ok) throw new Error("release_unavailable");
     const reader = response.body?.getReader();
     if (!reader) throw new Error("release_unavailable");
@@ -33,17 +33,17 @@ export const loadPublicRelease = cache(async () => {
     } finally { await reader.cancel(); }
     return Buffer.concat(chunks);
   }
-  try {
-    const pointer = JSON.parse((await read("latest.json")).toString("utf8"));
+  async function load(ref = "data") {
+    const pointer = JSON.parse((await read("latest.json", ref)).toString("utf8"));
     if (!validateLatest(pointer)) throw new Error("release_invalid");
     const prefix = `releases/${pointer.release_id}/`;
-    const rawManifest = await read(prefix + "manifest.json");
+    const rawManifest = await read(prefix + "manifest.json", ref);
     if (hash(rawManifest) !== pointer.manifest_sha256) throw new Error("release_invalid");
     const manifestInput = JSON.parse(rawManifest.toString("utf8"));
     if (!validatePublicRelease(manifestInput)) throw new Error("release_invalid");
     const manifest = manifestInput as { release_id: string; schema_version: string; status: string; files: {path:string;sha256:string}[]; generated_at: string };
     if (manifest.release_id !== pointer.release_id || manifest.status !== "published" || !(["1.1","1.2"].includes(manifest.schema_version)) || manifest.files.length !== 1 || manifest.files[0].path !== "dashboard.json.gz") throw new Error("release_invalid");
-    const raw = await read(prefix + "dashboard.json.gz");
+    const raw = await read(prefix + "dashboard.json.gz", ref);
     if (hash(raw) !== manifest.files[0].sha256) throw new Error("release_invalid");
     const payloadInput = JSON.parse(gunzipSync(raw,{maxOutputLength:releaseLimits.decompressed_bytes}).toString("utf8"));
     if (!validatePublicDashboard(payloadInput)) throw new Error("release_invalid");
@@ -63,6 +63,36 @@ export const loadPublicRelease = cache(async () => {
     const age = data.source_generated_at ? Date.now() - new Date(data.source_generated_at).getTime() : 0;
     if (age < 0) throw new Error("release_invalid");
     return { data, releaseId: manifest.release_id as string, status: !data.source_generated_at ? "insufficient" : age > 36 * 3600000 ? "stale" : "available", reason: !data.source_generated_at ? "insufficient_numeric_labels" : age > 36 * 3600000 ? "stale_required_source" : null };
+  }
+  try {
+    const latest = await load();
+    if (!day) return latest;
+    const at = Date.parse(`${day}T00:00:00+08:00`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(at) || new Date(at + 8 * 3600000).toISOString().slice(0, 10) !== day) throw new Error("date_invalid");
+    const covers = (data: Dashboard) => data.valid_start !== null && data.valid_end !== null &&
+      Date.parse(data.valid_start) <= at && Date.parse(data.valid_end) >= at + 86400000;
+    if (covers(latest.data)) return latest;
+    // Existing immutable packages remain discoverable after latest moves to D+1.
+    // One public history request is shared for five minutes; never read data branch code.
+    if (latest.data.valid_start && at < Date.parse(latest.data.valid_start)) {
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?sha=data&path=web%2Flatest.json&per_page=12`, {
+        next: { revalidate: 300 }, signal: AbortSignal.timeout(10000), redirect: "error",
+      });
+      if (!response.ok) return { ...latest, reason: "date_history_unavailable" };
+      const commits: unknown = await response.json();
+      if (!Array.isArray(commits) || commits.length > 12) throw new Error("release_history_invalid");
+      const seen = new Set([latest.releaseId]);
+      for (const commit of commits) {
+        if (!commit || typeof commit.sha !== "string" || !/^[0-9a-f]{40}$/.test(commit.sha)) throw new Error("release_history_invalid");
+        const pointer = JSON.parse((await read("latest.json", commit.sha)).toString("utf8"));
+        if (!validateLatest(pointer) || typeof pointer.release_id !== "string") throw new Error("release_invalid");
+        if (seen.has(pointer.release_id)) continue;
+        seen.add(pointer.release_id);
+        const previous = await load(commit.sha);
+        if (covers(previous.data)) return previous;
+      }
+    }
+    return { ...latest, reason: "outside_source_horizon" };
   } catch {
     return { data: empty, releaseId: null, status: "unavailable", reason: "release_unavailable" };
   }

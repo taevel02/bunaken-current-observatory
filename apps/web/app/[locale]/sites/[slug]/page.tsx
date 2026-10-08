@@ -9,11 +9,11 @@ import { validDay,witaDate,dayOffset } from "@/src/public/model";
 
 export default async function SitePage({params,searchParams}:{params:Promise<{locale:string;slug:string}>;searchParams:Promise<{date?:string;model?:string;signal?:string}>}) {
  const {locale,slug}=await params;if(locale!=='ko'&&locale!=='en')notFound();
- const state=await loadPublicRelease();
- const registry=state.data.sites.length?state.data.sites:sites;
- const site=registry.find(site=>site.slug===slug);if(!site)notFound();
  const query=await searchParams,today=witaDate();
  const day=validDay(query.date)&&query.date>=today&&query.date<=dayOffset(today,7)?query.date:dayOffset(today,1);
+ const state=await loadPublicRelease(day);
+ const registry=state.data.sites.length?state.data.sites:sites;
+ const site=registry.find(site=>site.slug===slug);if(!site)notFound();
  const modelMode=query.model==='transfer'?'transfer':'baseline';
  const signal=query.signal==='current'?'current':query.signal==='tide'?'tide':'pci';
  const moon=await loadMoon(day,site.lat,site.lon);

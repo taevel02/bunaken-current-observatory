@@ -15,7 +15,7 @@ export default async function Home({params,searchParams}:{params:Promise<{locale
  const modelMode=query.model==='transfer'?'transfer':'baseline';
  const signal=query.signal==='current'?'current':query.signal==='tide'?'tide':'pci';
  const preserved='?'+new URLSearchParams({date:day,site:siteId,model:modelMode,signal});
- const state=await loadPublicRelease();
+ const state=await loadPublicRelease(day);
  const registry=state.data.sites.length?state.data.sites:sites;
  const selected=registry.find(site=>site.id===siteId)??registry[0];
  const moon=await loadMoon(day,selected.lat,selected.lon);
