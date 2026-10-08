@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.3\
+버전: 2.4\
 작성일: 2026-10-07\
 기준: [PRD.md](PRD.md) v1.10 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
@@ -466,3 +466,10 @@ WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 �
 ### 연구 검토와 조회 경계 보강
 
 원고·결과·metadata 편집은 editor의 review flags를 초기화하고 draft로 전환한다. ready→published 요청은 서버에 저장된 ready 원고·결과·핵심 metadata와 일치해야 한다. 응답 손실 시 동일 요청 확인 전 입력을 잠가 재시도 성공으로 새 편집 내용을 덮어쓰지 않는다. 목록 revision보다 상세 응답 revision을 저장 조건으로 사용한다. 공개 목록은 20개씩 metadata만 조회하며 상세는 선택 release만 조회한다. 조회 전체 시간 15초·누적 8MB 제한을 적용한다. 목록의 손상된 개별 release는 다른 항목을 차단하지 않으며 부분 실패 안내를 표시한다.
+
+### 공개 대시보드 날짜 선택·공급 시각 보정 (2026-10-08)
+
+- `loadPublicRelease(day)`는 선택 WITA 날짜 전체를 포함하는 immutable 공개 package를 사용한다. 최신 package가 내일부터 시작하면 `web/latest.json`의 최근 Git commit 이력 12개 범위에서 기존 package를 조회한다. GitHub 공개 API는 5분 재검증 cache, manifest/dashboard는 고정 commit 경로·hash·schema·크기·freshness 검사 유지. main/data의 실행 코드를 읽지 않는다. 이력 조회 실패/범위 밖은 reason을 표시하고 값을 만들지 않는다. API 제한·잦은 수동 발행으로 12개를 초과할 경우를 위한 날짜 index는 P7 개선 대상으로 남긴다.
+- 메인·Site 상세 모두 같은 날짜 선택 함수를 사용한다. 무인자 공개 status/관측 조회는 최신 package 호환 유지. 선택 package의 생성 시각을 항상 표시한다. 과거 package의 관측도 당시 package 범위이며 최신 revision 전체를 과거 forecast에 혼합하지 않는다. 공개 experimental package 조회와 공식 D+1 seal은 구분하며 seal을 교체하지 않는다.
+- 자료 연결 정상은 `공개 자료 연결됨`, 현장 성능은 `현장 예측력 미검증`으로 독립 표시한다. 자료 없음·stale·환경/label 부족은 해당 상태를 보존한다.
+- 환경 비교표는 등록 Site 전체의 u/v·바람 방향·파고에 공통으로 존재하는 실제 공급 시각 중 정오에 가장 가까운 시각을 선택하고 WITA로 명시한다. 동률은 이른 시각이다. 모든 Site/열은 같은 시각이며 개별 Site 최근접 시각 대체나 보간을 하지 않는다. 중복·금지 quality·stale·범위 밖·결측 값은 null 유지한다. 공통 시각이 없으면 그 사유를 표시한다. graph의 원시각 자료와 PCI gate는 변경하지 않는다.
