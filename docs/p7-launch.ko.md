@@ -55,7 +55,7 @@ python3 ops/configure_github.py --apply
 로컬에서 production 값의 형식만 확인하려면 다음을 실행한다. 값 자체는 출력하지 않는다.
 
 ```sh
-node --conditions=react-server --env-file=<Vercel에서 받은 literal production 환경 파일> apps/web/scripts/check-production-env.mjs
+node --conditions=react-server --env-file=.local/production.env apps/web/scripts/check-production-env.mjs
 ```
 
 localhost origin이면 이 검사는 의도적으로 실패한다. 실제 HTTPS origin과 Production 설정을 등록한 뒤 확인한다.
