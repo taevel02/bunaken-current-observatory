@@ -283,7 +283,7 @@ P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_inpu
 | 저장소/PAT | 실제 Git 저장 | adapter·충돌 시뮬레이션 |
 | 소스 계정/dataset/license | 실제 자료 수집·공개 보존 | adapter schema·missing UI |
 | Site geometry | 해당 Site numeric 예측 | unverified 표시·기록 저장 |
-| 9/19 label 의미 | anchor의 numeric training | 원래 기록·rubric 보존 |
+| anchor의 미확인 환경·정확 위치 | 환경 similarity | 확인된 Overall 0.7·Peak 1.0과 원래 precision 보존 |
 | 검증 오차 허용기준 | High support | Low 또는 cold-start 운영 |
 | 실제 데이터 수 | 성능 주장·모델 승격 | 제품 개발·기록·방법론 발행 |
 

@@ -32,7 +32,7 @@
 
 PCI는 관찰자별 무차원 전체 체감 강도다. v1의 `overall_pci`는 다이빙 대표 수준이고 `peak_pci`는 별도 사건 label이다. 순수 수평 강도, m/s, 확률, 위험도와 동일시하지 않는다. 상한은 1.0이 아니며 0 이상의 유한 값을 허용한다.
 
-2026-09-19 Mandolin 약 11:00/15m의 PCI 약 1.00과 down 보고를 보존한다. 알려지지 않은 Zone, overall/peak 의미, 정확 시각, 수직 강도와 환경값을 확정하지 않는다. `legacy_unspecified` 기록은 의미 확인 전 numeric training에서 제외한다. 화면의 anchor 보존과 학습 적격 판단은 별개다.
+2026-09-19 Mandolin의 사용자 확인 Overall 0.7·Peak 1.0과 down 보고를 보존한다. 약 11:00/15m의 초기 사건 정보는 원래 precision으로 보존하며 알려지지 않은 Zone, 정확 시각, 수직 강도와 환경값을 확정하지 않는다. `legacy_unspecified` 기록은 의미 확인 전 numeric training에서 제외한다. 화면의 anchor 보존과 학습 적격 판단은 별개다.
 
 과거 weak/normal을 숫자로 바꾸지 않는다. 9/23의 유속을 9/24에 복사하지 않는다. Windy 보고 값을 Copernicus 관측으로 가장하지 않는다. 가상 사례는 `synthetic` fixture에 두고 실제 초기 데이터에 섞지 않는다.
 
