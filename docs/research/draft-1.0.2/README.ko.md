@@ -2,7 +2,7 @@
 
 기존 v1.0.1 네 원고에서 body를 가져와 가중치·운영 대조·계속되는 관측의 해석을 보강했다. 한국어가 정본이며 영어를 함께 갱신했다. 공개 data branch의 기존 release를 변경하지 않았다. 이 디렉터리는 공개 검토용이며 비공개 초안이 아니다.
 
-results.json은 기존 고정 결과의 원본 bytes다. metadata의 data_cutoff/model context/dataset hash와 결과는 그대로다. 새 성능 수치·DOI·심사 이력을 추가하지 않았다. bundle 생성으로 context·결과 hash 일치를 검증하며 발행 전 narrative/translation/results/rights 검토가 필요하다.
+results.json은 기존 고정 결과의 metrics·data cutoff·model version·dataset hash를 보존한다. release version만 1.0.2로 갱신하여 결과 파일 hash는 새로 계산한다. metadata의 data_cutoff/model context/dataset hash와 결과는 그대로다. 새 성능 수치·DOI·심사 이력을 추가하지 않았다. bundle 생성으로 context·결과 hash 일치를 검증하며 발행 전 narrative/translation/results/rights 검토가 필요하다.
 
 | 보강 주장 | 근거 |
 |---|---|
