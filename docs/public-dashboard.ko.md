@@ -1,6 +1,6 @@
 # 공개 대시보드와 release 운영
 
-P4 화면은 ko/en, WITA 내일 기본값, 오늘부터 D+7, Site 비교·상세·조석·공개 관측·PCI 기준·방법론·자료 상태를 지원한다. Site 예측 기준 수심은 18m다. 현재 release는 experimental이며 공식 D+1 발행이 아니다. P5 모델·검증 gate는 구현되어 있으며 모든 적격 조건을 통과한 슬롯에만 숫자 PCI를 제공한다.
+공개 화면은 /와 /research, ko/en, WITA 내일 기본값, 오늘부터 D+7, Site 비교·선택·PCI/모델 조류/조석·자료 상태를 지원한다. 공개 관측 JSON은 data에 보존하며 PCI 기준은 관리자 도움말·원고에서 설명한다. Site 예측 기준 수심은 18m다. 현재 release는 experimental이며 공식 D+1 발행이 아니다. P5 모델·검증 gate는 구현되어 있으며 모든 적격 조건을 통과한 슬롯에만 숫자 PCI를 제공한다.
 
 ## 최신 공개 동선 (2026-10-08)
 
@@ -16,7 +16,7 @@ Site 표의 동향 u·북향 v·바람 방향·파고는 공통 실제 공급 �
 pnpm dev
 ```
 
-`/ko`, `/en`, `/{locale}/sites/{slug}`, `/{locale}/observations`, `/{locale}/pci`, `/{locale}/methodology`, `/{locale}/status`, `/{locale}/research`, `/api/public/status`를 제공한다. 언어 전환은 선택 Site와 날짜를 유지한다. 1920×1080에서는 PCI 그래프를 상단 전체 폭으로 표시한다. Site를 조회하거나 표의 Site명을 선택하면 해당 Site 곡선만 표시한다. 아래 단일 표는 19 Site 오전·오후 PCI, 동향·북향 유속(m/s), 바람 방향(°), 파고(m)를 유지한다. 표의 상세 링크는 날짜를 유지한 Site 상세로 이동한다. 표 내부를 가로·세로 스크롤하며 헤더와 Site명은 고정한다. 우측 환경 패널은 제거하고 조석·환경 종합은 Site 상세에서 제공한다.
+`/ko`, `/en`, `/{locale}/sites/{slug}`, `/{locale}/observations`, `/{locale}/pci`, `/{locale}/methodology`, `/{locale}/status`, `/{locale}/research`, `/api/public/status`를 제공한다. 언어 전환은 선택 Site와 날짜를 유지한다. 1920×1080에서는 PCI 그래프를 상단 전체 폭으로 표시한다. Site를 조회하거나 표의 Site명을 선택하면 해당 Site 곡선만 표시한다. 아래 단일 표는 19 Site 오전·오후 PCI, 동향·북향 유속(m/s), 바람 방향(°), 파고(m)를 유지한다. 표의 상세 링크는 날짜를 유지한 Site 선택로 이동한다. 표 내부를 가로·세로 스크롤하며 헤더와 Site명은 고정한다. 우측 환경 패널은 제거하고 조석·환경 종합은 Site 상세에서 제공한다.
 
 환경 비교값은 선택 날짜 12:00 WITA와 정확히 일치하는 실제 sample이다. 같은 시각 중복·누락, 수심 불일치, 품질·공개 권한 미충족, stale release는 미제공으로 표시한다. 최근접 시각으로 대체하거나 방향을 평균하지 않는다. 메인 hint의 margin-top은 8px다. 그래프 해석·표시 불가 사유·기준 사건·출처·생성 정보는 연구 상세에서 확인한다. 정상 생성 시각은 연구 상세로 옮기되 오래된 자료의 생성 시각은 메인에 유지한다.
 

@@ -76,3 +76,8 @@ node apps/web/scripts/create-research-bundle.mjs \
 ```
 
 기존 output은 덮어쓰지 않는다. 이 명령은 검토 체크를 모두 false인 draft로 만들며 GitHub에 저장하지 않는다. `/ko/admin/research`의 묶음 가져오기로 입력하고 미리보기·한국어/영어·수치·권리·개인정보를 확인한다. 서버 초안 저장도 공개 Git 저장이다. 실제 발행은 사용자의 원고 검토 후 수행한다.
+
+
+## 현재 개정 원고
+
+[검토용 v1.0.2](draft-1.0.2/README.ko.md)는 기존 v1.0.1의 고정 결과를 보존하고 모델 가중치·공식 대조·지속 관측의 해석을 보강한다. 네 body와 metadata/results의 bundle 검증을 통과했다. 공개 발행은 별도 narrative/translation/results/rights 검토 후 새 release로 수행한다. 운영 성공이 연구 성능을 입증하지 않는다.

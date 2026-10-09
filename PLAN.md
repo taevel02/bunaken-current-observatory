@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.12\
+버전: 1.13\
 작성일: 2026-10-09\
-기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.7\
+기준: [PRD.md](PRD.md) v1.12 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.8\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -264,14 +264,14 @@ P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_inpu
 ## 10 P7 운영 연결과 출시
 
 - [ ] P7-01 production 환경변수·PAT·소스 자격증명을 설정하고 외부 PR/preview 격리를 검증한다.
-- [ ] P7-02 main 보호, data non-force 쓰기, workflow 권한, 고정 commit 참조를 확인한다.
+- [x] P7-02 main 보호, data non-force 쓰기, workflow 권한, 고정 commit 참조를 확인한다.
 - [ ] P7-03 production의 로그인 WAF 규칙, canonical origin, 구버전 deployment 차단을 실제 요청으로 확인한다.
 - [ ] P7-04 수집 07:17/19:17, seal 20:17 WITA를 연결하고 지연·누락 상태를 확인한다.
-- [ ] P7-05 웹 PAT commit 후 작업이 이어지고 GITHUB_TOKEN 후속 commit에 무한 실행 또는 작업 누락이 없는지 확인한다.
-- [ ] P7-06 Git bundle로 관측·snapshot·seal·manifest 복원을 검증한다.
+- [x] P7-05 웹 PAT commit 후 작업이 이어지고 GITHUB_TOKEN 후속 commit에 무한 실행 또는 작업 누락이 없는지 확인한다.
+- [x] P7-06 Git bundle로 관측·snapshot·seal·manifest 복원을 검증한다.
 - [ ] P7-07 저장 p95·홈페이지 반영 지연·모바일 LCP·source age·사용량을 측정한다. 목표와 실제를 나란히 기록한다.
 - [ ] P7-08 출처·데이터 이용 조건·한국어/영어 안내·cold-start 상태를 최종 검수한다.
-- [ ] P7-09 현재 작업에서 승인된 범위에 따라 배포·공개를 수행하고 버전·일시·검증 근거를 남긴다.
+- [x] P7-09 현재 작업에서 승인된 범위에 따라 배포·공개를 수행하고 버전·일시·검증 근거를 남긴다.
 
 완료 근거: PRD 전체 acceptance matrix. 운영 연결 전에는 fixture 기반 preview로 검토 가능하게 만들며 사용자에게 빈 화면이나 계획만을 승인 대상으로 제시하지 않는다.
 
@@ -401,3 +401,20 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 - 원격 Linux CI `37825928973`, main `f8cf2f9ef63cada1bbc31af0314a86a2589c6098`: completed/success. 웹·엔진·provider 검증 모두 통과했다. 초기 mutable pin 기대 테스트 실패는 새 immutable 계약 회귀로 해소했다.
 - 오늘 2026-10-09 공식 seal catch-up 복구 완료: data `8707b4cbadf94fc9b13f80eba8997574ac8289c0`, run `12ab5b5b-e1f0-59cc-88af-811903b2c95a`. receipt 전체를 실제 Git bytes·artifact·모델 재현·실제 저장 시각으로 검증하고 2026-10-08 WITA 20:00 이전 후보를 선택했다. 늦은 seal 작업이며 당시 예약 성공으로 표시하지 않는다. forecast는 새 계산·변경하지 않았다.
 - 운영 증거 반영 main `214c2cb6d5f5615e58b7002865143db7c2a914b9`, CI `37826507329`: completed/success.
+
+
+### P7 공개 환경 재점검 (2026-10-09)
+
+| ID | 상태 | 현재 증거·남은 조건 |
+|---|---|---|
+| P7-01 | 일부 완료 | 사용자 Production 변수 재설정·재배포, 실제 CSRF 200·관리자 미인증 401/no-store 확인. 외부 PR/preview 실제 격리 검증 남음 |
+| P7-02 | 완료 | main PR/CI·main/data 삭제/force 금지 ruleset, main/data environment branch policy, data 고정 pin 확인 |
+| P7-03 | 미완료 | 실제 WAF 11번째 429, canonical Origin, 옛 deployment/세션 철회 증거 남음 |
+| P7-04 | 일부 완료 | 예약 collect run 37877079532 success. scheduled seal의 이전 실패 및 다음 정상 실행 검수 남음 |
+| P7-05 | 완료 | 관측 commit 182be0ce309357ac74a0ddcc7d343abeb48181fa의 push run 37925946858 success. validation 경로가 관측 trigger를 재호출하지 않는 한 chain 확인 |
+| P7-06 | 완료 | 최신 code/data bundle 27,331,273bytes, 복원·fsck·ref 일치 확인. ignored credential·원 atlas 미포함 |
+| P7-07 | 미완료 | production p95/반영 지연/LCP/source age/사용량 실측 부족 |
+| P7-08 | 일부 완료 | 공개 ko/en·연구 페이지 200. 360px·출처·cold-start 최종 실기기 검수 남음 |
+| P7-09 | 완료 | 사용자 승인 Production 재배포와 HTTPS 공개 두 페이지·인증 초기화 정상 확인. 이 체크가 나머지 운영 acceptance 성공을 뜻하지 않음 |
+
+공개 준비 변경: 기존 head title 누락을 Metadata API로 보완하고 헤더의 연구 메뉴 오른쪽에 GitHub 링크를 추가한다. 코드 MIT·자료별 이용 조건·기여/보안 안내를 연결한다. 연구 v1.0.2는 기존 frozen metrics를 유지한 검토용 개정이며 별도 발행 검토가 필요하다. P7 미확인 항목을 일괄 완료 처리하지 않는다.
