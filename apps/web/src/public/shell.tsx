@@ -1,3 +1,4 @@
+import {LanguageLinks} from "@/src/public/language-links";
 import Link from "next/link";
 import { messages } from "@/i18n/messages";
 import { publicUrl } from "@/src/public/urls";
@@ -18,7 +19,7 @@ export function PublicShell({locale, title, query = "", path = "", workspace = f
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">{headerMeta}<nav className="flex flex-wrap items-center gap-x-3 sm:gap-x-5" aria-label={t.dashboard}>
         {([["", t.dashboard], ["/research", t.research]] as const).map(([href, label]) => <Link key={href} aria-current={currentPath === href ? "page" : undefined} className="inline-flex min-h-11 items-center text-sm text-[#155f53] underline-offset-4 aria-[current=page]:font-semibold hover:underline active:translate-y-px" href={publicUrl(href, locale)}>{label}</Link>)}
         <a className="inline-flex min-h-11 items-center text-sm text-[#155f53] underline-offset-4 hover:underline active:translate-y-px" href="https://github.com/taevel02/bunaken-current-observatory" aria-label={t.sourceCode}><span className="sm:hidden">GitHub</span><span className="hidden sm:inline">{t.sourceCode}</span></a>
-        <span className="inline-flex gap-x-3 sm:gap-x-5">{(["ko", "en"] as const).map(language => <Link key={language} lang={language} aria-current={locale === language ? "page" : undefined} className="inline-flex min-h-11 items-center text-sm text-[#155f53] aria-[current=page]:font-semibold active:translate-y-px" href={publicUrl(currentPath, language, values)}>{language === "ko" ? "한국어" : "English"}</Link>)}</span>
+        <LanguageLinks locale={locale} path={currentPath} values={values}/>
       </nav></div>
     </header>
     <h1 className="sr-only">{title}</h1><div id="public-content" className={workspace ? "xl:flex xl:min-h-0 xl:flex-1 xl:flex-col" : undefined}>{children}</div>

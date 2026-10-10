@@ -1,3 +1,5 @@
+import {Suspense} from "react";
+import {ResearchSkeleton} from "@/src/public/loading-skeleton";
 import Link from "next/link";
 import { messages } from "@/i18n/messages";
 import { researchBody, renderResearchMetrics } from "@bunaken/contracts/research";
@@ -14,6 +16,9 @@ export async function generateMetadata({searchParams}: {searchParams: Promise<Qu
 }
 export default async function ResearchPage({searchParams}: {searchParams: Promise<Query>}) {
   const query = await searchParams;
+  return <Suspense key={JSON.stringify(query)} fallback={<ResearchSkeleton locale={query.lang === "en" ? "en" : "ko"}/>}><ResearchContent query={query}/></Suspense>;
+}
+async function ResearchContent({query}: {query: Query}) {
   const locale = query.lang === "en" ? "en" : "ko";
   const audience = query.audience === "technical" ? "technical" : "guide";
   const t = messages[locale].research;
