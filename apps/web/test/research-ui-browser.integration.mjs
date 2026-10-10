@@ -1,4 +1,4 @@
-/* global document */
+/* global document, innerWidth */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import process from 'node:process';
@@ -6,8 +6,9 @@ import {mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 const enabled=Boolean(process.env.BUNAKEN_UI_URL&&process.env.BUNAKEN_PLAYWRIGHT_MODULE);
 async function launch(){
-  const {chromium}=await import(process.env.BUNAKEN_PLAYWRIGHT_MODULE);
-  return chromium.launch({headless:true,executablePath:process.env.BUNAKEN_BROWSER_EXECUTABLE||undefined});
+  const {chromium,webkit}=await import(process.env.BUNAKEN_PLAYWRIGHT_MODULE);
+  const safari=process.env.BUNAKEN_BROWSER_ENGINE==='webkit';
+  return (safari?webkit:chromium).launch({headless:true,...(process.env.BUNAKEN_BROWSER_EXECUTABLE?{executablePath:process.env.BUNAKEN_BROWSER_EXECUTABLE}:{})});
 }
 test('moon remains visible and follows the selected WITA date in both languages',{skip:!enabled},async()=>{
   const browser=await launch();
