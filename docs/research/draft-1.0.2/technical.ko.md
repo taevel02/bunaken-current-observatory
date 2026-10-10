@@ -18,7 +18,7 @@
 
 연구 registry에는 부나켄의 19개 Site가 있다. 좌표는 저자가 확인한 대표 입수점을 나타내며 실제 보트 입수 위치가 매번 같다는 뜻은 아니다. 비교 수심은 모든 Site에 설정한 대표값 18m다. 이는 각 다이빙의 실측 평균 수심이 아니다.
 
-환경 격자는 공급 모델의 공간 표본 셀이다. 좌표에서 6km 이내의 유효 해상 셀을 제한적으로 선택하는 기준이지, 그 반경의 모든 벽·동굴·해안 흐름을 대표한다는 검증이 아니다. 지도에서 판독한 빨간 화살표는 진행축, 파란 화살표는 외해축의 근사 reference geometry다. 북쪽 위 지도를 가정해 약 15° 단위로 옮겼으며 실제 벽 법선, GPS 궤적 또는 직교 축이 아니다. 두 축은 독립적으로 투영한다. Zone 위치 자료는 없어 Zone 단위 예측과 geometry group을 만들지 않았다.
+환경 격자는 공급 모델의 공간 표본 셀이다. 좌표에서 6km 이내의 유효 해상 셀을 제한적으로 선택하는 기준이지, 그 반경의 모든 벽·동굴·해안 흐름을 대표한다는 검증이 아니다. 각 Site의 진행축과 외해축은 저자가 반복 다이빙 경험으로 제안한 운영 기본 방향이다. 2026-10-04 저자가 제공한, 부나켄 해안선과 Site 이름 위에 진행 방향을 빨간색·외해 방향을 파란색으로 손으로 주석한 비공개 화면을 내부 판독에 사용했다. 북쪽이 위라는 가정 아래 두 방향을 독립적으로 판독하고 약 15° 간격의 방위각으로 기록했다. 이는 측량한 벽 법선이나 GPS 궤적, 직교 축이 아니다. 배경 지도 URL·축척·투영법은 기록하지 않았고 원 주석 화면도 공개하지 않으므로 원본 주석에서 방위각을 다시 판독하는 절차는 독립 재현할 수 없다. 계산 재현의 입력은 공개 config/geometry.json의 wall_bearing_deg(진행축을 담는 기존 필드명)와 offshore_bearing_deg다. 북쪽을 0°로 두고 시계 방향으로 정의한 이 숫자와 direction_reference의 가정·반올림·판독 provenance를 사용하면 벡터 투영 계산을 재현할 수 있다. 현장 방향의 정확성이 독립 검증됐다는 뜻은 아니다. Zone 위치 자료는 없어 Zone 단위 예측과 geometry group을 만들지 않았다.
 
 따라서 공간 해상도는 Site의 실측 흐름 규모보다 거칠 수 있다. 동일하거나 가까운 provider cell이 여러 Site에서 선택될 수도 있다. 좌표 정확성과 사용자가 경험하는 국지 흐름의 대표성은 별개다.
 
@@ -38,7 +38,7 @@ PCI는 무차원·관찰자 주관 지표다. 기준 anchor는 0.0(영향 거의
 - **Copernicus Marine GLOBAL_ANALYSISFORECAST_PHY_001_024**, dataset `cmems_mod_glo_phy-cur_anfc_0.083deg_PT6H-i` 등, version `202406`: uo/vo 수평 해양 모델 조류, thetao 모델 수온. 설정한 제품은 0.083° 격자, 6시간 시간 간격, 50개 native depth level이며 선택 수심의 실제 좌표축도 보존한다. 모델 조류는 현장 유속 계측값이 아니다.
 - **Open-Meteo ECMWF 및 Marine 계열**: 바람, 파랑, 너울 관련 변수. API 응답 간격과 provider native resolution은 같은 의미가 아니다. 바람 방향 convention과 모델 수평 조류 방향을 구분한다.
 
-활성 feature는 `tide_rate_m_per_hour`, `tide_excursion_m`; `current_along_m_s`, `current_cross_m_s`, `current_speed_m_s`, `horizontal_shear_10_30_m_s`; `modelled_temperature_c`, `temperature_difference_10_30_c`; `wind_along_m_s`, `wind_cross_m_s`, `wave_height_m`, `wave_period_s`, `swell_height_m`, `swell_period_s`, `wave_direction_sin/cos`, `swell_direction_sin/cos`다. 바람과 파랑·너울은 지도 기준축으로 projection되며 방향각은 주기형 성분으로 비교한다. 10m과 30m 사이 차이는 수평 층간 차이며 수직 유속이 아니다. 조석 excursion은 요청된 60분 window 내부 범위이지 전체 조석 주기 범위가 아니다.
+registry에 등록된 후보 feature는 `tide_rate_m_per_hour`, `tide_excursion_m`; `current_along_m_s`, `current_cross_m_s`, `current_speed_m_s`, `horizontal_shear_10_30_m_s`; `modelled_temperature_c`, `temperature_difference_10_30_c`; `wind_along_m_s`, `wind_cross_m_s`, `wave_height_m`, `wave_period_s`, `swell_height_m`, `swell_period_s`, `wave_direction_sin/cos`, `swell_direction_sin/cos`다. 실제 비교에 사용되는 feature는 model version의 comparison scope와 scaler·target mask로 결정한다. v1.3의 18m 비교는 10–30m 차이를 거리에서 제외한다. 바람은 지도 기준축으로 projection되며 방향각은 주기형 성분으로 비교한다. 10m과 30m 사이 차이는 수평 층간 차이며 수직 유속이 아니다. 조석 excursion은 요청된 60분 window 내부 범위이지 전체 조석 주기 범위가 아니다.
 
 Salinity와 달 정보는 수집·표시될 수 있지만 이번 PCI active feature가 아니다. 실제 dive computer 수온도 현재 comparison scope의 모델 수온과 별개의 관측값이며, 이를 모델 수온으로 치환하지 않는다. observation의 28°C 확인은 현장 label과 함께 보존되지만 modelled-temperature feature의 대체·보정값은 아니다.
 
