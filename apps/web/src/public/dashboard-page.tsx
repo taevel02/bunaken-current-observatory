@@ -1,3 +1,4 @@
+import {DashboardNavigation} from "@/src/public/dashboard-navigation";
 import {Suspense} from "react";
 import {comparisonColumns} from "@/src/public/environment-samples";
 import {MoonSummary} from "@/src/public/environment-overview";
@@ -22,10 +23,10 @@ export function DashboardPage({query}: {query: DashboardQuery}) {
   const preserved = "?" + new URLSearchParams({date:day,model:modelMode,lang:locale,...(query.site?{site:query.site}:{})});
   const moonSite=sites.find(site=>site.id===query.site)??sites[0];
   const moon=<Suspense fallback={<div className="flex items-center gap-2 text-sm"><strong>{messages[locale].public.environment.moon}:</strong><LoadingBlock className="h-4 w-28" label={messages[locale].public.loadingMoon}/></div>}><DashboardMoon day={day} locale={locale} lat={moonSite.lat} lon={moonSite.lon}/></Suspense>;
-  return <PublicShell workspace headerMeta={<Suspense fallback={<div role="status" className="flex flex-wrap items-center gap-x-4 text-sm text-[#49625c]"><strong className="font-medium">{messages[locale].public.loadingData}</strong><span className="inline-flex items-center gap-1">{messages[locale].public.generated}: <LoadingBlock className="h-4 w-36"/></span></div>}><DashboardStatus day={day} locale={locale}/></Suspense>} locale={locale} title={messages[locale].public.dashboard} query={preserved}>
+  return <DashboardNavigation><PublicShell workspace headerMeta={<Suspense fallback={<div role="status" className="flex flex-wrap items-center gap-x-4 text-sm text-[#49625c]"><strong className="font-medium">{messages[locale].public.loadingData}</strong><span className="inline-flex items-center gap-1">{messages[locale].public.generated}: <LoadingBlock className="h-4 w-36"/></span></div>}><DashboardStatus day={day} locale={locale}/></Suspense>} locale={locale} title={messages[locale].public.dashboard} query={preserved}>
     <DashboardToolbar locale={locale} day={day} moon={moon}/>
     <Suspense key={`${locale}:${day}:${modelMode}`} fallback={<DashboardSkeleton locale={locale} day={day} siteId={query.site} modelMode={modelMode}/>}><DashboardData query={query} locale={locale} day={day} modelMode={modelMode}/></Suspense>
-  </PublicShell>;
+  </PublicShell></DashboardNavigation>;
 }
 
 async function DashboardData({query,locale,day,modelMode}: {query:DashboardQuery;locale:"ko"|"en";day:string;modelMode:"baseline"|"transfer"}) {
