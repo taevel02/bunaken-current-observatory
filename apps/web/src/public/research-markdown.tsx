@@ -12,7 +12,13 @@ function inline(text:string, codeCommit:string) {
     const bare = match[5]?.replace(/[.,;:!?]+$/, "");
     const label = match[1] ?? code ?? bare ?? match[6];
     const href = match[2] ?? (match[4] ? fileUrl(match[4],codeCommit) : bare ?? fileUrl(match[6]??"",codeCommit));
-    parts.push(href ? <a key={match.index} href={href} className="text-[#155f53] underline [overflow-wrap:anywhere]" rel="noopener noreferrer">{label}</a> : match[3] ? <strong key={match.index}>{match[3]}</strong> : <Fragment key={match.index}>{label}</Fragment>);
+    if(href) {
+      parts.push(<a key={match.index} href={href} className="text-[#155f53] underline [overflow-wrap:anywhere]" rel="noopener noreferrer">{label}</a>);
+    } else if(match[3]) {
+      parts.push(<strong key={match.index}>{match[3]}</strong>);
+    } else {
+      parts.push(<Fragment key={match.index}>{label}</Fragment>);
+    }
     if(bare) parts.push(match[5].slice(bare.length));
     offset=(match.index??0)+match[0].length;
   }
