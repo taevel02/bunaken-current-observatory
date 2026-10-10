@@ -111,7 +111,12 @@ jobs:
           MODEL_RUBRIC_VERSION: ${{ vars.MODEL_RUBRIC_VERSION }}
         run: |
           if [[ -z "$TARGET_DATE" && "$OPERATION" != match ]]; then
-            TARGET_DATE=$(TZ=Asia/Makassar date -d tomorrow +%F)
+            if [[ "$OPERATION" == seal ]]; then
+              # A delayed run after midnight must seal today, not a future cutoff.
+              TARGET_DATE=$(uv run --project engine --locked python -c 'from datetime import datetime,timedelta; from zoneinfo import ZoneInfo; print((datetime.now(ZoneInfo("Asia/Makassar"))+timedelta(hours=4)).date().isoformat())')
+            else
+              TARGET_DATE=$(TZ=Asia/Makassar date -d tomorrow +%F)
+            fi
           fi
           export GITHUB_OWNER="${REPOSITORY%/*}"
           export GITHUB_REPO="${REPOSITORY#*/}"
