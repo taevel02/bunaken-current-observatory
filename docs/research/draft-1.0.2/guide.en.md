@@ -59,7 +59,7 @@ The graph must not draw a line through an unsupported gap. A break means evidenc
 
 ## What the current results show
 
-The public repository currently contains 24 dive records across nine dates. One measured temperature was corrected from 27°C to 28°C in a new revision. Measured temperature is not currently used by the PCI model, so the PCI input records did not change, but the research dataset was recalculated as a new version.
+The dataset frozen for this report at 2026-10-07T00:05:28Z contains 24 dive records across nine dates. One measured temperature was corrected from 27°C to 28°C in a new revision. Measured temperature is not currently used by the PCI model, so the PCI input records did not change, but the research dataset was recalculated as a new version.
 
 The evaluation that follows actual next-day cutoffs produced no PCI predictions for 24 test observations. This does not mean 24 predictions were wrong. There were no predictions to compare, so accuracy could not be calculated. The correction was saved after that day's first prediction window began. We did not recreate that day's result later and present it as an advance prediction.
 
@@ -89,7 +89,7 @@ The table is sorted by stored observations, from most to fewest. Ties follow the
 | Bunaken Timur Two | {{metrics.site_records_bunaken_timur_two}} |
 | Pangalisang | {{metrics.site_records_pangalisang}} |
 
-There are no saved observations yet for Mike's Point, Tengah, Johnson's Wall, Raymond's Point, Tanjung Parigi and Pangalisang. Modelled ocean velocity from another Site can be shown as environmental information, but velocity alone cannot tell us how strongly a diver would feel the current. These are different kinds of information. Estimating PCI at an unvisited Site requires separate tests that hold out an entire Site. Unsupported PCI values stay blank for now.
+There are no saved observations yet for Mike's Point, Tengah, Johnson's Wall, Raymond's Point, Tanjung Parigi and Pangalisang. Modelled ocean velocity from another Site can be shown as environmental information, but velocity alone cannot tell us how strongly a diver would feel the current. These are different kinds of information. Estimating PCI at an unvisited Site requires separate tests that hold out an entire Site. The current dashboard labels cross-Site transfer as a separate, unvalidated experiment. It is not included in this report's frozen results, and a displayed number does not demonstrate accuracy.
 
 The graph draws only PCI values actually calculated by the model and breaks where evidence is missing. It does not invent values to create a smooth sine-like wave. Tide and modelled-current lines may be shown separately where data are available, but they must not be mixed with PCI as though they meant the same thing.
 

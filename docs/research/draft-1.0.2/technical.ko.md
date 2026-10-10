@@ -6,7 +6,7 @@
 
 이 보고서는 인도네시아 북술라웨시 부나켄의 다이브 사이트를 대상으로, 다이버가 사후 기록한 주관적 체감 조류 지표(Perceived Current Intensity, PCI)와 조석·해양·기상 모델 자료를 연결하는 초기 연구 방법과 정정 후 계산 상태를 기술한다. PCI는 현장 유속이나 위험을 측정하는 변수가 아니다. 예측 엔진은 고정된 환경 feature 거리와 품질·출처·Site 가중치를 사용하는 Weighted Analog이며, numeric gate 미충족 시 abstain한다.
 
-정정된 공개 관측은 24건, 서로 다른 WITA 날짜는 9일이다. 수정된 dataset context의 24개 후보를 재계산했으며 환경 scaler에는 2,736개 행이 사용됐다. 같은 Site 근거를 포함한 공식 조건 forward 평가는 24건 중 0건을 제공했다. 따라서 이 정정 context에서 발행할 target PCI 슬롯은 없다. 이전 backfill 기반 forward와 LODO 수치는 진단용이며 D+1 운영 성능을 입증하지 않는다. 예측력은 입증되지 않았고 본문은 진행 중인 연구의 방법과 현재 상태를 보고한다.
+고정 기준일(2026-10-07T00:05:28Z)의 정정된 공개 관측은 24건, 서로 다른 WITA 날짜는 9일이다. 수정된 dataset context의 24개 후보를 재계산했으며 환경 scaler에는 2,736개 행이 사용됐다. 같은 Site 근거를 포함한 공식 조건 forward 평가는 24건 중 0건을 제공했다. 따라서 이 정정 context에서 발행할 target PCI 슬롯은 없다. 이전 backfill 기반 forward와 LODO 수치는 진단용이며 D+1 운영 성능을 입증하지 않는다. 예측력은 입증되지 않았고 본문은 진행 중인 연구의 방법과 현재 상태를 보고한다.
 
 ## 연구 질문과 범위
 
@@ -64,7 +64,7 @@ LODO는 하루를 제외하고 나머지 날짜로 계산하는 사후 진단이
 
 ## 정정 데이터 계산·검증 결과
 
-현재 공개 data head는 a431af719b869ae578b95e1392df8618cee0dfc8이다. 이번 계산은 이전에 확인된 immutable historical environment bundle을 재사용했다. 새 source 수집 시도에서는 필요한 historical source를 확보하지 못했으므로 신규 환경 수집이나 production 운영 검증을 주장하지 않는다. 관측 24건, WITA 날짜 9일, 등록 Site 19곳을 사용했다. Dataset SHA-256은 958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c다. 모델은 weighted-analog-v1.3, scope는 site-18m-v2다. Muka Kampung 실측 수온을 27°C에서 28°C로 정정했다. 실측 수온은 active PCI feature가 아니므로 후보 PCI 입력은 바뀌지 않았지만, 정정 context와 hash는 갱신했다.
+이 보고서의 고정 분석 data head는 a431af719b869ae578b95e1392df8618cee0dfc8이다. 이번 계산은 이전에 확인된 immutable historical environment bundle을 재사용했다. 새 source 수집 시도에서는 필요한 historical source를 확보하지 못했으므로 신규 환경 수집이나 production 운영 검증을 주장하지 않는다. 관측 24건, WITA 날짜 9일, 등록 Site 19곳을 사용했다. Dataset SHA-256은 958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c다. 모델은 weighted-analog-v1.3, scope는 site-18m-v2다. Muka Kampung 실측 수온을 27°C에서 28°C로 정정했다. 실측 수온은 active PCI feature가 아니므로 후보 PCI 입력은 바뀌지 않았지만, 정정 context와 hash는 갱신했다.
 
 정정 revision은 2026-10-07 08:05 WITA에 저장됐다. 첫 target window가 08:00에 시작된 뒤이므로 해당 날짜 PCI를 만들지 않았다. 이전 target 환경 snapshot도 전날 20:00 WITA cutoff 후 수집되어 공식 D+1 forecast로 쓸 수 없다. 정정 이후 정보를 과거 예측인 것처럼 재생하지 않았다. 엄격한 target replay는 수행되지 않았고, 정정 head의 target PCI 결과는 발행하지 않는다.
 
@@ -82,7 +82,7 @@ LODO는 하루를 제외하고 나머지 날짜로 계산하는 사후 진단이
 
 공식 조건 forward는 0/24 제공이다. MAE null은 틀린 예측 24건이 아니라 비교할 예측이 없어 오차를 계산하지 않았다는 뜻이다. 별도 retrospective forward는 3/24를 제공했고 MAE 0.06713으로 matched global baseline 0.04000과 Site baseline 0.05833보다 컸다. 이후 수집된 backfill 환경자료를 사용했다. LODO는 21/24 제공, MAE 0.06816, global baseline 0.07524, Site baseline 0.06857이었다. LODO는 held-out 날짜보다 뒤의 자료를 학습에 포함할 수 있으므로 D+1 운영 성능이 아니다.
 
-현재 공개 관측의 Site별 수는 아래와 같다. observation ID별 최신 상태 한 건만 집계하고 withdrawn는 제외했다. 관측 수 내림차순이며 동률은 registry 순서다.
+고정 분석 기준일의 공개 관측 Site별 수는 아래와 같다. observation ID별 최신 상태 한 건만 집계하고 withdrawn는 제외했다. 관측 수 내림차순이며 동률은 registry 순서다.
 
 | Site | 공개 관측 수 |
 |---|---|
@@ -106,7 +106,7 @@ LODO는 하루를 제외하고 나머지 날짜로 계산하는 사후 진단이
 | Bunaken Timur Two | {{metrics.site_records_bunaken_timur_two}} |
 | Pangalisang | {{metrics.site_records_pangalisang}} |
 
-이 수는 현재 공개 저장소 기록이며 저자의 전체 다이빙 횟수가 아니다. Mike's Point, Tengah, Johnson's Wall, Raymond's Point, Tanjung Parigi, Pangalisang에는 저장 관측이 없다. 동일 Site 근거 gate를 유지했다. 다른 Site의 모델 유속은 환경 자료로 비교할 수 있어도 유속 자체로 사람의 PCI를 만들거나 빈 Site의 PCI를 채우지 않는다. Site 간 PCI 전이는 별도 모델로 격리하고 whole-Site holdout, spatial block, 독립 날짜, coverage와 matched baseline을 검증하기 전에는 공개 예측으로 제공하지 않는다.
+이 수는 고정 분석 기준일의 공개 저장소 기록이며 저자의 전체 다이빙 횟수가 아니다. Mike's Point, Tengah, Johnson's Wall, Raymond's Point, Tanjung Parigi, Pangalisang에는 저장 관측이 없다. 동일 Site 근거 gate를 유지했다. 다른 Site의 모델 유속은 환경 자료로 비교할 수 있어도 유속 자체로 사람의 PCI를 만들거나 빈 Site의 PCI를 채우지 않는다. 운영 화면의 site-transfer-v1은 별도 실험으로 격리하며 unvalidated·experimental/very_low로 표시한다. 이 보고서의 frozen 결과에는 포함하지 않는다. whole-Site holdout, spatial block, 독립 날짜, coverage와 matched baseline 검증 전에는 검증된 예측으로 해석하지 않는다.
 
 PCI 그래프는 실제 계산된 유효 시간 슬롯만 연결하고 결측·중복·gate 차단 구간은 끊는다. 보기 좋은 삼각함수 곡선을 위해 PCI 값을 합성하지 않는다. 조석과 모델 유속은 별도 환경 계열로 보여줄 수 있지만 PCI와 단위·의미가 다르다. 현재 결과는 전체 Site PCI 곡선이나 공간 전이 성능을 검증하지 않았다.
 
@@ -114,7 +114,7 @@ PCI 그래프는 실제 계산된 유효 시간 슬롯만 연결하고 결측·�
 
 단일 관찰자와 현재 anchor를 쓰므로 observer drift, 반복성, observer 간 척도 차이를 추정하지 못했다. Site 방문은 균등하지 않고, 여러 Site에는 저장 관측이 전혀 없다. 같은 Site 요건 때문에 데이터가 많은 Site의 결과가 우세하며, site별 MAE도 표본 부족 상태다. reference geometry, 18m 대표 수심 및 6km grid limit은 분석상 기준이며 현장 흐름 검증이 아니다. Zone/GPS 자료도 없다. native grid와 국지 지형 간 대표성은 미측정이다.
 
-향후에는 최소 한 달 이상의 전향적 관측, 동일 observer rubric 기록, timestamp·환경 cutoff 보존, 누락·abstention 추적, 사전 정의한 baseline 비교를 수행한다. 다른 Site 자료 전이는 whole-Site holdout·spatial block 및 독립 날짜 검증, matched baseline 대비 오차와 제공률 검토를 통과하기 전 별도 experimental model로 발행하지 않는다. 관측 수 자체는 예측력을 보장하지 않는다. 곡선은 실제 산출 점 사이만 연결하고 누락 구간은 끊어야 한다. 삼각함수 형태의 가상 PCI를 채워 그리지 않는다.
+향후에는 최소 한 달 이상의 전향적 관측, 동일 observer rubric 기록, timestamp·환경 cutoff 보존, 누락·abstention 추적, 사전 정의한 baseline 비교를 수행한다. 다른 Site 자료 전이 실험은 whole-Site holdout·spatial block 및 독립 날짜 검증, matched baseline 대비 오차와 제공률 검토 전에는 검증된 예측으로 승격하지 않는다. 관측 수 자체는 예측력을 보장하지 않는다. 곡선은 실제 산출 점 사이만 연결하고 누락 구간은 끊어야 한다. 삼각함수 형태의 가상 PCI를 채워 그리지 않는다.
 
 재현 기준: model `weighted-analog-v1.3`; scope `site-18m-v2`; dataset hash와 source data/code commits는 위 metadata에 동일하게 기록; scaler cutoff는 데이터 cutoff와 분리해 구현 bundle manifest에 보존한다. immutable source snapshot과 result hash가 연구 release에 연결된다. 공개물은 원 NetCDF/FES atlas가 아니라 허용된 유도 결과만 포함한다. FES·Copernicus·Open-Meteo의 데이터·라이선스·attribution은 각 provider 조건을 따른다.
 

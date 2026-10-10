@@ -5,7 +5,7 @@
       "role": "연구 구상, 현장 다이빙·관측·기록, 자료 분석·해석, 원고 작성 및 자체 발행"
     }
   ],
-  "change_reason": "고정 결과를 유지하고 Weighted Analog 가중치·공식 D+1 대조·지속 관측의 해석을 보강한 검토용 개정",
+  "change_reason": "고정 결과를 보존하고 Weighted Analog 가중치·공식 D+1 대조·지도 근사축 재현 한계·지속 관측 및 별도 전이 실험의 해석을 보강",
   "code_commit": "dffe7b7a387551a7ebf3e09518adfc547e067245",
   "data_cutoff": "2026-10-07T00:05:28Z",
   "dataset_sha256": "958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c",

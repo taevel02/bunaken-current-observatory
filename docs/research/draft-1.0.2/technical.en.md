@@ -6,7 +6,7 @@ Version 1.0.2 · Independent research report · Not peer reviewed
 
 This report documents an initial method and corrected recalculation for linking post-dive, observer-reported Perceived Current Intensity (PCI) with tide, ocean and weather model data at Bunaken dive sites, North Sulawesi, Indonesia. PCI is not a measurement of in-situ current velocity or risk. The estimator is a Weighted Analog model with a fixed environmental feature distance and quality, provenance and Site weights. It abstains when numeric eligibility gates are not met.
 
-The corrected public dataset contains 24 observations across nine WITA dates. The corrected context was recalculated for 24 candidates using 2,736 environmental scaler rows. The operational forward evaluation provided zero predictions for 24 test observations under the same-Site and source gates. No target PCI slots are published from this corrected context. Earlier retrospective forward and LODO metrics are diagnostics only and do not establish D+1 operational skill. Predictive performance has not been demonstrated; this report describes an ongoing study.
+The corrected public dataset frozen at 2026-10-07T00:05:28Z contains 24 observations across nine WITA dates. The corrected context was recalculated for 24 candidates using 2,736 environmental scaler rows. The operational forward evaluation provided zero predictions for 24 test observations under the same-Site and source gates. No target PCI slots are published from this corrected context. Earlier retrospective forward and LODO metrics are diagnostics only and do not establish D+1 operational skill. Predictive performance has not been demonstrated; this report describes an ongoing study.
 
 ## Research question and scope
 
@@ -62,13 +62,13 @@ LODO excludes one date and evaluates it using the remaining dates. Dates after t
 
 ## Corrected-data calculation and validation results
 
-The current public data head is a431af719b869ae578b95e1392df8618cee0dfc8. This calculation replayed previously verified immutable historical environmental bundles. A fresh source-collection attempt did not return the required historical sources; no new provider collection or production validation is claimed. The analysis uses 24 public observations across nine WITA dates and 19 registered Sites. Dataset SHA-256 is 958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c. The model is weighted-analog-v1.3, comparison scope site-18m-v2. One observed temperature was corrected from 27°C to 28°C. Observed temperature is not an active PCI feature, so the 24 PCI candidate feature records did not change; the corrected context and hash did.
+The frozen analysis data head for this report is a431af719b869ae578b95e1392df8618cee0dfc8. This calculation replayed previously verified immutable historical environmental bundles. A fresh source-collection attempt did not return the required historical sources; no new provider collection or production validation is claimed. The analysis uses 24 public observations across nine WITA dates and 19 registered Sites. Dataset SHA-256 is 958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c. The model is weighted-analog-v1.3, comparison scope site-18m-v2. One observed temperature was corrected from 27°C to 28°C. Observed temperature is not an active PCI feature, so the 24 PCI candidate feature records did not change; the corrected context and hash did.
 
 The correction revision was stored at 08:05 WITA on 7 October 2026, after the first target window began at 08:00. No target PCI was generated from that post-window context. The previously available target environmental snapshot preceded the temperature correction but was retrieved after the prior-day 20:00 WITA operational cutoff. It cannot be presented as an official D+1 forecast. No historical prediction was reconstructed with information unavailable at the required cutoff.
 
 | Result | Value |
 |---|---|
-| Current public observations / WITA dates | {{metrics.observations}} / {{metrics.observation_days}} |
+| Frozen public observations / WITA dates | {{metrics.observations}} / {{metrics.observation_days}} |
 | Registered Sites | {{metrics.total_sites}} |
 | Operational-cutoff forward: predictions / test observations | {{metrics.operational_forward_predicted}} / {{metrics.operational_forward_test}} |
 | Operational-cutoff forward coverage / abstentions | {{metrics.operational_forward_coverage}} / {{metrics.operational_forward_abstention}} |
@@ -80,7 +80,7 @@ The correction revision was stored at 08:05 WITA on 7 October 2026, after the fi
 
 The official-condition forward evaluation provided 0 of 24 observations. Its MAE is null because there were no predictions to compare, not because 24 predictions all failed. This differs from the number of corrected-head target slots replayed: no corrected-head target PCI slots were replayed. A separate retrospective forward evaluation provided 3 of 24 observations, with MAE 0.06713, worse than its matched global baseline 0.04000 and Site baseline 0.05833. It used later backfilled environmental data. LODO provided 21 of 24 observations with MAE 0.06816; its global baseline was 0.07524 and Site baseline 0.06857. LODO can include dates later than the held-out date in training and is not D+1 operational performance.
 
-The table lists current public observations by Site. Only the latest state for each observation ID is counted; withdrawn records are excluded. Rows are sorted by count descending, with ties in registry order.
+The table lists public observations by Site at the frozen analysis cutoff. Only the latest state for each observation ID is counted; withdrawn records are excluded. Rows are sorted by count descending, with ties in registry order.
 
 | Site | Public observations |
 |---|---|
@@ -104,7 +104,7 @@ The table lists current public observations by Site. Only the latest state for e
 | Bunaken Timur Two | {{metrics.site_records_bunaken_timur_two}} |
 | Pangalisang | {{metrics.site_records_pangalisang}} |
 
-These counts describe current records in this public repository, not the author's lifetime dive count. Mike's Point, Tengah, Johnson's Wall, Raymond's Point, Tanjung Parigi and Pangalisang have no stored observations. The same-Site evidence gate remains in force. Current velocity from another Site can be compared as an environmental model input, but it cannot itself create a human PCI label or fill an unobserved Site's PCI. Cross-Site PCI transfer needs a separate model and must pass whole-Site holdout, spatial-block, independent-date, coverage and matched-baseline evaluation before public prediction.
+These counts describe records in this public repository at the frozen analysis cutoff, not the author's lifetime dive count. Mike's Point, Tengah, Johnson's Wall, Raymond's Point, Tanjung Parigi and Pangalisang have no stored observations. The same-Site evidence gate remains in force. Current velocity from another Site can be compared as an environmental model input, but it cannot itself create a human PCI label or fill an unobserved Site's PCI. The operational dashboard isolates site-transfer-v1 as an unvalidated experiment with experimental/very_low support. It is not part of the frozen results in this report. Whole-Site holdout, spatial-block, independent-date, coverage and matched-baseline evaluation are required before interpreting transfer as validated prediction.
 
 The PCI graph connects only valid calculated time slots. Missing, duplicate and withheld slots break the line. Values are not synthesized to make a smooth sine-shaped curve. Environmental current or tide series may be shown separately across Sites when available, but they have different units and meanings from PCI. These data do not validate all-Site PCI curves or spatial transfer skill.
 
