@@ -9,7 +9,7 @@
 ## 현재 화면과 운영
 
 - `/`: 한국어 기본, `?lang=en` 영어. 왼쪽 Site 비교표·오른쪽 선택 Site의 PCI/모델 조류/조석. 날짜·Site·모델 선택을 query로 유지한다.
-- 공개 페이지는 자료 대기 중 스켈레톤을 표시한다. 달 정보는 별도로 로드하며 같은 날짜의 Site·모델 선택은 추가 서버 요청 없이 반영한다. 날짜 변경은 새 자료를 읽는다.
+- 공개 페이지는 헤더·날짜/모델 선택·Site 이름·열 제목·그래프 제목/시간축을 먼저 보여준다. 수치·곡선 등 자료 의존 영역만 스켈레톤을 표시하며 자료 도착 시 미전송 선택을 유지한다. 달 정보는 별도로 로드하며 같은 날짜의 Site·모델 선택은 추가 서버 요청 없이 반영한다. 날짜 변경은 새 자료를 읽는다.
 - `/research`: `audience=guide` 일반용, `audience=technical` 전문가용. 이전 공개 URL은 canonical 페이지로 연결한다.
 - `/admin/login`: 서버 자체 인증. 로그인 설정은 Production 서버 변수이며 preview/development는 관리자 기능을 차단한다.
 - main: 코드·schema·신뢰된 workflow. data: 관측·snapshot·공식 seal·공개 패키지·연구 파일. 서버 DB·OAuth·LLM runtime 의존성은 없다.

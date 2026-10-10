@@ -168,3 +168,5 @@ UI 문자열을 translation key로 관리하고 ko/en 누락 검사를 둔다. `
 - 최신 운영 안내는 README.md와 docs/README.ko.md에서 연결한다. dated 검증·연구 근거는 historical evidence로 보존하며 현재 운영 절차로 복사하지 않는다. docs/environment-sources.ko.md는 사용자 요청 없이 변경하지 않는다.
 - 발행 연구 수정은 새 version의 네 원고·단일 results·metadata로 검토한다. results의 version은 release와 같아야 하며 수치가 같아도 결과 파일 hash를 새로 계산한다. 기존 release·frozen metrics·data cutoff를 덮어쓰지 않는다.
 - Next.js 로컬 dotenv용 escaped dollar와 Vercel 변수의 literal dollar를 구분한다. Node --env-file의 해석을 Next.js 환경 로더와 동일하다고 가정하지 않는다. 검사에 secret 값을 출력하지 않는다.
+
+- 공개 로딩은 정적 헤더·날짜/모델 조작·Site 이름·열 제목·그래프 제목/시간축을 먼저 표시한다. 수치·곡선·생성 시각·실제 공급 상태만 대기 표시하며 대기를 `0`·`미제공`·정상 자료로 표현하지 않는다. 조작부는 자료 Suspense 밖에 둬 완료 시 미전송 입력을 초기화하지 않는다. 전역 loading으로 관리자 인증 redirect의 HTTP 상태를 변경하지 않는다.
