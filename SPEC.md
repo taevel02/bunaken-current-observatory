@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.7\
+버전: 2.8\
 작성일: 2026-10-08\
-기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md)\
+기준: [PRD.md](PRD.md) v1.12 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
 
@@ -494,3 +494,10 @@ WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 �
 - 공식 seal의 run/manifest/storage commit과 실제 receipt confirmation을 대조한다. cutoff 이후 저장·backfill·현재 재계산 PCI를 공식 예측으로 바꾸지 않는다. observer/rubric별 지표를 분리하고 실제 다이빙과 60분 슬롯의 근사 시간 차이를 저장한다.
 - 수치 재생의 플랫폼 roundoff는 absolute/relative 1e-12 범위에서만 허용한다. 원본 hash·설정·scaler identity·gate·문자열·구조는 정확히 검사한다. 원본 저장 파일과 과거 예측은 변경하지 않는다.
 - Vercel preview/development 관리자 인증은 enabled 값과 무관하게 차단한다. Production Secret은 preview/외부 PR과 분리하고 data Git 배포를 비활성화한다. 실제 production WAF·Origin·옛 deployment 차단은 외부 운영 acceptance로 확인한다.
+
+
+### 공개 metadata·문서 계약 (2026-10-09)
+
+공개 두 경로의 Metadata API는 ko/en 제목·설명·Open Graph·Twitter summary와 canonical/언어 alternates를 제공한다. 대시보드의 날짜·Site·모델 변형은 언어별 대표 URL로 canonical을 정리한다. 연구는 audience와 명시 slug/version을 보존한다. 관리자 경로는 기본 noindex, robots는 관리자/API crawl을 제외하며 인증 경계는 그대로다. sitemap은 공개 언어·원고 독자 경로만 포함한다.
+
+헤더의 소스 링크는 연구 메뉴 뒤에 둔다. 연구 페이지의 진행 중 안내는 현재 운영과 보고서의 frozen 결과를 구분하며 새 수치나 성능 주장을 추가하지 않는다. v1.0.2는 검토용 body 원고와 version이 일치하는 results를 묶고, 발행된 v1.0.1은 불변 보존한다.

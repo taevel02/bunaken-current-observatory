@@ -12,10 +12,10 @@
 ## 저장소와 branch 준비
 
 1. GitHub에서 하나의 **public** repository를 만든다. `main`을 기본 branch로 설정한다.
-2. `main`에는 검토된 애플리케이션 코드, schema, 문서, 신뢰된 workflow만 둔다. 제품 구현 후 프로젝트 구조 예시에 따라 저장소 디렉터리를 추가한다.
+2. `main`에는 검토된 애플리케이션 코드, schema, 문서, 신뢰된 workflow만 둔다. 현재 저장소의 실제 구조·schema·allowlist를 따른다.
 3. `data` branch를 `main`에서 생성한다. 운영 데이터가 아직 없다면 branch만 만들고 예시 관측을 실제 기록으로 취급하지 않는다.
-4. `data`에는 확인된 운영 파일만 둔다. 초기 경로 계약은 `config/sites.json`, `config/zones.json`, `observers/`, `observations/`, `environment-links/`, `idempotency/`, `audit/`, `snapshots/`, `seals/`, `backfills/`, `research/`, `jobs/`, `models/`, `scalers/`, `releases/`, `latest.json`이다. 앱에서 해당 형식을 구현하기 전 빈 구조를 임의 데이터로 채우지 않는다.
-5. `data/.github/workflows/on-data.yml`은 설치 운영자가 두는 최소 entrypoint로 제한한다. 공개 `main`의 검토된 고정 commit에 있는 reusable workflow만 호출하고, `data`의 파일을 실행 코드로 checkout·실행하지 않는다. 실제 실행 workflow는 지원되는 GitHub Actions 설정을 확인한 뒤 추가한다.
+4. `data`에는 확인된 운영 파일만 둔다. 경로 계약은 저장 adapter와 packages/contracts의 현재 schema를 따른다. observations/revisions, current pointer, idempotency/audit, snapshots, receipts/confirmations, environment-inputs, seals, validation/d1, web/releases/latest, research가 구현되어 있다. 앱에서 해당 형식을 구현하기 전 빈 구조를 임의 데이터로 채우지 않는다.
+5. `data/.github/workflows/data-entrypoint.yml`은 설치 운영자가 두는 최소 entrypoint로 제한한다. 공개 `main`의 검토된 고정 commit에 있는 reusable workflow만 호출하고, `data`의 파일을 실행 코드로 checkout·실행하지 않는다. 설치 template은 ops/workflows/data-entrypoint.yml이며 검토된 main full SHA와 CODE_COMMIT을 함께 고정한다.
 
 ## 접근·보호 규칙
 

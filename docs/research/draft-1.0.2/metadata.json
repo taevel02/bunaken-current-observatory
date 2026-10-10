@@ -1,0 +1,59 @@
+{
+  "authors": [
+    {
+      "alias": "권태훈 / PADI IDC Staff Instructor (#554990)",
+      "role": "연구 구상, 현장 다이빙·관측·기록, 자료 분석·해석, 원고 작성 및 자체 발행"
+    }
+  ],
+  "change_reason": "고정 결과를 보존하고 Weighted Analog 가중치·공식 D+1 대조·지도 근사축 재현 한계·지속 관측 및 별도 전이 실험의 해석을 보강",
+  "code_commit": "dffe7b7a387551a7ebf3e09518adfc547e067245",
+  "data_cutoff": "2026-10-07T00:05:28Z",
+  "dataset_sha256": "958cdbda3c831df6b756c8a19772f0139e34014a68244ca707ce823fbca2f03c",
+  "model_version": "weighted-analog-v1.3",
+  "peer_review_status": "not_peer_reviewed",
+  "references": [
+    {
+      "title": "FES2022 handbook",
+      "url": "https://www.aviso.altimetry.fr/fileadmin/documents/data/tools/hdbk_FES2022.pdf"
+    },
+    {
+      "title": "AVISO License",
+      "url": "https://www.aviso.altimetry.fr/fileadmin/documents/data/License_Aviso.pdf"
+    },
+    {
+      "title": "Copernicus Global Ocean Physics Analysis and Forecast",
+      "url": "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024/services"
+    },
+    {
+      "title": "Copernicus Service Commitments and Licence",
+      "url": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence"
+    },
+    {
+      "title": "Open-Meteo ECMWF API",
+      "url": "https://open-meteo.com/en/docs/ecmwf-api"
+    },
+    {
+      "title": "Open-Meteo Marine Weather API",
+      "url": "https://open-meteo.com/en/docs/marine-weather-api"
+    },
+    {
+      "title": "Open-Meteo Terms",
+      "url": "https://open-meteo.com/en/terms"
+    },
+    {
+      "title": "Corrected public observation data head",
+      "url": "https://github.com/taevel02/bunaken-current-observatory/commit/a431af719b869ae578b95e1392df8618cee0dfc8"
+    },
+    {
+      "title": "Corrected Mandolin Overall and Peak labels",
+      "url": "https://github.com/taevel02/bunaken-current-observatory/commit/85189a85fae3189db798b39b6264096a4c22d900"
+    }
+  ],
+  "slug": "bunaken-pci-methodology-initial-observations",
+  "source_data_commit": "a431af719b869ae578b95e1392df8618cee0dfc8",
+  "title": {
+    "en": "Bunaken PCI Prediction: Methodology and Initial Recalculation Results",
+    "ko": "부나켄 PCI 예측 연구: 방법론과 초기 재계산 결과"
+  },
+  "version": "1.0.2"
+}

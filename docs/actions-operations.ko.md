@@ -89,3 +89,8 @@ Actions 자체가 비용·소스 요청 제한·전송 시간을 면제하지 �
 ## P7 연결 갱신 (2026-10-09)
 
 현재 trusted pin은 `bf50ec9af2301505886cdd99c71214ad44253721`이다. main 예약과 data entrypoint 모두 이 코드에 고정한다. `operation=match`는 공급 재수집 없이 공식 D+1 대조를 수행한다. collect/seal 뒤에도 같은 chain에서 대조하므로 별도 GITHUB_TOKEN push 실행에 의존하지 않는다. `validation/d1/` 저장은 observation push filter에 포함하지 않아 재귀 실행하지 않는다. 배포·보호 설정과 실제 검수는 [P7 운영 안내](p7-launch.ko.md)를 따른다.
+
+
+## 지연 실행의 seal 기본 날짜
+
+collect의 기본 대상은 WITA 내일이다. seal은 실행 시점에 가장 최근 지나간 WITA 20:00 cutoff의 대상 날짜를 선택한다. WITA 현재 시각에 4시간을 더한 날짜를 사용해 20:00 이후에는 내일, 자정 이후 지연 실행은 오늘을 선택한다. 명시한 `date_wita`는 유지한다. 이 날짜 복구는 성공한 과거 snapshot만 선택하며 cutoff 이후 수집 자료를 과거 forecast로 만들지 않는다. GitHub 예약 지연으로 실행이 제시간에 성공했다는 뜻은 아니다.

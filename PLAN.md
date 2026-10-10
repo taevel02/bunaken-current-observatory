@@ -1,8 +1,8 @@
 # Bunaken Current Observatory 구현 계획
 
-버전: 1.12\
+버전: 1.13\
 작성일: 2026-10-09\
-기준: [PRD.md](PRD.md) v1.11 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.7\
+기준: [PRD.md](PRD.md) v1.12 · [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) v2.8\
 상태: P0–P6 연구 release v1.0.1 완료. P7 실제 운영·production 배포 검증은 남아 있다.
 
 ## 1 문서 역할과 실행 원칙
@@ -264,14 +264,14 @@ P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_inpu
 ## 10 P7 운영 연결과 출시
 
 - [ ] P7-01 production 환경변수·PAT·소스 자격증명을 설정하고 외부 PR/preview 격리를 검증한다.
-- [ ] P7-02 main 보호, data non-force 쓰기, workflow 권한, 고정 commit 참조를 확인한다.
+- [x] P7-02 main 보호, data non-force 쓰기, workflow 권한, 고정 commit 참조를 확인한다.
 - [ ] P7-03 production의 로그인 WAF 규칙, canonical origin, 구버전 deployment 차단을 실제 요청으로 확인한다.
 - [ ] P7-04 수집 07:17/19:17, seal 20:17 WITA를 연결하고 지연·누락 상태를 확인한다.
-- [ ] P7-05 웹 PAT commit 후 작업이 이어지고 GITHUB_TOKEN 후속 commit에 무한 실행 또는 작업 누락이 없는지 확인한다.
-- [ ] P7-06 Git bundle로 관측·snapshot·seal·manifest 복원을 검증한다.
+- [x] P7-05 웹 PAT commit 후 작업이 이어지고 GITHUB_TOKEN 후속 commit에 무한 실행 또는 작업 누락이 없는지 확인한다.
+- [x] P7-06 Git bundle로 관측·snapshot·seal·manifest 복원을 검증한다.
 - [ ] P7-07 저장 p95·홈페이지 반영 지연·모바일 LCP·source age·사용량을 측정한다. 목표와 실제를 나란히 기록한다.
 - [ ] P7-08 출처·데이터 이용 조건·한국어/영어 안내·cold-start 상태를 최종 검수한다.
-- [ ] P7-09 현재 작업에서 승인된 범위에 따라 배포·공개를 수행하고 버전·일시·검증 근거를 남긴다.
+- [x] P7-09 현재 작업에서 승인된 범위에 따라 배포·공개를 수행하고 버전·일시·검증 근거를 남긴다.
 
 완료 근거: PRD 전체 acceptance matrix. 운영 연결 전에는 fixture 기반 preview로 검토 가능하게 만들며 사용자에게 빈 화면이나 계획만을 승인 대상으로 제시하지 않는다.
 
@@ -283,7 +283,7 @@ P5 구현 근거: `config/model.json`, `analog.py`, `model_data.py`, `model_inpu
 | 저장소/PAT | 실제 Git 저장 | adapter·충돌 시뮬레이션 |
 | 소스 계정/dataset/license | 실제 자료 수집·공개 보존 | adapter schema·missing UI |
 | Site geometry | 해당 Site numeric 예측 | unverified 표시·기록 저장 |
-| 9/19 label 의미 | anchor의 numeric training | 원래 기록·rubric 보존 |
+| anchor의 미확인 환경·정확 위치 | 환경 similarity | 확인된 Overall 0.7·Peak 1.0과 원래 precision 보존 |
 | 검증 오차 허용기준 | High support | Low 또는 cold-start 운영 |
 | 실제 데이터 수 | 성능 주장·모델 승격 | 제품 개발·기록·방법론 발행 |
 
@@ -401,3 +401,37 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 - 원격 Linux CI `37825928973`, main `f8cf2f9ef63cada1bbc31af0314a86a2589c6098`: completed/success. 웹·엔진·provider 검증 모두 통과했다. 초기 mutable pin 기대 테스트 실패는 새 immutable 계약 회귀로 해소했다.
 - 오늘 2026-10-09 공식 seal catch-up 복구 완료: data `8707b4cbadf94fc9b13f80eba8997574ac8289c0`, run `12ab5b5b-e1f0-59cc-88af-811903b2c95a`. receipt 전체를 실제 Git bytes·artifact·모델 재현·실제 저장 시각으로 검증하고 2026-10-08 WITA 20:00 이전 후보를 선택했다. 늦은 seal 작업이며 당시 예약 성공으로 표시하지 않는다. forecast는 새 계산·변경하지 않았다.
 - 운영 증거 반영 main `214c2cb6d5f5615e58b7002865143db7c2a914b9`, CI `37826507329`: completed/success.
+
+
+### P7 공개 환경 재점검 (2026-10-09)
+
+| ID | 상태 | 현재 증거·남은 조건 |
+|---|---|---|
+| P7-01 | 일부 완료 | 사용자 Production 변수 재설정·재배포, 실제 CSRF 200·관리자 미인증 401/no-store 확인. 외부 PR/preview 실제 격리 검증 남음 |
+| P7-02 | 완료 | main PR/CI·main/data 삭제/force 금지 ruleset, main/data environment branch policy, data 고정 pin 확인 |
+| P7-03 | 일부 완료 | 2026-10-10 Production 로그인 1~10회 403·11번째 429, foreign Origin 403 확인. 옛 deployment 차단·세션 철회 증거 남음 |
+| P7-04 | 일부 완료 | 예약 collect run 37877079532 success. scheduled seal의 이전 실패 및 다음 정상 실행 검수 남음 |
+| P7-05 | 완료 | 관측 commit 182be0ce309357ac74a0ddcc7d343abeb48181fa의 push run 37925946858 success. validation 경로가 관측 trigger를 재호출하지 않는 한 chain 확인 |
+| P7-06 | 완료 | 최신 code/data bundle 27,331,273bytes, 복원·fsck·ref 일치 확인. ignored credential·원 atlas 미포함 |
+| P7-07 | 미완료 | production p95/반영 지연/LCP/source age/사용량 실측 부족 |
+| P7-08 | 일부 완료 | 공개 ko/en·연구 페이지 200. 360px·출처·cold-start 최종 실기기 검수 남음 |
+| P7-09 | 완료 | 사용자 승인 Production 재배포와 HTTPS 공개 두 페이지·인증 초기화 정상 확인. 이 체크가 나머지 운영 acceptance 성공을 뜻하지 않음 |
+
+공개 준비 변경: 기존 head title 누락을 Metadata API로 보완하고 헤더의 연구 메뉴 오른쪽에 GitHub 링크를 추가한다. 코드 MIT·자료별 이용 조건·기여/보안 안내를 연결한다. 연구 v1.0.2는 기존 frozen metrics를 유지한 검토용 개정이며 별도 발행 검토가 필요하다. P7 미확인 항목을 일괄 완료 처리하지 않는다.
+
+
+### 공개 로딩·지도 서술·WAF 검증 (2026-10-10)
+
+- 공개 대시보드·연구 원고에 Suspense 스켈레톤을 적용했다. 달 정보는 별도 스트리밍하며 같은 날짜의 Site·모델 선택은 검증된 공개 데이터로 즉시 변경한다. 날짜 변경은 서버에서 해당 날짜 자료를 다시 읽는다. 관리자 인증 리다이렉트는 기존 HTTP 상태를 유지한다.
+- 최종 로컬 production build의 스켈레톤 첫 스트림 105ms, 데이터 workspace 1,398ms, Site 선택 51ms·추가 요청 0건을 확인했다. 단일 로컬 측정이며 Production p95/LCP 개선 증거가 아니다. 기존 Production에서는 스켈레톤 부재·네트워크 차단 시 Site 전환 실패를 재현했다.
+- 웹·계약·인증 HTTP 테스트 73개, 로딩 browser 테스트 2개, lint·typecheck·production build 통과. 360/1920px × ko/en에서 문서 가로 넘침 없음. 브라우저 검증은 실제 공개 자료를 읽되 인증·관측 저장을 수행하지 않았다.
+- Production smoke: 공개 ko/en 및 연구 200, CSRF 200·미인증 관측 401/private/no-store, foreign Origin 로그인 403. rate-limit 검증은 같은 실행 IP에서 빈 로그인 POST 10회 403, 11번째 429를 확인했다. 해당 IP·지역·실행 시점의 증거이며 전 세계 전역 카운터를 입증하지 않는다. 비밀번호·세션 변경, 구배포 차단은 수행하지 않았다.
+- 연구 검토용 v1.0.2는 지도 근사축의 입력·방위각 기준·반올림 및 원 지도 메타데이터 부족으로 원 해석을 독립 재현할 수 없다는 한계를 명시한다. 공개 geometry로 벡터 계산은 재현 가능하다. 기존 v1.0.1·frozen 결과·geometry는 변경하지 않았다. 새 원고 bundle 검증 통과; 발행 검토는 별도다.
+
+
+### 모바일 입력·연구 개정·지연 seal 후속 (2026-10-10)
+
+- iPhone 16/Safari 신고에 따라 날짜·시간·기존 datetime-local 입력의 native 폭·WebKit 값 정렬 제약을 보완하고 400px 미만의 입·출수는 한 열로 배치했다. 생성·정정 경계를 Chrome/WebKit × 360/375/390px × ko/en에서 확인했다. 기존 에뮬레이션에서 원 신고 자체가 재현되지 않았으므로 iPhone 실기기 재확인은 남는다. 레이아웃 계약 회귀 red/green, 웹 74개 및 합성 관리자 시간 계산·저장 실패 보존·초안 복구 통과.
+- 연구 v1.0.2 발행 commit `d449770941e32b2841c67e7fdbd30178bbde91f3`. 네 원고와 단일 results를 원격 readback으로 검증했다. 이전 release 파일과 frozen 수치는 보존한다. 24건은 고정 분석 기준일의 관측 수이며 최신 누적 건수가 아니다. 코드 MIT가 원고·공급 자료에 적용된다고 주장하지 않는다.
+- 옛 Production deployment의 관리자·CSRF·관측 경로는 Vercel의 `/login` 보호 화면으로 연결되는 것을 확인했다. 당시의 실제 세션 쿠키가 없어 세션 철회 실증은 별도로 남긴다.
+- 최근 예약 collect `38016806955` success. 예약 seal `37972963721`은 자정 이후 지연 실행에서 내일 날짜를 골라 `seal_before_cutoff`로 실패했다. 가장 최근 지나간 cutoff의 날짜를 선택하도록 수정하며 19:59/20:00/20:17/자정 이후 경계 회귀 통과. 수집·공식 cutoff·snapshot은 변경하지 않는다. 실제 예약 성공은 다음 실행에서 검수한다.

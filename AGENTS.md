@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 개발 지침
 
-이 파일은 저장소 루트에 두는 개발 에이전트와 기여자의 작업 지침이다. 제품 요구사항의 정본은 같은 디렉터리의 `PRD.md` v1.11이다. 2026-09-27 결정에 따라 외부 OAuth와 비공개 저장소를 사용하지 않는다. 기본 작업·보고 언어는 한국어다. 제품은 한국어 우선이며 영어를 함께 지원한다.
+이 파일은 저장소 루트에 두는 개발 에이전트와 기여자의 작업 지침이다. 제품 요구사항의 정본은 같은 디렉터리의 `PRD.md` v1.12이다. 2026-09-27 결정에 따라 외부 OAuth와 비공개 저장소를 사용하지 않는다. 기본 작업·보고 언어는 한국어다. 제품은 한국어 우선이며 영어를 함께 지원한다.
 
 이 문서와 PRD는 구현 계획이다. 존재하지 않는 코드·명령·배포·테스트 결과를 있다고 보고하지 않는다. 첫 구현에서 실제 구조와 실행 명령을 만든 후 README와 이 문서의 명령 안내를 함께 갱신한다.
 
@@ -32,7 +32,7 @@
 
 PCI는 관찰자별 무차원 전체 체감 강도다. v1의 `overall_pci`는 다이빙 대표 수준이고 `peak_pci`는 별도 사건 label이다. 순수 수평 강도, m/s, 확률, 위험도와 동일시하지 않는다. 상한은 1.0이 아니며 0 이상의 유한 값을 허용한다.
 
-2026-09-19 Mandolin 약 11:00/15m의 PCI 약 1.00과 down 보고를 보존한다. 알려지지 않은 Zone, overall/peak 의미, 정확 시각, 수직 강도와 환경값을 확정하지 않는다. `legacy_unspecified` 기록은 의미 확인 전 numeric training에서 제외한다. 화면의 anchor 보존과 학습 적격 판단은 별개다.
+2026-09-19 Mandolin의 사용자 확인 Overall 0.7·Peak 1.0과 down 보고를 보존한다. 약 11:00/15m의 초기 사건 정보는 원래 precision으로 보존하며 알려지지 않은 Zone, 정확 시각, 수직 강도와 환경값을 확정하지 않는다. `legacy_unspecified` 기록은 의미 확인 전 numeric training에서 제외한다. 화면의 anchor 보존과 학습 적격 판단은 별개다.
 
 과거 weak/normal을 숫자로 바꾸지 않는다. 9/23의 유속을 9/24에 복사하지 않는다. Windy 보고 값을 Copernicus 관측으로 가장하지 않는다. 가상 사례는 `synthetic` fixture에 두고 실제 초기 데이터에 섞지 않는다.
 
@@ -126,7 +126,7 @@ UI 문자열을 translation key로 관리하고 ko/en 누락 검사를 둔다. `
 
 기본안은 Next.js/TypeScript 웹, Python 엔진, JSON Schema 계약, Vercel 서버 함수, GitHub Actions다. 구체 버전은 구현 시 지원 상태를 확인한 뒤 lockfile로 고정한다. 실제 코드를 읽기 전 특정 패키지가 설치되어 있다고 가정하지 않는다.
 
-예상 경로는 `apps/web`, `packages/contracts`, `engine`, `config`, `docs`, `tests`, `ops/workflows`다. 공개 code의 고정 commit/tag에서 신뢰된 운영 코드를 가져온다. data branch의 데이터·연구 원고가 실행 코드를 주입하게 하지 않는다. 외부 Actions는 immutable commit SHA로 고정한다. 예약 workflow는 main에 두고 data push는 설치 시 둔 trusted entrypoint에서 고정 commit의 reusable workflow를 호출한다. GITHUB_TOKEN commit이 다음 workflow를 자동으로 실행할 것에 의존하지 않고 필요한 단계를 한 chain에서 이어 실행한다. data 변경에 Vercel preview build를 만들지 않는다.
+주요 경로는 `apps/web`, `packages/contracts`, `engine`, `config`, `docs`, `tests`, `ops/workflows`다. 공개 code의 고정 commit/tag에서 신뢰된 운영 코드를 가져온다. data branch의 데이터·연구 원고가 실행 코드를 주입하게 하지 않는다. 외부 Actions는 immutable commit SHA로 고정한다. 예약 workflow는 main에 두고 data push는 설치 시 둔 trusted entrypoint에서 고정 commit의 reusable workflow를 호출한다. GITHUB_TOKEN commit이 다음 workflow를 자동으로 실행할 것에 의존하지 않고 필요한 단계를 한 chain에서 이어 실행한다. data 변경에 Vercel preview build를 만들지 않는다.
 
 소스 adapter, 순수 feature 함수, Analog core, storage adapter, auth, public exporter의 책임을 분리한다. 단위는 field 이름과 schema에 명시한다. 변경된 model/rubric/schema는 버전을 올리고 compatibility·migration을 함께 작성한다. 실험적 모델을 production 기본값으로 조용히 교체하지 않는다.
 
@@ -158,3 +158,13 @@ UI 문자열을 translation key로 관리하고 ko/en 누락 검사를 둔다. `
 5. 새 인프라 비용·권한·공개 동작이 요청 범위를 넘지 않는다.
 
 별도 기능을 추가하기보다 요청한 기능의 저장·인증·실패 복구·표시 의미까지 완성한다.
+
+
+## 12 공개 문서·metadata 유지
+
+- Production 기본 URL은 https://bunaken-current-observatory.vercel.app 이다. 공개 `/`와 `/research`의 title·description·canonical·ko/en alternates는 Next.js Metadata API에서 구성한다. 관리자 페이지는 noindex를 유지하되 robots를 인증 수단으로 간주하지 않는다.
+- GitHub 소스 링크는 공개 헤더의 연구 메뉴 뒤·언어 선택 앞에 둔다. 기존 44px 조작 영역과 모바일 줄바꿈을 유지한다.
+- 프로젝트 소프트웨어·개발/운영 문서는 MIT다. 연구 원고·고정 근거·관측·공급자 자료에 코드 MIT를 확장하지 않는다. LICENSING.md와 원 제공자의 조건을 확인한다.
+- 최신 운영 안내는 README.md와 docs/README.ko.md에서 연결한다. dated 검증·연구 근거는 historical evidence로 보존하며 현재 운영 절차로 복사하지 않는다. docs/environment-sources.ko.md는 사용자 요청 없이 변경하지 않는다.
+- 발행 연구 수정은 새 version의 네 원고·단일 results·metadata로 검토한다. results의 version은 release와 같아야 하며 수치가 같아도 결과 파일 hash를 새로 계산한다. 기존 release·frozen metrics·data cutoff를 덮어쓰지 않는다.
+- Next.js 로컬 dotenv용 escaped dollar와 Vercel 변수의 literal dollar를 구분한다. Node --env-file의 해석을 Next.js 환경 로더와 동일하다고 가정하지 않는다. 검사에 secret 값을 출력하지 않는다.

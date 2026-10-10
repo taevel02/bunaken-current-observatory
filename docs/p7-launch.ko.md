@@ -12,7 +12,7 @@
 
 ## GitHub 운영 설정
 
-현재 로컬 gh 로그인은 만료됐고 저장용 PAT는 별도 운영 설정 권한을 제공하지 않는다. 저장용 PAT에 Administration/Workflows 권한을 추가하지 않는다. SSH 코드는 기존 인증으로 push할 수 있다. 정책 설정과 수동 Actions 실행은 운영자 gh 인증을 갱신한다.
+GitHub 운영 설정에는 별도 인증이 필요하며 저장용 PAT는 운영 설정 권한을 제공하지 않는다. 저장용 PAT에 Administration/Workflows 권한을 추가하지 않는다. SSH 코드는 기존 인증으로 push할 수 있다. 정책 설정과 수동 Actions 실행은 운영자 gh 인증을 갱신한다.
 
 ```sh
 gh auth login -h github.com --web --scopes repo,workflow
@@ -37,7 +37,7 @@ python3 ops/configure_github.py --apply
 1. Vercel에 로그인한 뒤 **Add New → Project → Import Git Repository**에서 공개 저장소 `taevel02/bunaken-current-observatory`를 선택한다.
 2. Framework는 Next.js, Root Directory는 `apps/web`, Production Branch는 `main`, Node.js는 `24.x`를 선택한다. monorepo의 root/packages/config/docs 파일을 빌드에 포함한다.
 3. `apps/web/vercel.json`의 frozen pnpm 설치·build 설정을 사용한다. data의 Root Directory에도 `ops/workflows/data-vercel.json`을 `apps/web/vercel.json`과 루트 `vercel.json`으로 설치하여 자동 배포를 비활성화한다. main 설정만으로 source 없는 data branch의 배포 차단이 확인됐다고 주장하지 않는다. 외부 PR build에는 production Secret을 제공하지 않는다. preview/development 관리자 기능은 서버에서도 차단한다.
-4. 아래 서버 변수는 **Production만** 선택해 등록한다. 기존 로컬 파일 값을 복사하되 공개 observer와 로그인 ID를 구분한다.
+4. Next.js 로컬 dotenv의 hash escape를 Vercel에 복사하지 않는다. ADMIN_PASSWORD_HASH는 원래 $argon2id$… 값이며 backslash·따옴표를 포함하지 않는다. 아래 서버 변수는 **Production만** 선택해 등록한다. 기존 로컬 파일 값을 복사하되 공개 observer와 로그인 ID를 구분한다.
 5. 프로젝트가 정한 production HTTPS URL을 `CANONICAL_ORIGIN`으로 등록한다. 끝 `/`·path·query 없이 `https://<실제 호스트>` 형식이다. 처음 배포에서 설정이 없으면 관리자는 차단된다. URL 등록 후 production 재배포한다.
 
 | Production 변수 | 설정 |
@@ -55,7 +55,7 @@ python3 ops/configure_github.py --apply
 로컬에서 production 값의 형식만 확인하려면 다음을 실행한다. 값 자체는 출력하지 않는다.
 
 ```sh
-node --conditions=react-server --env-file=apps/web/.env.local apps/web/scripts/check-production-env.mjs
+node --conditions=react-server --env-file=.local/production.env apps/web/scripts/check-production-env.mjs
 ```
 
 localhost origin이면 이 검사는 의도적으로 실패한다. 실제 HTTPS origin과 Production 설정을 등록한 뒤 확인한다.
