@@ -23,10 +23,10 @@ export function DiveTimeFields({ prefix, initialStart, initialEnd, today, text: 
     update(next);
   }
   return <div className="grid min-w-0 gap-3">
-    <label>{t.date}<input name={`${prefix}_date`} type="date" required value={times.date} onChange={(event) => update({ ...times, date: event.target.value })} /></label>
-    <div className="grid min-w-0 grid-cols-2 items-start gap-3">
-      <label>{t.startTime}<input name={`${prefix}_start_time`} type="time" required value={times.start} onChange={(event) => startChanged(event.target.value)} /></label>
-      <label>{t.endTime}<input name={`${prefix}_end_time`} type="time" required value={times.end} onChange={(event) => { setManualEnd(true); update({ ...times, end: event.target.value }); }} /></label>
+    <label className="grid min-w-0 gap-2">{t.date}<input name={`${prefix}_date`} type="date" required value={times.date} onChange={(event) => update({ ...times, date: event.target.value })} /></label>
+    <div className="grid min-w-0 grid-cols-1 min-[400px]:grid-cols-2 items-start gap-3">
+      <label className="grid min-w-0 gap-2">{t.startTime}<input name={`${prefix}_start_time`} type="time" required value={times.start} onChange={(event) => startChanged(event.target.value)} /></label>
+      <label className="grid min-w-0 gap-2">{t.endTime}<input name={`${prefix}_end_time`} type="time" required value={times.end} onChange={(event) => { setManualEnd(true); update({ ...times, end: event.target.value }); }} /></label>
     </div>
     <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
       <span>{t.defaultDiveTime}</span>
