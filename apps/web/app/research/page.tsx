@@ -16,7 +16,7 @@ export async function generateMetadata({searchParams}: {searchParams: Promise<Qu
 }
 export default async function ResearchPage({searchParams}: {searchParams: Promise<Query>}) {
   const query = await searchParams;
-  return <Suspense key={JSON.stringify(query)} fallback={<ResearchSkeleton locale={query.lang === "en" ? "en" : "ko"}/>}><ResearchContent query={query}/></Suspense>;
+  return <Suspense key={JSON.stringify(query)} fallback={<ResearchSkeleton locale={query.lang === "en" ? "en" : "ko"} audience={query.audience === "technical" ? "technical" : "guide"} values={Object.fromEntries(Object.entries(query).filter((entry): entry is [string,string]=>typeof entry[1]==="string"))}/> }><ResearchContent query={query}/></Suspense>;
 }
 async function ResearchContent({query}: {query: Query}) {
   const locale = query.lang === "en" ? "en" : "ko";
