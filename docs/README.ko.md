@@ -11,7 +11,7 @@
 ## 연구와 고정 근거
 
 - [연구 작성·검토·발행](research/astra-authoring.ko.md)
-- [검토용 개정 v1.0.2](research/draft-1.0.2/README.ko.md)
+- [발행 v1.0.2 원고 보존본](research/draft-1.0.2/README.ko.md)
 - [2026-10-05 고정 근거](research/evidence-2026-10-05/README.ko.md)
 - [2026-10-08 모델 요인 진단](research/evidence-2026-10-08-model-audit/README.ko.md)
 

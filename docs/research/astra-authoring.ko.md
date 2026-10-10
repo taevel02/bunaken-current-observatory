@@ -80,4 +80,4 @@ node apps/web/scripts/create-research-bundle.mjs \
 
 ## 현재 개정 원고
 
-[검토용 v1.0.2](draft-1.0.2/README.ko.md)는 기존 v1.0.1의 고정 결과를 보존하고 모델 가중치·공식 대조·지속 관측의 해석을 보강한다. 네 body와 metadata/results의 bundle 검증을 통과했다. 공개 발행은 별도 narrative/translation/results/rights 검토 후 새 release로 수행한다. 운영 성공이 연구 성능을 입증하지 않는다.
+[v1.0.2 원고 보존본](draft-1.0.2/README.ko.md)는 기존 v1.0.1의 고정 결과를 보존하고 모델 가중치·공식 대조·지속 관측의 해석을 보강한다. 네 body와 metadata/results의 bundle 검증을 통과했다. 2026-10-10 narrative/translation/results/rights/real-synthetic 검토 후 새 release로 발행했다. 후속 개정도 같은 별도 검토를 거친다. 운영 성공이 연구 성능을 입증하지 않는다.

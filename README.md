@@ -90,9 +90,9 @@ Weighted Analog는 목표의 환경 feature와 과거 dive 구간을 비교한 �
 
 ## 연구 원고
 
-발행된 v1.0.1은 [data branch 원문](https://github.com/taevel02/bunaken-current-observatory/tree/data/research/bunaken-pci-methodology-initial-observations/releases/1.0.1)에서 보존한다. 네 원고는 같은 결과·model version·dataset hash·data cutoff를 사용하며 한국어가 정본이다. 자체 발행 연구 보고서이며 동료심사를 받지 않았다.
+최신 발행 v1.0.2는 [data branch 원문](https://github.com/taevel02/bunaken-current-observatory/tree/data/research/bunaken-pci-methodology-initial-observations/releases/1.0.2)에서 보존한다. 네 원고는 같은 결과·model version·dataset hash·data cutoff를 사용하며 한국어가 정본이다. 자체 발행 연구 보고서이며 동료심사를 받지 않았다.
 
-[검토용 v1.0.2](docs/research/draft-1.0.2/README.ko.md)는 가중치·공식 D+1 대조·계속되는 관측의 해석을 보강한다. 기존 결과를 새 운영 성능으로 바꾸지 않았고 아직 발행하지 않았다. 작성·bundle 생성·검토·발행은 [연구 운영 안내](docs/research/astra-authoring.ko.md)를 따른다.
+[v1.0.2 원고 보존본](docs/research/draft-1.0.2/README.ko.md)는 가중치·공식 D+1 대조·계속되는 관측의 해석을 보강한다. 기존 결과를 새 운영 성능으로 바꾸지 않았으며 2026-10-10 새 release로 발행했다. 작성·bundle 생성·검토·발행은 [연구 운영 안내](docs/research/astra-authoring.ko.md)를 따른다.
 
 ## 배포·기여
 
