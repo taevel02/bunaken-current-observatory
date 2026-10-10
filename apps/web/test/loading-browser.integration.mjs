@@ -84,3 +84,40 @@ test('pending data retains static controls and an unsent date edit', {skip:!proc
   }
  }finally{await browser?.close();if(server?.exitCode===null){server.kill('SIGTERM');await Promise.race([once(server,'exit'),new Promise(r=>setTimeout(r,3000))]);}await rm(root,{recursive:true,force:true});}
 });
+
+
+test('date navigation hides previous data until the requested server day arrives', {skip:!enabled}, async()=>{
+  const {chromium}=await import(process.env.BUNAKEN_PLAYWRIGHT_MODULE);
+  const browser=await chromium.launch({headless:true,executablePath:process.env.BUNAKEN_BROWSER_EXECUTABLE||undefined});
+  try {
+    const page=await browser.newPage({viewport:{width:390,height:844}});
+    await page.goto(process.env.BUNAKEN_LOADING_URL);
+    await page.locator('[data-dashboard-workspace]').waitFor({timeout:60000});
+    const date=page.locator('[data-dashboard-toolbar] input[name=date]');
+    const today=await date.getAttribute('min');const tomorrow=await date.inputValue();
+    assert.notEqual(today,tomorrow,'fixture must start on tomorrow');
+    let release;let intercepted;
+    const waiting=new Promise(resolve=>{intercepted=resolve;});
+    const gate=new Promise(resolve=>{release=resolve;});
+    await page.route('**/*_rsc*',async route=>{intercepted();await gate;await route.continue();});
+    await page.getByRole('link',{name:'오늘',exact:true}).click();await waiting;
+    await page.waitForFunction(today=>document.querySelector('input[name=date]')?.value===today,today,{timeout:2500});
+    assert.equal(await page.locator('[data-dashboard-pending]').count(),1);
+    assert.equal(await page.locator('[data-dashboard-workspace]').count(),0);
+    assert.equal(await page.locator('[data-dashboard-pending] tbody th').count(),19);
+    assert.ok(await page.locator('[data-dashboard-pending] tbody td').evaluateAll(cells=>cells.every(cell=>cell.textContent.trim()==='')));
+    const site=page.locator('[data-dashboard-pending] tbody th a').nth(4);
+    const selectedSite=new URL(await site.getAttribute('href'),page.url()).searchParams.get('site');
+    assert.equal(new URL(await site.getAttribute('href'),page.url()).searchParams.get('date'),today);
+    await site.click();
+    if(process.env.BUNAKEN_UI_ARTIFACT_DIR){await mkdir(process.env.BUNAKEN_UI_ARTIFACT_DIR,{recursive:true});await page.screenshot({path:join(process.env.BUNAKEN_UI_ARTIFACT_DIR,'date-pending-390.png'),fullPage:true});}
+    release();await page.locator('[data-dashboard-workspace]').waitFor({timeout:60000});
+    assert.equal(await page.locator('[data-dashboard-workspace]').getAttribute('data-dashboard-day'),today);
+    assert.equal(new URL(page.url()).searchParams.get('date'),today);
+    assert.equal(new URL(page.url()).searchParams.get('site'),selectedSite);
+    await date.fill(tomorrow);await page.getByRole('button',{name:'조회',exact:true}).click();
+    await page.waitForFunction(day=>document.querySelector('[data-dashboard-workspace]')?.getAttribute('data-dashboard-day')===day,tomorrow,{timeout:60000});
+    assert.equal(new URL(page.url()).searchParams.get('date'),tomorrow);
+    await page.goBack();await page.waitForFunction(day=>document.querySelector('[data-dashboard-workspace]')?.getAttribute('data-dashboard-day')===day,today,{timeout:60000});
+  } finally {await browser.close();}
+});
