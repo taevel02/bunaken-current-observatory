@@ -12,7 +12,7 @@ export type EnvironmentSample = Tide & {
  native_resolution: string | null;
  interpolation_method: string | null; grid_distance_km?: number;
 };
-export type Moon = { phase: string; illumination: number; at: string; retrievedAt: string; apiVersion: string } | null;
+export type Moon = { phase: string; illumination: number; at: string; calculationVersion: string } | null;
 export type Observation = { id: string; site_id: string; local_start: string; overall_pci: number; record_status: string; label_scope: string; notes_public?: string; revision: number };
 export type TransferEstimate = { prediction: Prediction; donor_sites: string[]; donor_site_count: number; n_eff_sites: number; max_site_share: number; analog_count: number; validation_status: "unvalidated"; config_sha256: string };
 export type Dashboard = {

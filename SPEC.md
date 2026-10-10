@@ -1,7 +1,7 @@
 # Bunaken Current Observatory 기술 명세
 
-버전: 2.8\
-작성일: 2026-10-08\
+버전: 2.9\
+작성일: 2026-10-10\
 기준: [PRD.md](PRD.md) v1.12 · [AGENTS.md](AGENTS.md)\
 구현 순서: [PLAN.md](PLAN.md)  
 상태: 구현 계약. 실행 가능한 코드·배포·실제 예측 성능을 제공하는 문서는 아니다.
@@ -455,7 +455,7 @@ FES2022b·Copernicus dataset/version·공개 파생 변수는 config/source-regi
 
 선택 Site·WITA 날짜의 PCI, 조석과 u/v, 모델 수온, 염분, 10m 바람·방향, 파고·주기·방향, 너울 높이·주기·방향을 함께 표시한다. 환경 값은 예측 PCI와 단위를 섞지 않는다. 일 범위는 제공 시각의 min/max이며 하루 전체 coverage를 주장하지 않는다. 방향은 circular min/max 대신 시각별 점·값을 표시한다. 수치가 없는 경우 공개 권한·geometry·freshness·결측 사유를 보존한다. source 실패 또는 나이 미확인 자료를 유효 환경값으로 표시하지 않는다.
 
-달은 USNO Complete Sun and Moon Data for One Day API의 해당 날짜 WITA 정오 위상·밝은 면 비율을 사용한다. 고정 HTTPS endpoint, 4초 timeout, 16KB 응답 제한, 24시간 cache, 좌표·날짜·위상·비율 검증을 적용한다. API 실패는 달만 미제공으로 처리한다. 달 모양은 위상 도식이며 관측 사진·현지 하늘 방향을 뜻하지 않는다. 천문 metadata는 forecast snapshot 밖의 별도 표시 자료로 구분하며 PCI feature나 weight를 추가하지 않는다. 가입·API key·신규 환경변수는 필요 없다.
+달은 서버의 Astronomy Engine 2.1.19 계산으로 해당 날짜 WITA 정오의 지구 중심 위상·밝은 면 비율을 표시한다. 외부 API 요청 없이 유효한 날짜·좌표를 검증하고, 계산 버전을 표시 metadata에 남긴다. 위상 이름은 45° 간격의 8개 표시 구간이며 정확한 삭·망 시각 판정이 아니다. 잘못된 입력에서도 달 영역을 숨기지 않고 미제공 상태를 표시한다. 달 모양은 위상 도식이며 관측 사진·현지 하늘 방향을 뜻하지 않는다. 천문 metadata는 forecast snapshot 밖의 별도 표시 자료로 구분하며 PCI feature나 weight를 추가하지 않는다. 가입·API key·신규 환경변수는 필요 없다.
 
 ### 2026-10-04 관측 입력 결정
 
@@ -501,3 +501,7 @@ WITA 오늘 날짜를 기본으로 제시하고 입수 시각만 선택하면 �
 공개 두 경로의 Metadata API는 ko/en 제목·설명·Open Graph·Twitter summary와 canonical/언어 alternates를 제공한다. 대시보드의 날짜·Site·모델 변형은 언어별 대표 URL로 canonical을 정리한다. 연구는 audience와 명시 slug/version을 보존한다. 관리자 경로는 기본 noindex, robots는 관리자/API crawl을 제외하며 인증 경계는 그대로다. sitemap은 공개 언어·원고 독자 경로만 포함한다.
 
 헤더의 소스 링크는 연구 메뉴 뒤에 둔다. 연구 페이지의 진행 중 안내는 현재 운영과 보고서의 frozen 결과를 구분하며 새 수치나 성능 주장을 추가하지 않는다. v1.0.2는 검토용 body 원고와 version이 일치하는 results를 묶고, 발행된 v1.0.1은 불변 보존한다.
+
+### 2026-10-10 공개 연구 표시 결정
+
+640px 미만에서 일반·전문가 해설 선택은 세로 배치하며 자료 대기 화면도 같은 구조를 유지한다. 원고 본문·목록·긴 URL·dataset 식별자는 화면 폭 안에서 줄바꿈한다. 표는 자체 영역 안에서 가로 스크롤할 수 있다. HTTPS 참고 URL을 링크로 표시하고, 확인된 공개 config 파일은 해당 연구 release의 고정 code commit에 있는 GitHub 파일로 연결한다. 원고·frozen 결과·release version은 렌더링 수정 때문에 변경하지 않는다.

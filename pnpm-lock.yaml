@@ -202,6 +202,9 @@ importers:
       argon2:
         specifier: 0.45.1
         version: 0.45.1
+      astronomy-engine:
+        specifier: 2.1.19
+        version: 2.1.19
       csrf-csrf:
         specifier: 4.0.3
         version: 4.0.3
@@ -979,6 +982,9 @@ packages:
   argon2@0.45.1:
     resolution: {integrity: sha512-skm+/WCjkGqCQxF7FG1LuZXM5yvbFjgbfiCGsud2oLgaDhh6b6dbH0b1EkghbM+xx4Bj8Ape+KKgixoIlWZicQ==}
     engines: {node: '>=16.17.0'}
+
+  astronomy-engine@2.1.19:
+    resolution: {integrity: sha512-8yWKNf7UeNbH458h3sAJ6ZgAjE5jTXp/mNNRFoC20j2SHwZIjAQeEsBB2Q3uCFRaTCCJRv33K2XhkhZQMXoX6w==}
 
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
@@ -2179,6 +2185,8 @@ snapshots:
       cross-env: 10.1.0
       node-addon-api: 8.9.2
       node-gyp-build: 4.8.4
+
+  astronomy-engine@2.1.19: {}
 
   balanced-match@4.0.4: {}
 

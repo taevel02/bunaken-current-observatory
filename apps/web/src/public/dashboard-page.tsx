@@ -51,5 +51,5 @@ async function DashboardStatus({day,locale}: {day:string;locale:"ko"|"en"}) {
 
 async function DashboardMoon({day, locale, lat, lon}: {day: string; locale: "ko" | "en"; lat: number | null; lon: number | null}) {
   const moon = await loadMoon(day, lat, lon);
-  return moon ? <MoonSummary moon={moon} locale={locale}/> : null;
+  return <MoonSummary moon={moon} locale={locale}/>;
 }
