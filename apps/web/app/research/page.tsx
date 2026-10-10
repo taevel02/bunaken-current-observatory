@@ -31,13 +31,13 @@ async function ResearchContent({query}: {query: Query}) {
   const values = {audience, ...(item ? {slug: item.release.slug, version: item.release.version} : {}), ...(query.slug ? {slug: query.slug} : {}), ...(query.version ? {version: query.version} : {})};
   return <PublicShell locale={locale} title={messages[locale].public.research} path="/research" query={"?" + new URLSearchParams(values)}>
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#c8d6d0] pb-2">
-      <nav className="flex gap-2" aria-label={t.reports}>{(["guide", "technical"] as const).map(target => <Link key={target} aria-current={target === audience ? "page" : undefined} className="inline-flex min-h-11 items-center rounded-md px-4 text-[#155f53] aria-[current=page]:bg-[#e8efec] aria-[current=page]:font-semibold active:translate-y-px" href={publicUrl("/research", locale, {...values, audience: target})}>{t[target]}</Link>)}</nav>
+      <nav className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row" aria-label={t.reports}>{(["guide", "technical"] as const).map(target => <Link key={target} aria-current={target === audience ? "page" : undefined} className="inline-flex min-h-11 items-center rounded-md px-4 text-[#155f53] aria-[current=page]:bg-[#e8efec] aria-[current=page]:font-semibold active:translate-y-px" href={publicUrl("/research", locale, {...values, audience: target})}>{t[target]}</Link>)}</nav>
       {item && <span className="text-sm text-[#49625c]">{item.release.version} · {t.notPeerReviewed}</span>}
     </div>
     <p className="mx-auto mb-3 max-w-[90ch] text-sm text-[#49625c]">{t.ongoingResearch}</p>
-    {library.status === "unavailable" ? <p role="status">{t.unavailable}</p> : withdrawn ? <p role="status">{t.withdrawnNotice}</p> : !item ? <p role="status">{t.empty}</p> : <article className="mx-auto max-w-[90ch] py-2 print:max-w-none">
+    {library.status === "unavailable" ? <p role="status">{t.unavailable}</p> : withdrawn ? <p role="status">{t.withdrawnNotice}</p> : !item ? <p role="status">{t.empty}</p> : <article className="mx-auto min-w-0 max-w-[90ch] py-2 print:max-w-none">
       {item.display_state !== "published" && <p role="status">{t.states.superseded}</p>}
-      <ResearchMarkdown body={renderResearchMetrics(researchBody(item.documents[`${audience}.${locale}.md`], item.release, `${audience}.${locale}.md`), item.results)}/>
+      <ResearchMarkdown codeCommit={item.release.code_commit} body={renderResearchMetrics(researchBody(item.documents[`${audience}.${locale}.md`], item.release, `${audience}.${locale}.md`), item.results)}/>
     </article>}
   </PublicShell>;
 }
