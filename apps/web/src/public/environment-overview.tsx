@@ -11,5 +11,5 @@ function MoonDisk({moon,label}:{moon:NonNullable<Moon>;label:string}) {
 export function MoonSummary({moon,locale}:{moon:Moon;locale:Locale}) {
  const t=messages[locale].public.environment;
  const phase=moon?t.phases[moon.phase as keyof typeof t.phases]:null;
- return <div className="flex min-w-0 items-center gap-2 text-sm">{moon&&<MoonDisk moon={moon} label={`${phase} · ${Math.round(moon.illumination*100)}%`}/>}<div><strong className="font-semibold">{t.moon}: </strong>{moon?`${phase} · ${t.illuminated} ${Math.round(moon.illumination*100)}%`:t.moonUnavailable}</div></div>;
+ return <div data-moon-date={moon?.at.slice(0,10)} className="flex min-w-0 items-center gap-2 text-sm">{moon&&<MoonDisk moon={moon} label={`${phase} · ${Math.round(moon.illumination*100)}%`}/>}<div><strong className="font-semibold">{t.moon}: </strong>{moon?`${phase} · ${t.illuminated} ${Math.round(moon.illumination*100)}%`:t.moonUnavailable}</div></div>;
 }

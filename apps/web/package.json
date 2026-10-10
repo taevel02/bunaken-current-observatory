@@ -11,6 +11,7 @@
   "dependencies": {
     "@bunaken/contracts": "workspace:*",
     "argon2": "0.45.1",
+    "astronomy-engine": "2.1.19",
     "csrf-csrf": "4.0.3",
     "iron-session": "9.0.1",
     "next": "16.3.6",
