@@ -409,7 +409,7 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 |---|---|---|
 | P7-01 | 일부 완료 | 사용자 Production 변수 재설정·재배포, 실제 CSRF 200·관리자 미인증 401/no-store 확인. 외부 PR/preview 실제 격리 검증 남음 |
 | P7-02 | 완료 | main PR/CI·main/data 삭제/force 금지 ruleset, main/data environment branch policy, data 고정 pin 확인 |
-| P7-03 | 미완료 | 실제 WAF 11번째 429, canonical Origin, 옛 deployment/세션 철회 증거 남음 |
+| P7-03 | 일부 완료 | 2026-10-10 Production 로그인 1~10회 403·11번째 429, foreign Origin 403 확인. 옛 deployment 차단·세션 철회 증거 남음 |
 | P7-04 | 일부 완료 | 예약 collect run 37877079532 success. scheduled seal의 이전 실패 및 다음 정상 실행 검수 남음 |
 | P7-05 | 완료 | 관측 commit 182be0ce309357ac74a0ddcc7d343abeb48181fa의 push run 37925946858 success. validation 경로가 관측 trigger를 재호출하지 않는 한 chain 확인 |
 | P7-06 | 완료 | 최신 code/data bundle 27,331,273bytes, 복원·fsck·ref 일치 확인. ignored credential·원 atlas 미포함 |
@@ -418,3 +418,12 @@ P6 기반 검증: engine 90개, 계약/웹 단위 58개, 실제 로컬 인증 HT
 | P7-09 | 완료 | 사용자 승인 Production 재배포와 HTTPS 공개 두 페이지·인증 초기화 정상 확인. 이 체크가 나머지 운영 acceptance 성공을 뜻하지 않음 |
 
 공개 준비 변경: 기존 head title 누락을 Metadata API로 보완하고 헤더의 연구 메뉴 오른쪽에 GitHub 링크를 추가한다. 코드 MIT·자료별 이용 조건·기여/보안 안내를 연결한다. 연구 v1.0.2는 기존 frozen metrics를 유지한 검토용 개정이며 별도 발행 검토가 필요하다. P7 미확인 항목을 일괄 완료 처리하지 않는다.
+
+
+### 공개 로딩·지도 서술·WAF 검증 (2026-10-10)
+
+- 공개 대시보드·연구 원고에 Suspense 스켈레톤을 적용했다. 달 정보는 별도 스트리밍하며 같은 날짜의 Site·모델 선택은 검증된 공개 데이터로 즉시 변경한다. 날짜 변경은 서버에서 해당 날짜 자료를 다시 읽는다. 관리자 인증 리다이렉트는 기존 HTTP 상태를 유지한다.
+- 최종 로컬 production build의 스켈레톤 첫 스트림 105ms, 데이터 workspace 1,398ms, Site 선택 51ms·추가 요청 0건을 확인했다. 단일 로컬 측정이며 Production p95/LCP 개선 증거가 아니다. 기존 Production에서는 스켈레톤 부재·네트워크 차단 시 Site 전환 실패를 재현했다.
+- 웹·계약·인증 HTTP 테스트 73개, 로딩 browser 테스트 2개, lint·typecheck·production build 통과. 360/1920px × ko/en에서 문서 가로 넘침 없음. 브라우저 검증은 실제 공개 자료를 읽되 인증·관측 저장을 수행하지 않았다.
+- Production smoke: 공개 ko/en 및 연구 200, CSRF 200·미인증 관측 401/private/no-store, foreign Origin 로그인 403. rate-limit 검증은 같은 실행 IP에서 빈 로그인 POST 10회 403, 11번째 429를 확인했다. 해당 IP·지역·실행 시점의 증거이며 전 세계 전역 카운터를 입증하지 않는다. 비밀번호·세션 변경, 구배포 차단은 수행하지 않았다.
+- 연구 검토용 v1.0.2는 지도 근사축의 입력·방위각 기준·반올림 및 원 지도 메타데이터 부족으로 원 해석을 독립 재현할 수 없다는 한계를 명시한다. 공개 geometry로 벡터 계산은 재현 가능하다. 기존 v1.0.1·frozen 결과·geometry는 변경하지 않았다. 새 원고 bundle 검증 통과; 발행 검토는 별도다.
