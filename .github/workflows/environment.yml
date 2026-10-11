@@ -16,7 +16,7 @@ on:
       code_commit:
         description: Trusted full code commit SHA
         required: false
-        default: e223ce1972d1b267459017d1a54d5ee9e40b7388
+        default: d61dbf63f2c6529be99f7d3676b8cecdcbe03c79
         type: string
       resume_run_id:
         description: Existing immutable run UUID to resume without recollection (requires date_wita)
@@ -57,7 +57,7 @@ jobs:
       group: bunaken-environment-${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
       cancel-in-progress: false
     env:
-      CODE_COMMIT: ${{ inputs.code_commit || 'e223ce1972d1b267459017d1a54d5ee9e40b7388' }}
+      CODE_COMMIT: ${{ inputs.code_commit || 'd61dbf63f2c6529be99f7d3676b8cecdcbe03c79' }}
       TARGET_DATE: ${{ inputs.date_wita }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id }}
       OPERATION: ${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
