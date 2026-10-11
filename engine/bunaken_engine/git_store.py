@@ -4,6 +4,8 @@ from http.client import IncompleteRead
 import base64
 import json
 import re
+import copy
+from collections import OrderedDict
 from datetime import date, timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -16,14 +18,31 @@ class StorageError(Exception):
 
 
 class GitDataStore:
-    def __init__(self, owner: str, repo: str, token: str, *, requester=None):
+    def __init__(self, owner: str, repo: str, token: str, *, requester=None, cache_root=None):
         if not re.fullmatch(r"[A-Za-z0-9_.-]+",owner) or not re.fullmatch(r"[A-Za-z0-9_.-]+",repo) or not token:
             raise StorageError("storage_unconfigured")
         self.base=f"https://api.github.com/repos/{owner}/{repo}"
         self.token=token
         self.requester=requester
+        from bunaken_engine.git_blob_cache import BlobCache
+        self.blob_cache=BlobCache(cache_root) if cache_root else None
+        self._trees=OrderedDict()
+        self._metadata=OrderedDict()
 
     def request(self,method,path,body=None):
+        immutable = self.blob_cache is not None and method=='GET' and (
+            re.fullmatch(r'/git/(?:commits|trees)/[0-9a-f]{40}(?:\?recursive=1)?',path) or
+            re.fullmatch(r'/commits\?sha=[0-9a-f]{40}&path=[^&]+&per_page=1',path))
+        if immutable and path in self._metadata:
+            self._metadata.move_to_end(path)
+            return copy.deepcopy(self._metadata[path])
+        result=self._request(method,path,body)
+        if immutable and result is not None:
+            self._metadata[path]=copy.deepcopy(result)
+            if len(self._metadata)>128:self._metadata.popitem(last=False)
+        return result
+
+    def _request(self,method,path,body=None):
         if self.requester:
             return self.requester(method,path,body)
         payload=None if body is None else json.dumps(body).encode()
@@ -68,6 +87,8 @@ class GitDataStore:
         return self._read_content(path,ref)
 
     def _read_content(self,path,ref):
+        if self.blob_cache is not None and re.fullmatch('[0-9a-f]{40}',ref):
+            return self._read_cached_blob(path,ref)
         result=self.request("GET",f"/contents/{quote(path,safe='/')}?ref={quote(ref,safe='')}")
         if result is None:
             return None
@@ -79,6 +100,30 @@ class GitDataStore:
         if not result or result.get("encoding")!="base64":
             raise StorageError("unsupported_content_encoding")
         return base64.b64decode(result["content"])
+
+    def _read_cached_blob(self,path,ref):
+        from bunaken_engine.git_blob_cache import blob_id
+        if ref not in self._trees:
+            commit=self.request('GET',f'/git/commits/{ref}')
+            if not commit:raise StorageError('storage_commit_missing')
+            sha=commit['tree']['sha']
+            if not re.fullmatch('[0-9a-f]{40}',sha):raise StorageError('invalid_tree_identity')
+            tree=self.request('GET',f'/git/trees/{sha}?recursive=1')
+            if not tree or tree.get('truncated'):raise StorageError('storage_tree_truncated')
+            self._trees[ref]={entry['path']:entry['sha'] for entry in tree['tree'] if entry['type']=='blob'}
+            if len(self._trees)>32:self._trees.popitem(last=False)
+        self._trees.move_to_end(ref)
+        sha=self._trees[ref].get(path)
+        if sha is None:return None
+        if not re.fullmatch('[0-9a-f]{40}',sha):raise StorageError('invalid_blob_identity')
+        cached=self.blob_cache.read(sha)
+        if cached is not None:return cached
+        result=self.request('GET',f'/git/blobs/{sha}')
+        if not result or result.get('encoding')!='base64':raise StorageError('unsupported_content_encoding')
+        raw=base64.b64decode(result['content'])
+        if blob_id(raw)!=sha:raise StorageError('blob_hash_mismatch')
+        self.blob_cache.write(sha,raw)
+        return raw
 
     def insert(self,files: dict[str,bytes],message="store immutable environment artifacts") -> str:
         if not files or any(not allowed_data_path(path) for path in files):
@@ -200,7 +245,7 @@ class GitDataStore:
         # Verify snapshot and current revisions really belong to the declared source head.
         from datetime import datetime
         from zoneinfo import ZoneInfo
-        from bunaken_engine.snapshots import make_bundle
+        from bunaken_engine.snapshots import validate_bundle
         import gzip
         if not manifest['snapshot_ids'] and (payload['predictions'] or payload['tides'] or payload.get('environment_samples') or payload.get('experimental_transfer',{}).get('predictions')):
             raise StorageError('release_source_mismatch')
@@ -219,7 +264,7 @@ class GitDataStore:
             from bunaken_engine.snapshots import canonical
             if snapshot['geometry_hash'] != digest(canonical(load_geometry())):
                 raise StorageError('release_geometry_mismatch')
-            make_bundle(snapshot,features,forecasts)
+            validate_bundle(snapshot,features,forecasts)
             from bunaken_engine.public_release import public_samples, public_source_metadata
             tides, environment_samples=public_samples(snapshot['samples'])
             if payload['schema_version'] in {'1.1','1.2'} and (environment_samples!=payload['environment_samples'] or payload['sources']!=public_source_metadata(snapshot['source_status'])):

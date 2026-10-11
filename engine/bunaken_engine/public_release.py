@@ -6,7 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from bunaken_engine.registry import ROOT, load_sources, load_geometry, read_json
-from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, SnapshotError
+from bunaken_engine.snapshots import canonical, digest, validate, validate_bundle, SnapshotError
 from bunaken_engine.sources import utc_now
 
 
@@ -19,7 +19,7 @@ def build_release(source_commit, *, manifest_path=None, observations=None, root=
         manifest = load_manifest(manifest_path)
         features = json.loads(gzip.decompress((manifest_path.parent/'features.json.gz').read_bytes()))
         predictions = json.loads(gzip.decompress((manifest_path.parent/'forecast.json.gz').read_bytes()))
-        make_bundle(manifest, features, predictions, root=root, kind=manifest['kind'])
+        validate_bundle(manifest, features, predictions, root=root, kind=manifest['kind'])
         if manifest['geometry_hash'] != digest(canonical(load_geometry(root))):
             raise SnapshotError('release_geometry_mismatch')
         if manifest['kind'] != 'snapshot':

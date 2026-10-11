@@ -104,7 +104,11 @@ main의 PR/CI 보호와 data의 non-force 쓰기를 유지한다. 환경 수집�
 
 수집 단계 제한은 300분, 전체 job은 360분이다. timeout 발생 시 단계 로그와 data 저장 여부를 먼저 확인한다. 이미 저장된 run은 `resume_run_id`와 원래 `date_wita`로 재개하며 공식 D+1 cutoff를 소급 변경하지 않는다.
 
-엔진은 반복되는 snapshot·model-context schema 검증의 성공 hash를 프로세스 내 최대 128개 재사용한다. 문서 내용 또는 schema fingerprint가 달라지면 다시 검증하며 Git 저장 확인·모델 재현 검증은 계속 수행한다.
+엔진은 반복되는 snapshot·model-context 및 bundle 검증의 성공 hash를 프로세스 내 최대 128개 재사용한다. 임시 replay 경로가 달라도 schema 내용이 같으면 재사용하며 문서·schema·설정이 달라지면 다시 검증한다. 검증만 필요한 읽기에서는 큰 bundle을 재직렬화하지 않는다. 검증된 bundle 출력 캐시는 최대 128MiB다. Git 저장 확인과 모델 재현 검증은 생략하지 않는다.
+
+CI는 `GIT_DATA_CACHE_ROOT`의 공개 Git blob만 Actions cache에 보관한다. 매 실행 Git commit/tree를 다시 확인하고 blob SHA를 검사한다. 손상된 캐시는 원본에서 다시 가져오며 cache 장애는 원본 읽기로 처리한다. 자격증명·FES atlas·원 NetCDF는 이 캐시에 넣지 않는다. 영구 저장소는 data branch이며 이전 forecast·snapshot·관측 revision을 삭제하거나 덮어쓰지 않는다.
+
+수집 단계별 소요 시간은 stderr에 기록한다. 오늘 재수집 시 model cutoff보다 앞선 슬롯은 기존 `scaler_cutoff_after_target` gate로 PCI null을 보존하며, 이후 슬롯과 환경 자료 수집은 계속한다. timeout 확장만으로 수집 성공을 보장하지 않으며 실제 실행 완료와 웹 release 반영을 확인해야 한다.
 
 ```sh
 git fetch origin main data

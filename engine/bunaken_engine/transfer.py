@@ -116,8 +116,7 @@ def transfer_forecast(context, features, manifest, code_commit, *, root=ROOT):
             candidates, scaler, _ = prepare_model(context['observations'], context['training_bundles'],
                 context['observer'], context['rubric'], context['cutoff'], root=replay)
             for feature in features:
-                if instant(context['cutoff']) > instant(feature['start_at']):
-                    raise ValueError('model_cutoff_after_target')
+                # predict_transfer retains the scaler cutoff abstention gate.
                 point = resolve_geometry(feature['site_id'], feature['zone_id'], replay)
                 target = dict(**feature, geometry_verified=usable_geometry(point),
                     reference_geometry=point['status'] == 'reference_geometry', sources_ready=manifest['status'] == 'succeeded',

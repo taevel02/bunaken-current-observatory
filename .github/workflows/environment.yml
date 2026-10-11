@@ -61,6 +61,7 @@ jobs:
       TARGET_DATE: ${{ inputs.date_wita }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id }}
       OPERATION: ${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
+      GIT_DATA_CACHE_ROOT: ${{ runner.temp }}/bunaken-git-data-cache
     timeout-minutes: 360
     steps:
       - name: Validate trusted invocation
@@ -89,6 +90,12 @@ jobs:
         run: |
           uv run --project engine --locked python -m unittest discover -s engine/tests
           uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
+      - name: Restore public Git blob cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.GIT_DATA_CACHE_ROOT }}/blobs
+          key: bunaken-public-blobs-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: bunaken-public-blobs-v1-${{ runner.os }}-
       - name: Fetch verified tidal ephemeris
         if: env.OPERATION == 'collect' && env.RESUME_RUN_ID == ''
         env:
@@ -190,3 +197,9 @@ jobs:
           GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
         run: |
           uv run --project engine --locked python -m bunaken_engine.d1_matching --code-commit "$CODE_COMMIT" --output "$RUNNER_TEMP/bunaken-d1" --publish
+      - name: Save public Git blob cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.GIT_DATA_CACHE_ROOT }}/blobs
+          key: bunaken-public-blobs-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}

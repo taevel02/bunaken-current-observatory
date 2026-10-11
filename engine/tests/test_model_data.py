@@ -28,6 +28,24 @@ def observation(**updates):
 
 
 class ModelDataTest(unittest.TestCase):
+    def test_today_collection_retains_past_windows_as_abstentions(self):
+        from bunaken_engine.transfer import transfer_forecast
+        from bunaken_engine.features import instant
+        context=model_context([],[],'synthetic-observer','synthetic-rubric','2026-10-12T04:00:00Z')
+        with patch('bunaken_engine.pipeline.utc_now',return_value='2026-10-12T04:01:00Z'):
+            manifest,files=collect_run('2026-10-12','a'*40,days=1,
+                run_id='11111111-1111-4111-8111-111111111111',collector=lambda *args:[],model=context)
+        forecast=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('/forecast.json.gz'))))
+        features=json.loads(gzip.decompress(next(raw for path,raw in files.items() if path.endswith('/features.json.gz'))))
+        transfer=transfer_forecast(context,features,manifest,'a'*40)
+        for rows in (forecast,[row['prediction'] for row in transfer['predictions']]):
+            self.assertEqual(len(rows),304)
+            past=[row for row in rows if instant(row['start_at'])<instant(context['cutoff'])]
+            future=[row for row in rows if instant(row['start_at'])>=instant(context['cutoff'])]
+            self.assertTrue(past);self.assertTrue(future)
+            self.assertTrue(all(row['pci'] is None and 'scaler_cutoff_after_target' in row['reason_codes'] for row in past))
+            self.assertTrue(all('scaler_cutoff_after_target' not in row['reason_codes'] for row in future))
+
     def test_latest_revision_conflict_and_as_of_cutoff(self):
         first=observation(); later=observation(revision=2, updated_at='2026-09-05T00:00:00Z', record_status='withdrawn')
         self.assertEqual(latest_revisions([later, first])[0]['revision'], 2)
