@@ -61,7 +61,6 @@ jobs:
       TARGET_DATE: ${{ inputs.date_wita }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id }}
       OPERATION: ${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
-      GIT_DATA_CACHE_ROOT: ${{ runner.temp }}/bunaken-git-data-cache
     timeout-minutes: 360
     steps:
       - name: Validate trusted invocation
@@ -90,6 +89,8 @@ jobs:
         run: |
           uv run --project engine --locked python -m unittest discover -s engine/tests
           uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
+      - name: Configure public Git blob cache
+        run: printf 'GIT_DATA_CACHE_ROOT=%s/bunaken-git-data-cache\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Restore public Git blob cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
