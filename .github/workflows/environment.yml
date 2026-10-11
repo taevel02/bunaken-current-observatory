@@ -16,7 +16,7 @@ on:
       code_commit:
         description: Trusted full code commit SHA
         required: false
-        default: d61dbf63f2c6529be99f7d3676b8cecdcbe03c79
+        default: 8075ef2edba0119c57901b3a880cb6e7989eb8f1
         type: string
       resume_run_id:
         description: Existing immutable run UUID to resume without recollection (requires date_wita)
@@ -57,7 +57,7 @@ jobs:
       group: bunaken-environment-${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
       cancel-in-progress: false
     env:
-      CODE_COMMIT: ${{ inputs.code_commit || 'd61dbf63f2c6529be99f7d3676b8cecdcbe03c79' }}
+      CODE_COMMIT: ${{ inputs.code_commit || '8075ef2edba0119c57901b3a880cb6e7989eb8f1' }}
       TARGET_DATE: ${{ inputs.date_wita }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id }}
       OPERATION: ${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
@@ -89,6 +89,14 @@ jobs:
         run: |
           uv run --project engine --locked python -m unittest discover -s engine/tests
           uv run --project engine --extra providers --locked python -m unittest discover -s engine/provider-tests
+      - name: Configure public Git blob cache
+        run: printf 'GIT_DATA_CACHE_ROOT=%s/bunaken-git-data-cache\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Restore public Git blob cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.GIT_DATA_CACHE_ROOT }}/blobs
+          key: bunaken-public-blobs-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: bunaken-public-blobs-v1-${{ runner.os }}-
       - name: Fetch verified tidal ephemeris
         if: env.OPERATION == 'collect' && env.RESUME_RUN_ID == ''
         env:
@@ -190,3 +198,9 @@ jobs:
           GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
         run: |
           uv run --project engine --locked python -m bunaken_engine.d1_matching --code-commit "$CODE_COMMIT" --output "$RUNNER_TEMP/bunaken-d1" --publish
+      - name: Save public Git blob cache
+        if: always() && !cancelled()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.GIT_DATA_CACHE_ROOT }}/blobs
+          key: bunaken-public-blobs-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}

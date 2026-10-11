@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from bunaken_engine.features import extract_window, finite, instant, build_scaler
 from bunaken_engine.registry import ROOT, read_json, resolve_geometry, load_geometry, load_sources, usable_geometry
-from bunaken_engine.snapshots import canonical, digest, validate, make_bundle
+from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, validate_bundle
 from bunaken_engine.time import wita_date
 
 
@@ -37,7 +37,7 @@ def read_bundle(path, *, root=ROOT):
     manifest = load_manifest(path)
     features = json.loads(gzip.decompress((path.parent / 'features.json.gz').read_bytes()))
     forecast = json.loads(gzip.decompress((path.parent / 'forecast.json.gz').read_bytes()))
-    make_bundle(manifest, features, forecast, root=root, kind=manifest['kind'])
+    validate_bundle(manifest, features, forecast, root=root, kind=manifest['kind'])
     if manifest.get('model_context') is not None:
         # Derived environment-only projection: preserve origin hash; omit prior labels/models.
         origin = digest(path.read_bytes())
@@ -79,9 +79,9 @@ def checked_bundles(bundles, *, root=ROOT):
             if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']],[row['variable']]) for row in manifest['samples']):
                 raise ValueError('training_source_export_forbidden')
             with replay_root({'configuration':configuration},root) as replay:
-                make_bundle(manifest,bundle['features'],bundle['forecast'],root=replay,kind=manifest['kind'])
+                validate_bundle(manifest,bundle['features'],bundle['forecast'],root=replay,kind=manifest['kind'])
         else:
-            make_bundle(manifest, bundle['features'], bundle['forecast'], root=root, kind=manifest['kind'])
+            validate_bundle(manifest, bundle['features'], bundle['forecast'], root=root, kind=manifest['kind'])
             bundle={**bundle,'environment_configuration':environment_configuration(manifest,root)}
         identity = manifest['snapshot_id']
         hashed = digest(canonical(bundle))
@@ -302,7 +302,8 @@ def predict_context(context, feature_rows, source_ready, snapshot_id, *, root=RO
     predictions = []
     for feature in feature_rows:
         geometry = resolve_geometry(feature['site_id'], feature['zone_id'], root)
-        if instant(context['cutoff']) > instant(feature['start_at']): raise ValueError('model_cutoff_after_target')
+        # The existing scaler cutoff gate abstains for elapsed slots; keep the
+        # window and its source data rather than aborting today's entire run.
         target = dict(**feature, geometry_verified=usable_geometry(geometry), reference_geometry=geometry['status']=='reference_geometry', sources_ready=source_ready,
                       source_snapshot_ids=[snapshot_id])
         prediction=predict(target, candidates, scaler, evidence=evidence, root=root)

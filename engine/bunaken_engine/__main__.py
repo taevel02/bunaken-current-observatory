@@ -19,10 +19,12 @@ from bunaken_engine.pipeline import collect_run, publish_bundle, publish_seal, v
 from bunaken_engine.snapshots import canonical, digest, bundle_path, make_bundle, select_seal, SnapshotError
 from bunaken_engine.sources import SourceError, utc_now
 from bunaken_engine.snapshot_io import read_stored_manifest
+from bunaken_engine.progress import stage
 
 
 def store_from_env():
-    return GitDataStore(os.environ.get("GITHUB_OWNER",""),os.environ.get("GITHUB_REPO",""),os.environ.get("GITHUB_WRITE_TOKEN",""))
+    return GitDataStore(os.environ.get("GITHUB_OWNER",""),os.environ.get("GITHUB_REPO",""),os.environ.get("GITHUB_WRITE_TOKEN",""),
+                        cache_root=os.environ.get('GIT_DATA_CACHE_ROOT'))
 
 
 def write_files(output: Path,files: dict[str,bytes]):
@@ -134,12 +136,16 @@ def main(argv=None):
                     from bunaken_engine.model_input import data_inputs
                     from bunaken_engine.model_data import model_context
                     cutoff=utc_now()
-                    _, observations, bundles=data_inputs(store or store_from_env(),cutoff,root=root)
-                    model=model_context(observations,bundles,args.observer,args.rubric,cutoff,root=root)
-                manifest,files=collect_run(args.date,args.code_commit,days=args.days,run_id=run_id,kind=args.kind,root=root,
-                                          model=model)
+                    with stage('model_inputs'):
+                        _, observations, bundles=data_inputs(store or store_from_env(),cutoff,root=root)
+                    with stage('model_context'):
+                        model=model_context(observations,bundles,args.observer,args.rubric,cutoff,root=root)
+                with stage('provider_collection_and_forecast'):
+                    manifest,files=collect_run(args.date,args.code_commit,days=args.days,run_id=run_id,kind=args.kind,root=root,
+                                              model=model)
             write_files(args.output,files)
-            receipt=publish_bundle(store,manifest,files,root=root) if store else None
+            with stage('snapshot_storage'):
+                receipt=publish_bundle(store,manifest,files,root=root) if store else None
             result=dict(run_id=run_id,status=manifest["status"],samples=len(manifest["samples"]),source_status=manifest["source_status"],saved_to_public_repository=receipt is not None,storage_commit=receipt["storage_commit"] if receipt else None)
         elif args.command=='validate-transfer':
             from bunaken_engine.validation import evaluate_transfer

@@ -5,7 +5,7 @@ import re
 
 from bunaken_engine.pipeline import verified_receipt
 from bunaken_engine.model_data import checked_bundles
-from bunaken_engine.snapshots import make_bundle, canonical, digest, validate
+from bunaken_engine.snapshots import validate_bundle, canonical, digest, validate
 from bunaken_engine.registry import ROOT
 from bunaken_engine.features import instant
 from bunaken_engine.snapshot_io import decode_manifest
@@ -40,7 +40,7 @@ def data_inputs(store, cutoff, *, root=ROOT):
             prefix = receipt['manifest_path'].rsplit('/', 1)[0]
             features = json.loads(gzip.decompress(store.read(prefix+'/features.json.gz', receipt['storage_commit'])))
             forecast = json.loads(gzip.decompress(store.read(prefix+'/forecast.json.gz', receipt['storage_commit'])))
-            make_bundle(manifest, features, forecast, root=root, kind=manifest['kind'])
+            validate_bundle(manifest, features, forecast, root=root, kind=manifest['kind'])
             origin = digest(manifest_raw)
             configuration=None
             if manifest.get('model_context') is not None:

@@ -9,8 +9,10 @@ from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker, validators
 from referencing import Registry, Resource
+from referencing.jsonschema import DRAFT202012
+from referencing.exceptions import Unresolvable
 from bunaken_engine.features import instant, finite
 from bunaken_engine.registry import ROOT, load_sources, read_json, export_allowed
 
@@ -32,12 +34,52 @@ def digest(raw: bytes) -> str:
 @lru_cache(maxsize=128)
 def schema_validator(name, fingerprint):
     schemas=[read_json(path) for path, _, _ in fingerprint]
-    registry=Registry().with_resources((schema["$id"],Resource.from_contents(schema)) for schema in schemas)
+    from bunaken_engine.bundle_cache import content_identity
+    identity=content_identity(tuple((path.name,path,mtime,size) for path,mtime,size in fingerprint))
+    original_ref=Draft202012Validator.VALIDATORS['$ref']
+    draft=Draft202012Validator.META_SCHEMA['$id']
+    cacheable={schema['$id']:schema['$id'].rsplit('/',1)[-1].removesuffix('.schema.json')
+               for schema in schemas if schema.get('$schema')==draft and
+               schema['$id'].endswith(('/snapshot.schema.json','/model-context.schema.json'))}
+
+    def cached_ref(validator, ref, document, schema):
+        try:
+            target=validator._resolver.lookup(ref).contents
+        except Unresolvable:
+            yield from original_ref(validator,ref,document,schema)
+            return
+        target_name=cacheable.get(target.get('$id')) if isinstance(target,dict) else None
+        key=(target_name,identity,digest(canonical(document))) if target_name else None
+        if key is not None and key in _validated_documents:
+            _validated_documents.move_to_end(key)
+            return
+        invalid=False
+        for error in original_ref(validator,ref,document,schema):
+            invalid=True
+            yield error
+        if key is not None and not invalid:
+            remember_validation(key)
+
+    # Keep the same 2020-12 specification while allowing extended validators to
+    # evolve through references. Other dialects/dynamic references use stock validation.
+    dynamic=any(b'"$dynamicRef":' in canonical(schema) or b'"$recursiveRef":' in canonical(schema) for schema in schemas)
+    cached=not dynamic and all(schema.get('$schema')==draft for schema in schemas)
+    validator_class=validators.extend(Draft202012Validator,{'$ref':cached_ref}) if cached else Draft202012Validator
+    resources=[{key:value for key,value in schema.items() if key!='$schema'} if cached else schema for schema in schemas]
+    registry=Registry().with_resources((schema['$id'],Resource.from_contents(resource,default_specification=DRAFT202012))
+                                       for schema,resource in zip(schemas,resources))
     schema=next(item for item in schemas if item["$id"].endswith(f"/{name}.schema.json"))
-    return Draft202012Validator(schema,registry=registry,format_checker=FormatChecker())
+    return validator_class(schema,registry=registry,format_checker=FormatChecker())
 
 
 _validated_documents = OrderedDict()
+
+
+def remember_validation(key):
+    _validated_documents[key] = True
+    _validated_documents.move_to_end(key)
+    if len(_validated_documents) > 128:
+        _validated_documents.popitem(last=False)
 
 
 def validate(name: str, document, root=ROOT):
@@ -45,15 +87,15 @@ def validate(name: str, document, root=ROOT):
     fingerprint=tuple((path,path.stat().st_mtime_ns,path.stat().st_size) for path in paths)
     # Replays repeatedly validate the same large context. Retain only successful
     # content hashes within this process, never documents or storage evidence.
-    key = (name, fingerprint, digest(canonical(document))) if name in {'snapshot','model-context'} else None
+    from bunaken_engine.bundle_cache import content_identity
+    identity = content_identity(tuple((path.name,path,mtime,size) for path,mtime,size in fingerprint))
+    key = (name, identity, digest(canonical(document))) if name in {'snapshot','model-context'} else None
     if key is not None and key in _validated_documents:
         _validated_documents.move_to_end(key)
         return
     schema_validator(name,fingerprint).validate(document)
     if key is not None:
-        _validated_documents[key] = True
-        if len(_validated_documents) > 128:
-            _validated_documents.popitem(last=False)
+        remember_validation(key)
 
 
 def bundle_path(date_wita: str, run_id: str, kind: str="snapshot") -> str:
@@ -94,11 +136,53 @@ def assess_sources(samples: list[dict], required: list[str], now: str, root=ROOT
     return result
 
 
+_checked_bundles = OrderedDict()
+
+
+def bundle_identity(manifest, features, forecast, root, kind):
+    from bunaken_engine import bundle_cache
+    paths = sorted(list((root/'config').rglob('*.json')) +
+                   list((root/'packages/contracts/json-schema').glob('*.schema.json')) +
+                   [root/'packages/contracts/data/sites.json'])
+    fingerprint = tuple((str(path.relative_to(root)),path,path.stat().st_mtime_ns,path.stat().st_size) for path in paths)
+    return digest(canonical(dict(manifest=manifest,features=features,forecast=forecast,
+        configuration=bundle_cache.content_identity(fingerprint),kind=kind)))
+
+
+def validate_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot"):
+    """Validate without serializing unused copies of the entire forecast history."""
+    try:
+        key=bundle_identity(manifest,features,forecast,root,kind)
+    except (TypeError, ValueError):
+        return _validate_bundle(manifest,features,forecast,root=root,kind=kind)
+    if key in _checked_bundles:
+        _checked_bundles.move_to_end(key)
+        return
+    _validate_bundle(manifest,features,forecast,root=root,kind=kind)
+    _checked_bundles[key]=True
+    if len(_checked_bundles)>128:_checked_bundles.popitem(last=False)
+
+
 def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot", compress_manifest=False, reference_inputs=None) -> dict[str,bytes]:
+    from bunaken_engine import bundle_cache
+    from bunaken_engine.snapshot_io import MAX_MANIFEST_BYTES, MAX_COMPRESSED_MANIFEST_BYTES
+    if reference_inputs is None:
+        reference_inputs = manifest.get('model_context') is not None
+    validate_bundle(manifest,features,forecast,root=root,kind=kind)
+    key=(bundle_identity(manifest,features,forecast,root,kind),compress_manifest,reference_inputs,
+         MAX_MANIFEST_BYTES,MAX_COMPRESSED_MANIFEST_BYTES)
+    cached = bundle_cache.get(key)
+    if cached is not None:
+        return cached
+    files = _encode_bundle(manifest,features,forecast,kind=kind,
+                           compress_manifest=compress_manifest,reference_inputs=reference_inputs)
+    bundle_cache.put(key,files)
+    return files
+
+
+def _validate_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, root=ROOT, kind="snapshot"):
     """Validate every public field before constructing any Git blob."""
     context=manifest.get('model_context')
-    if reference_inputs is None:
-        reference_inputs = context is not None
     if context is not None:
         from bunaken_engine.model_data import trusted_configuration, current_configuration, replay_root
         validate('model-context',context,root)
@@ -113,7 +197,7 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
             if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']],[row['variable']]) for row in manifest['samples']):
                 raise SnapshotError('source_export_forbidden')
             with replay_root(context,root) as replay:
-                return make_bundle(manifest,features,forecast,root=replay,kind=kind,compress_manifest=compress_manifest,reference_inputs=reference_inputs)
+                return validate_bundle(manifest,features,forecast,root=replay,kind=kind)
     if context is None and manifest['source_registry_hash'] != digest(canonical(read_json(root/'config/source-registry.json'))):
         from bunaken_engine.model_data import environment_configuration, replay_root
         configuration = environment_configuration(manifest, root)
@@ -121,7 +205,7 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
         if any(row['source'] not in current_sources or not export_allowed(current_sources[row['source']], [row['variable']]) for row in manifest['samples']):
             raise SnapshotError('source_export_forbidden')
         with replay_root({'configuration': configuration}, root) as replay:
-            return make_bundle(manifest, features, forecast, root=replay, kind=kind,compress_manifest=compress_manifest,reference_inputs=reference_inputs)
+            return validate_bundle(manifest,features,forecast,root=replay,kind=kind)
     registry=load_sources(root)
     if manifest.get("kind") != kind:
         raise SnapshotError("run_kind_mismatch")
@@ -162,6 +246,11 @@ def make_bundle(manifest: dict, features: list[dict], forecast: list[dict], *, r
     if manifest.get("artifact_hashes")!={"features.json.gz":digest(encoded_features),"forecast.json.gz":digest(encoded_forecast)}:
         raise SnapshotError("artifact_hash_mismatch")
     validate("snapshot",manifest,root)
+
+
+def _encode_bundle(manifest, features, forecast, *, kind, compress_manifest, reference_inputs):
+    encoded_features=gzip.compress(canonical(features),mtime=0)
+    encoded_forecast=gzip.compress(canonical(forecast),mtime=0)
     prefix=bundle_path(manifest["date_wita"],manifest["run_id"],kind)
     from bunaken_engine.snapshot_io import encode_manifest
     manifest_name = 'manifest.json.gz' if compress_manifest else 'manifest.json'

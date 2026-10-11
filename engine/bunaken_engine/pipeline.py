@@ -11,7 +11,7 @@ from bunaken_engine.features import extract_window, instant, finite
 from bunaken_engine.registry import ROOT, read_json, load_sources, load_geometry, export_allowed, usable_geometry, COORDINATE_STATUSES
 from bunaken_engine.sources import collect_fes, collect_open_meteo, SourceError, utc_now
 from bunaken_engine.git_store import StorageError
-from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, bundle_path, assess_sources, select_seal, SnapshotError
+from bunaken_engine.snapshots import canonical, digest, validate, make_bundle, validate_bundle, bundle_path, assess_sources, select_seal, SnapshotError
 
 WITA=ZoneInfo("Asia/Makassar")
 REQUIRED=["fes-height","copernicus-currents"]
@@ -194,7 +194,7 @@ def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
         if content is None or digest(content)!=expected:
             raise SnapshotError("receipt_artifact_mismatch")
         artifacts[name]=json.loads(gzip.decompress(content))
-    make_bundle(manifest,artifacts["features.json.gz"],artifacts["forecast.json.gz"],root=root,kind=manifest["kind"])
+    validate_bundle(manifest,artifacts["features.json.gz"],artifacts["forecast.json.gz"],root=root,kind=manifest["kind"])
     raw_confirmation=store.read(f"snapshot-confirmations/{receipt['run_id']}.json",head)
     if raw_confirmation is None:
         return {**receipt,"storage_verified":False,"reason_codes":["receipt_confirmation_missing"]}
@@ -229,7 +229,7 @@ def historical_rows(manifest_path, *, root=ROOT) -> list[dict]:
         raise SnapshotError('historical_backfill_required')
     features=json.loads(gzip.decompress((manifest_path.parent/'features.json.gz').read_bytes()))
     forecast=json.loads(gzip.decompress((manifest_path.parent/'forecast.json.gz').read_bytes()))
-    make_bundle(manifest,features,forecast,root=root,kind='backfill')
+    validate_bundle(manifest,features,forecast,root=root,kind='backfill')
     result=[]
     for row in features:
         samples=[sample for sample in manifest['samples'] if sample.get('site_id')==row['site_id'] and sample.get('zone_id')==row['zone_id']]

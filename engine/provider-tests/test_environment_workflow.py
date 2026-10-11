@@ -23,7 +23,11 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         for step in steps:
             if 'uses' in step:
                 self.assertRegex(step['uses'],r'@[0-9a-f]{40}$')
-                self.assertNotIn('cache',step['uses'])
+                if step['uses'].startswith('actions/cache/'):
+                    self.assertEqual(step['with']['path'],'${{ env.GIT_DATA_CACHE_ROOT }}/blobs')
+                    self.assertTrue(step['with']['key'].startswith('bunaken-public-blobs-v1-'))
+                else:
+                    self.assertNotIn('cache',step['uses'])
                 self.assertNotIn('upload-artifact',step['uses'])
         entry = yaml.load((root/'ops/workflows/data-entrypoint.yml').read_text(),Loader=yaml.BaseLoader)
         invocation = entry['jobs']['environment']
@@ -64,7 +68,17 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         self.assertEqual(publish['if'], "env.OPERATION == 'collect'")
         self.assertGreater(int(job['timeout-minutes']), 180)
         self.assertIn('SNAPSHOT_RUN_ID=$SNAPSHOT_RUN_ID',chain)
-        self.assertIn('bunaken_engine.d1_matching', job['steps'][-1]['run'])
+        match = next(step for step in job['steps'] if step.get('name') == 'Match official D+1 observations')
+        self.assertIn('bunaken_engine.d1_matching', match['run'])
+        self.assertNotIn('GIT_DATA_CACHE_ROOT',job['env'])
+        configure = next(step for step in job['steps'] if step.get('name') == 'Configure public Git blob cache')
+        self.assertIn('"$RUNNER_TEMP"',configure['run'])
+        self.assertIn('"$GITHUB_ENV"',configure['run'])
+        restore = next(step for step in job['steps'] if step.get('name') == 'Restore public Git blob cache')
+        save = next(step for step in job['steps'] if step.get('name') == 'Save public Git blob cache')
+        self.assertLess(job['steps'].index(restore),job['steps'].index(prepare))
+        self.assertEqual(save['if'],'always() && !cancelled()')
+        self.assertEqual(restore['with']['key'],save['with']['key'])
 
     def test_web_visibility_is_required_after_publish_and_before_matching(self):
         import io
