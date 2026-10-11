@@ -1,4 +1,4 @@
-import {DashboardNavigation} from "@/src/public/dashboard-navigation";
+import {DashboardNavigation, DashboardReleaseRefresh} from "@/src/public/dashboard-navigation";
 import {Suspense} from "react";
 import {comparisonColumns} from "@/src/public/environment-samples";
 import {MoonSummary} from "@/src/public/environment-overview";
@@ -41,11 +41,11 @@ async function DashboardData({query,locale,day,modelMode}: {query:DashboardQuery
 }
 
 async function DashboardStatus({day,locale}: {day:string;locale:"ko"|"en"}) {
-  const state=await loadPublicRelease(day);
+  const [state, latest]=await Promise.all([loadPublicRelease(day), loadPublicRelease()]);
   const t = messages[locale].public;
   const status = state.status === "available" ? t.dataAvailable : state.status === "stale" ? t.stale : state.status === "unavailable" ? t.unavailable : t.modelPending;
   const generated = state.data.generated_at ? new Intl.DateTimeFormat(locale, {timeZone: "Asia/Makassar", dateStyle: "short", timeStyle: "short"}).format(new Date(state.data.generated_at)) : t.noGenerated;
-  const headerMeta = <div role="status" className="flex flex-wrap items-center gap-x-4 text-sm text-[#49625c]"><strong className="font-medium text-[#18302d]">{status}</strong><span>{t.generated}: {generated}</span></div>;
+  const headerMeta = <><DashboardReleaseRefresh releaseId={latest.releaseId}/><div role="status" className="flex flex-wrap items-center gap-x-4 text-sm text-[#49625c]"><strong className="font-medium text-[#18302d]">{status}</strong><span>{t.generated}: {generated}</span></div></>;
   return headerMeta;
 }
 

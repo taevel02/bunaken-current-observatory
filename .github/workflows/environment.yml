@@ -16,7 +16,7 @@ on:
       code_commit:
         description: Trusted full code commit SHA
         required: false
-        default: c84cb9a99036be44b36a0bc73417cb119371bedc
+        default: e223ce1972d1b267459017d1a54d5ee9e40b7388
         type: string
       resume_run_id:
         description: Existing immutable run UUID to resume without recollection (requires date_wita)
@@ -57,11 +57,11 @@ jobs:
       group: bunaken-environment-${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
       cancel-in-progress: false
     env:
-      CODE_COMMIT: ${{ inputs.code_commit || 'c84cb9a99036be44b36a0bc73417cb119371bedc' }}
+      CODE_COMMIT: ${{ inputs.code_commit || 'e223ce1972d1b267459017d1a54d5ee9e40b7388' }}
       TARGET_DATE: ${{ inputs.date_wita }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id }}
       OPERATION: ${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
-    timeout-minutes: 180
+    timeout-minutes: 360
     steps:
       - name: Validate trusted invocation
         env:
@@ -99,6 +99,7 @@ jobs:
           uv run --project engine --locked python -m bunaken_engine.fes_cache fetch --directory "$RUNNER_TEMP/fes-derived"
           echo "FES_DERIVED_ROOT=$RUNNER_TEMP/fes-derived" >> "$GITHUB_ENV"
       - name: Collect or seal in one chain
+        timeout-minutes: 300
         env:
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
@@ -136,14 +137,56 @@ jobs:
             if [[ -n "$MODEL_OBSERVER_ID" && -n "$MODEL_RUBRIC_VERSION" ]]; then
               MODEL_ARGS=(--model-from-data --observer "$MODEL_OBSERVER_ID" --rubric "$MODEL_RUBRIC_VERSION")
             fi
+            echo "::group::Collect and verify immutable snapshot"
             uv run --project engine --extra providers --locked python -m bunaken_engine collect --date "$TARGET_DATE" --code-commit "$CODE_COMMIT" --run-id "$SNAPSHOT_RUN_ID" --output "$RUNNER_TEMP/bunaken-output" --publish "${MODEL_ARGS[@]}" "${RESUME_ARGS[@]}"
+            echo "::endgroup::"
+            echo "TARGET_DATE=$TARGET_DATE" >> "$GITHUB_ENV"
+            echo "SNAPSHOT_RUN_ID=$SNAPSHOT_RUN_ID" >> "$GITHUB_ENV"
+          elif [[ "$OPERATION" == seal ]]; then
+            uv run --project engine --locked python -m bunaken_engine seal --date "$TARGET_DATE" --publish
+          fi
+      - name: Publish validated web release
+        if: env.OPERATION == 'collect'
+        timeout-minutes: 45
+        env:
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
+        run: |
             SOURCE_DATA_COMMIT=$(uv run --project engine --locked python -c 'from bunaken_engine.__main__ import store_from_env; print(store_from_env().head())')
             MANIFEST_FILE="$RUNNER_TEMP/bunaken-output/snapshots/$TARGET_DATE/$SNAPSHOT_RUN_ID/manifest.json.gz"
             if [[ ! -f "$MANIFEST_FILE" ]]; then
               MANIFEST_FILE="$RUNNER_TEMP/bunaken-output/snapshots/$TARGET_DATE/$SNAPSHOT_RUN_ID/manifest.json"
             fi
             uv run --project engine --locked python -m bunaken_engine.public_release --source-data-commit "$SOURCE_DATA_COMMIT" --snapshot "$MANIFEST_FILE" --output "$RUNNER_TEMP/bunaken-web" --experimental-transfer --code-commit "$CODE_COMMIT" --publish
-          elif [[ "$OPERATION" == seal ]]; then
-            uv run --project engine --locked python -m bunaken_engine seal --date "$TARGET_DATE" --publish
-          fi
+      - name: Verify Vercel release visibility
+        if: env.OPERATION == 'collect'
+        timeout-minutes: 10
+        run: |
+          uv run --project engine --locked python - <<'PY'
+          import json, os, time
+          from pathlib import Path
+          from urllib.request import urlopen
+          pointer = json.loads((Path(os.environ['RUNNER_TEMP'])/'bunaken-web/web/latest.json').read_text())
+          for attempt in range(24):
+              try:
+                  with urlopen('https://bunaken-current-observatory.vercel.app/api/public/status', timeout=10) as response:
+                      state = json.load(response)
+                  if state.get('release_id') == pointer['release_id']:
+                      print(json.dumps(dict(vercel_release_visible=True, release_id=pointer['release_id'])))
+                      break
+              except (OSError, ValueError):
+                  pass
+              if attempt < 23:
+                  time.sleep(15)
+          else:
+              raise SystemExit('vercel_release_not_visible')
+          PY
+      - name: Match official D+1 observations
+        timeout-minutes: 45
+        env:
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
+        run: |
           uv run --project engine --locked python -m bunaken_engine.d1_matching --code-commit "$CODE_COMMIT" --output "$RUNNER_TEMP/bunaken-d1" --publish

@@ -56,10 +56,42 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         self.assertNotIn('fes_atlas', prepare['run'])
         self.assertNotIn('AVISO_PASSWORD', str(job))
         self.assertLess(job['steps'].index(prepare),next(i for i,step in enumerate(job['steps']) if step.get('name') == 'Collect or seal in one chain'))
-        chain = job['steps'][-1]['run']
+        chain = next(step['run'] for step in job['steps'] if step.get('name') == 'Collect or seal in one chain')
         self.assertIn('TZ=Asia/Makassar date -d tomorrow',chain)
         self.assertIn('--model-from-data',chain)
-        self.assertIn('bunaken_engine.public_release',chain)
+        publish = next(step for step in job['steps'] if step.get('name') == 'Publish validated web release')
+        self.assertIn('bunaken_engine.public_release',publish['run'])
+        self.assertEqual(publish['if'], "env.OPERATION == 'collect'")
+        self.assertGreater(int(job['timeout-minutes']), 180)
+        self.assertIn('SNAPSHOT_RUN_ID=$SNAPSHOT_RUN_ID',chain)
+        self.assertIn('bunaken_engine.d1_matching', job['steps'][-1]['run'])
+
+    def test_web_visibility_is_required_after_publish_and_before_matching(self):
+        import io
+        import json
+        from contextlib import redirect_stdout
+        from unittest.mock import patch
+        root = Path(__file__).resolve().parents[2]
+        data = yaml.load((root/'.github/workflows/environment.yml').read_text(),Loader=yaml.BaseLoader)
+        steps = data['jobs']['environment']['steps']
+        names = [step.get('name') for step in steps]
+        verify = steps[names.index('Verify Vercel release visibility')]
+        self.assertEqual(verify['if'], "env.OPERATION == 'collect'")
+        self.assertLess(names.index('Publish validated web release'),names.index(verify['name']))
+        self.assertLess(names.index(verify['name']),names.index('Match official D+1 observations'))
+        script = verify['run'].split('\n',1)[1].rsplit('\nPY',1)[0]
+        def response(release):
+            return io.BytesIO(json.dumps(dict(release_id=release)).encode())
+        with patch.dict(os.environ, RUNNER_TEMP='/tmp/synthetic'), patch.object(Path,'read_text',return_value='{"release_id":"expected"}'), patch('time.sleep') as sleep, redirect_stdout(io.StringIO()) as output:
+            with patch('urllib.request.urlopen',side_effect=[OSError('offline'),response('old'),response('expected')]) as fetch:
+                exec(compile(script,'vercel-visibility','exec'),{})
+            self.assertEqual(fetch.call_count,3)
+            self.assertEqual(sleep.call_count,2)
+            self.assertTrue(json.loads(output.getvalue())['vercel_release_visible'])
+            with patch('urllib.request.urlopen',side_effect=lambda *args,**kwargs:response('old')) as fetch:
+                with self.assertRaisesRegex(SystemExit,'vercel_release_not_visible'):
+                    exec(compile(script,'vercel-visibility','exec'),{})
+            self.assertEqual(fetch.call_count,24)
 
     def test_invocation_rejects_preview_tags_and_invalid_inputs(self):
         root = Path(__file__).resolve().parents[2]

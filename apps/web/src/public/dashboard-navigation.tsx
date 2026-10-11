@@ -1,7 +1,32 @@
 "use client";
 
-import {createContext, useContext, useState, useTransition, type ReactNode} from "react";
+import {createContext, useContext, useEffect, useState, useTransition, type ReactNode} from "react";
 import {useRouter} from "next/navigation";
+import {releaseChanged} from "@/src/public/release-refresh";
+
+export function DashboardReleaseRefresh({releaseId}: {releaseId: string | null}) {
+  const router = useRouter();
+  useEffect(() => {
+    const controller = new AbortController();
+    let checking = false;
+    const check = async () => {
+      if (checking || document.visibilityState !== "visible") return;
+      checking = true;
+      try {
+        if (await releaseChanged(releaseId, controller.signal) && !controller.signal.aborted) router.refresh();
+      } finally { checking = false; }
+    };
+    const timer = window.setInterval(check, 60000);
+    document.addEventListener("visibilitychange", check);
+    void check();
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [releaseId, router]);
+  return null;
+}
 
 type Navigation = {pendingDay: string | null; navigate: (href: string, day: string) => void};
 const NavigationContext = createContext<Navigation | null>(null);
