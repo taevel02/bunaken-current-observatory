@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from functools import lru_cache
+from collections import OrderedDict
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -36,10 +37,23 @@ def schema_validator(name, fingerprint):
     return Draft202012Validator(schema,registry=registry,format_checker=FormatChecker())
 
 
+_validated_documents = OrderedDict()
+
+
 def validate(name: str, document, root=ROOT):
     paths=sorted((root/"packages/contracts/json-schema").glob("*.schema.json"))
     fingerprint=tuple((path,path.stat().st_mtime_ns,path.stat().st_size) for path in paths)
+    # Replays repeatedly validate the same large context. Retain only successful
+    # content hashes within this process, never documents or storage evidence.
+    key = (name, fingerprint, digest(canonical(document))) if name in {'snapshot','model-context'} else None
+    if key is not None and key in _validated_documents:
+        _validated_documents.move_to_end(key)
+        return
     schema_validator(name,fingerprint).validate(document)
+    if key is not None:
+        _validated_documents[key] = True
+        if len(_validated_documents) > 128:
+            _validated_documents.popitem(last=False)
 
 
 def bundle_path(date_wita: str, run_id: str, kind: str="snapshot") -> str:
