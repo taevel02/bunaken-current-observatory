@@ -1,0 +1,37 @@
+{
+  "id": "9693d651-1e97-4140-b49c-2bf64b606603",
+  "local_start": "2026-10-15T11:41",
+  "local_end": "2026-10-15T12:31",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "rons-point",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.41,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": {
+    "celsius": 28,
+    "depth_m": null,
+    "at": null
+  },
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-10-15T03:41:00.000Z",
+  "end_at": "2026-10-15T04:31:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-10-15T05:12:47.998Z",
+  "updated_at": "2026-10-15T05:12:47.998Z",
+  "train_eligible": false
+}
