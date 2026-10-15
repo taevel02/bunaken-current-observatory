@@ -1,0 +1,37 @@
+{
+  "id": "768eaa7e-cb36-4363-b9b3-5f7ab55e015d",
+  "local_start": "2026-10-15T09:51",
+  "local_end": "2026-10-15T10:41",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "mandolin",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.42,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": {
+    "celsius": 28,
+    "depth_m": null,
+    "at": null
+  },
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-10-15T01:51:00.000Z",
+  "end_at": "2026-10-15T02:41:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-10-15T03:01:35.160Z",
+  "updated_at": "2026-10-15T03:01:35.160Z",
+  "train_eligible": false
+}
