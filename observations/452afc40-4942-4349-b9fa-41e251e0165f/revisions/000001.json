@@ -1,0 +1,37 @@
+{
+  "id": "452afc40-4942-4349-b9fa-41e251e0165f",
+  "local_start": "2026-10-16T09:35",
+  "local_end": "2026-10-16T10:20",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "fukui",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.38,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": {
+    "celsius": 27,
+    "depth_m": null,
+    "at": null
+  },
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-10-16T01:35:00.000Z",
+  "end_at": "2026-10-16T02:20:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-10-16T02:35:15.133Z",
+  "updated_at": "2026-10-16T02:35:15.133Z",
+  "train_eligible": false
+}
