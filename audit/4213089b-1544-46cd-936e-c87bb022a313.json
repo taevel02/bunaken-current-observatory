@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "id": "4213089b-1544-46cd-936e-c87bb022a313",
+  "actor_alias": "bunaken-observer-01",
+  "action": "create",
+  "observation_id": "5f0f91ef-72c0-4e1d-a966-1e9737ca4c18",
+  "previous_revision": null,
+  "new_revision": 1,
+  "created_at": "2026-10-16T04:52:14.461Z",
+  "parent_commit_sha": "57c1b1f602377e8b3701e76e294cba6775ae1369"
+}
