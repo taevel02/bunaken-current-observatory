@@ -5,12 +5,16 @@
 main의 `.github/workflows/environment.yml`은 UTC 23:17/11:17에 수집, UTC 12:17에 seal을 실행한다. WITA 기준 07:17/19:17, 20:17이다. 예약은 기본 branch에 설치된 뒤 동작하며 GitHub 지연으로 시작이 늦어질 수 있다. seal cutoff는 기존 WITA 20:00을 유지한다. [GitHub 예약 실행 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
 
 ```text
-main schedule
+main schedule collect
   → 고정 코드 checkout·main 이력 확인
   → 코드에 고정한 hash의 FES 조석 파생값 검증·재사용
   → 실제 환경 수집·data 관측/환경으로 모델 구성
   → snapshot·receipt·confirmation 저장
   → 패키지 검증·새 release·latest 원자적 저장
+
+main schedule seal
+  → 공식 seal 저장
+  → 새 seal 날짜만 D+1 비교 증분 갱신
 
 data observations push
   → 위 trusted 수집·공개 chain
@@ -96,7 +100,7 @@ Actions 자체가 비용·소스 요청 제한·전송 시간을 면제하지 �
 
 ## P7 연결 갱신 (2026-10-09)
 
-2026-10-09 당시 main 예약과 data entrypoint는 `bf50ec9af2301505886cdd99c71214ad44253721`에 고정했다. 현재 예약 collect/seal은 D+1 비교를 실행하지 않는다. 관측 push는 `validation/d1/checkpoints/`의 가장 최근 성공 run을 기준으로 변경 관측과 seal의 관련 WITA 날짜만 비교한다. 첫 체크포인트는 마지막 기존 비교의 `source_data_commit`에서 시작해 그동안 누락된 push도 복구한다. 기존 비교가 없으면 전체 이력을 재구축한다. 비교 파일과 체크포인트는 한 commit에 저장하며, `validation/d1/`은 observation push filter에 포함하지 않아 재귀 실행하지 않는다. `operation=match` 수동 실행은 전체 이력을 다시 확인한다. 배포·보호 설정과 실제 검수는 [P7 운영 안내](p7-launch.ko.md)를 따른다.
+2026-10-09 당시 main 예약과 data entrypoint는 `bf50ec9af2301505886cdd99c71214ad44253721`에 고정했다. 현재 예약 collect는 D+1 비교를 생략하고 예약 seal은 새 seal 날짜만 증분 비교한다. 관측 push도 `validation/d1/checkpoints/`의 가장 최근 성공 run을 기준으로 변경 관측과 seal의 관련 WITA 날짜만 비교한다. 첫 체크포인트는 마지막 기존 비교의 `source_data_commit`에서 시작해 그동안 누락된 push도 복구한다. 기존 비교가 없으면 전체 이력을 재구축한다. 비교 파일과 체크포인트는 한 commit에 저장하며, `validation/d1/`은 observation push filter에 포함하지 않아 재귀 실행하지 않는다. `operation=match` 수동 실행은 전체 이력을 다시 확인한다. 배포·보호 설정과 실제 검수는 [P7 운영 안내](p7-launch.ko.md)를 따른다.
 
 
 ## 지연 실행의 seal 기본 날짜

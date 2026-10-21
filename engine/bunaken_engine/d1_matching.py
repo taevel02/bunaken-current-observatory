@@ -82,7 +82,7 @@ def observations_from_head(store,head,root=ROOT):
     return result
 
 
-def changed_inputs(store,before,head,root=ROOT):
+def changed_inputs(store,head,root=ROOT):
     """Return changed observation IDs and sealed dates, or None for a full rebuild."""
     def tree_at(commit_sha):
         commit=store.request('GET',f'/git/commits/{commit_sha}')
@@ -186,11 +186,11 @@ def official_predictions(store,head,day,root=ROOT):
     return predictions,evidence,None,scope,baseline_pool
 
 
-def build_reports(store,*,root=ROOT,code_commit,since_commit=None,head=None):
+def build_reports(store,*,root=ROOT,code_commit,incremental=False,head=None):
     head=head or store.head();by_day=defaultdict(list);excluded_by_day=defaultdict(list)
     changed_ids=None;selected_days=None
-    if since_commit is not None:
-        changes=changed_inputs(store,since_commit,head,root)
+    if incremental:
+        changes=changed_inputs(store,head,root)
         if changes is not None:
             changed_ids,changed_seal_days=changes
             if not changed_ids and not changed_seal_days:return []
@@ -263,15 +263,14 @@ def main(argv=None):
     from bunaken_engine.__main__ import store_from_env,write_files
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--code-commit',required=True);parser.add_argument('--output',type=Path,required=True)
-    parser.add_argument('--since-commit')
+    parser.add_argument('--incremental',action='store_true')
     parser.add_argument('--run-id');parser.add_argument('--run-attempt',type=int,default=1)
     parser.add_argument('--publish',action='store_true');args=parser.parse_args(argv)
     if not re.fullmatch('[0-9a-f]{40}',args.code_commit): parser.error('full code SHA required')
-    if args.since_commit is not None and not re.fullmatch('[0-9a-f]{40}',args.since_commit): parser.error('full data commit SHA required')
     if args.run_id is not None and not re.fullmatch(r'\d{1,20}',args.run_id):parser.error('workflow run ID must be decimal')
     if args.run_attempt<1 or args.run_attempt>99999:parser.error('workflow run attempt is out of range')
     if args.publish and args.run_id is None:parser.error('--run-id is required when publishing')
-    store=store_from_env();head=store.head();reports=build_reports(store,code_commit=args.code_commit,since_commit=args.since_commit,head=head)
+    store=store_from_env();head=store.head();reports=build_reports(store,code_commit=args.code_commit,incremental=args.incremental,head=head)
     if args.publish:
         import subprocess
         actual=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()

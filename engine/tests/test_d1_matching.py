@@ -123,7 +123,7 @@ class D1MatchingTest(unittest.TestCase):
             {'tree':{'sha':'b'*40}},tree(before),
         ]
         store.read.return_value=canonical(report)
-        ids,days=changed_inputs(store,'f'*40,'a'*40)
+        ids,days=changed_inputs(store,'a'*40)
         self.assertEqual(ids,{observation_id})
         self.assertEqual(days,set())
         self.assertTrue(any('/commits?sha=' in call.args[1] and 'path=validation/d1' in call.args[1]
@@ -138,7 +138,7 @@ class D1MatchingTest(unittest.TestCase):
             {'tree':[], 'truncated':False},
             [],
         ]
-        self.assertIsNone(changed_inputs(store,'f'*40,'a'*40))
+        self.assertIsNone(changed_inputs(store,'a'*40))
 
     def test_incremental_match_rebuilds_changed_observation_and_seal_days_only(self):
         from bunaken_engine.d1_matching import build_reports
@@ -183,12 +183,11 @@ class D1MatchingTest(unittest.TestCase):
             build_reports(store,code_commit='d'*40)
             full_rebuild_days=official.call_count
             official.reset_mock()
-            reports=build_reports(store,code_commit='d'*40,since_commit='f'*40)
+            reports=build_reports(store,code_commit='d'*40,incremental=True)
 
         expected=['2026-10-09','2026-10-10','2026-10-12']
         self.assertEqual(full_rebuild_days,43)
         self.assertTrue(any('/git/commits/'+'e'*40 in call.args[1] for call in store.request.call_args_list))
-        self.assertFalse(any('/git/commits/'+'f'*40 in call.args[1] for call in store.request.call_args_list))
         self.assertEqual(official.call_count,3)
         self.assertEqual([report['date_wita'] for report in reports],expected)
         self.assertEqual([call.args[2] for call in official.call_args_list],expected)

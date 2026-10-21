@@ -112,11 +112,10 @@ class EnvironmentWorkflowTest(unittest.TestCase):
         data = yaml.load((root/'.github/workflows/environment.yml').read_text(),Loader=yaml.BaseLoader)
         steps = data['jobs']['environment']['steps']
         match = next(step for step in steps if step.get('name') == 'Match official D+1 observations')
-        self.assertEqual(match['if'], "github.event_name == 'push' || env.OPERATION == 'match'")
-        self.assertIn('EVENT_BEFORE', match['env'])
+        self.assertEqual(match['if'], "github.event_name == 'push' || env.OPERATION == 'seal' || env.OPERATION == 'match'")
         self.assertIn('MATCH_RUN_ID', match['env'])
         self.assertIn('MATCH_RUN_ATTEMPT', match['env'])
-        self.assertIn('--since-commit "$EVENT_BEFORE"', match['run'])
+        self.assertIn('--incremental', match['run'])
         self.assertIn('--run-id "$MATCH_RUN_ID"', match['run'])
         self.assertIn('--run-attempt "$MATCH_RUN_ATTEMPT"', match['run'])
         self.assertEqual(subprocess.run(['bash','-n','-c',match['run']],capture_output=True).returncode,0)
