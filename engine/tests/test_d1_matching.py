@@ -140,6 +140,18 @@ class D1MatchingTest(unittest.TestCase):
         ]
         self.assertIsNone(changed_inputs(store,'a'*40))
 
+    def test_checkpoint_cleanup_without_report_commit_forces_full_rebuild(self):
+        from bunaken_engine.d1_matching import changed_inputs
+
+        store=Mock()
+        store.request.side_effect=[
+            {'tree':{'sha':'c'*40}},
+            {'tree':[], 'truncated':False},
+            [{'sha':'9'*40}],
+            {'files':[{'filename':'validation/d1/checkpoints/00000000000000000042-00001.json'}]},
+        ]
+        self.assertIsNone(changed_inputs(store,'a'*40))
+
     def test_incremental_match_rebuilds_changed_observation_and_seal_days_only(self):
         from bunaken_engine.d1_matching import build_reports
         from datetime import date,timedelta

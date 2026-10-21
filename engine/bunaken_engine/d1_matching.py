@@ -125,7 +125,7 @@ def changed_inputs(store,head,root=ROOT):
         if not isinstance(files,list):raise SnapshotError('matching_checkpoint_commit_invalid')
         report_paths=[row['filename'] for row in files if isinstance(row,dict) and
                       re.fullmatch(r'validation/d1/\d{4}-\d{2}-\d{2}/[a-f0-9]{64}\.json',row.get('filename',''))]
-        if not report_paths:raise SnapshotError('matching_checkpoint_report_missing')
+        if not report_paths:return None
         raw=store.read(report_paths[0],match_sha)
         if raw is None:raise SnapshotError('matching_checkpoint_report_missing')
         try:report=json.loads(raw)
