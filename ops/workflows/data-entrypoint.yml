@@ -10,10 +10,10 @@ permissions:
   contents: read
 jobs:
   environment:
-    uses: taevel02/bunaken-current-observatory/.github/workflows/environment.yml@bc4a9550ad602de5f0d6b4840f6fde6187e201ea
+    uses: taevel02/bunaken-current-observatory/.github/workflows/environment.yml@f1b4095cf97001c8538f6ab6bfde098178e62662
     with:
       operation: collect
-      code_commit: bc4a9550ad602de5f0d6b4840f6fde6187e201ea
+      code_commit: f1b4095cf97001c8538f6ab6bfde098178e62662
     secrets:
       DATA_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
       COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
