@@ -16,7 +16,7 @@ test("registered Bunaken Sites have stable unique IDs and resolve display names"
   assert.equal(resolveSiteId("mikes-point"), "mikes-point");
   assert.equal(resolveSiteId("unregistered-site"), null);
 });
-const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "model-context", "environment-link", "prediction", "release", "error-envelope", "snapshot-receipt", "snapshot-confirmation", "seal", "d1-comparison"];
+const schemaNames = ["create-request", "observation-revision", "source-sample", "snapshot", "model-context", "environment-link", "prediction", "release", "error-envelope", "snapshot-receipt", "snapshot-confirmation", "seal", "d1-comparison", "d1-checkpoint"];
 const schemas = await Promise.all(schemaNames.map(async name => JSON.parse(await readFile(new URL(`json-schema/${name}.schema.json`, base), "utf8"))));
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 addFormats(ajv);
@@ -100,6 +100,14 @@ test("PCI above one remains valid; unknown and zero are not conflated", async ()
   assert.equal(observation.overall_pci, 1.24);
   assert.equal(observation.vertical.intensity, null);
   assert.deepEqual((await fixture("core")).cases[0].values, { unknown: "unknown", missing: null, none: "none", zero: 0 });
+});
+
+test("D+1 checkpoint contains only a validated public source commit", async () => {
+  const validate = ajv.getSchema("https://bunaken-current-observatory.example/schemas/d1-checkpoint.schema.json");
+  const checkpoint = await fixture("d1-checkpoint");
+  assert.ok(validate);
+  assert.equal(validate(checkpoint), true, JSON.stringify(validate.errors));
+  assert.equal(validate({ ...checkpoint, token: "secret" }), false);
 });
 
 test("client-only training and unknown fields are rejected", async () => {

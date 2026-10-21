@@ -191,13 +191,22 @@ jobs:
               raise SystemExit('vercel_release_not_visible')
           PY
       - name: Match official D+1 observations
+        if: github.event_name == 'push' || env.OPERATION == 'match'
         timeout-minutes: 45
         env:
           GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.event.repository.name }}
           GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          MATCH_RUN_ID: ${{ github.run_id }}
+          MATCH_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
-          uv run --project engine --locked python -m bunaken_engine.d1_matching --code-commit "$CODE_COMMIT" --output "$RUNNER_TEMP/bunaken-d1" --publish
+          MATCH_ARGS=()
+          if [[ "$EVENT_NAME" == push && "$EVENT_BEFORE" =~ ^[0-9a-f]{40}$ ]]; then
+            MATCH_ARGS+=(--since-commit "$EVENT_BEFORE")
+          fi
+          uv run --project engine --locked python -m bunaken_engine.d1_matching --code-commit "$CODE_COMMIT" --output "$RUNNER_TEMP/bunaken-d1" --run-id "$MATCH_RUN_ID" --run-attempt "$MATCH_RUN_ATTEMPT" --publish "${MATCH_ARGS[@]}"
       - name: Save public Git blob cache
         if: always() && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

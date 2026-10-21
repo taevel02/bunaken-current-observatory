@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "workflow_run_id": "1234567890",
+  "workflow_run_attempt": 1,
+  "source_data_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "code_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

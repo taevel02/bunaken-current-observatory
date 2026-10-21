@@ -58,6 +58,8 @@ class SnapshotTest(unittest.TestCase):
             make_bundle(changed,[],[],kind="snapshot")
         self.assertFalse(allowed_data_path(".github/workflows/injection.yml"))
         self.assertFalse(allowed_data_path("snapshots/../password"))
+        self.assertTrue(allowed_data_path("validation/d1/checkpoints/00000000000000000001-00001.json"))
+        self.assertFalse(allowed_data_path("validation/d1/checkpoints/latest.json"))
         self.assertTrue(all(allowed_data_path(path) for path in files))
         readiness=assess_sources([], ["fes-height","copernicus-currents"],"2026-09-30T00:00:00Z")
         self.assertTrue(all(state["status"]=="failed" for state in readiness.values()))

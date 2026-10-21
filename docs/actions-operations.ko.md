@@ -5,13 +5,21 @@
 main의 `.github/workflows/environment.yml`은 UTC 23:17/11:17에 수집, UTC 12:17에 seal을 실행한다. WITA 기준 07:17/19:17, 20:17이다. 예약은 기본 branch에 설치된 뒤 동작하며 GitHub 지연으로 시작이 늦어질 수 있다. seal cutoff는 기존 WITA 20:00을 유지한다. [GitHub 예약 실행 문서](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onschedule).
 
 ```text
-main schedule 또는 data observations push
+main schedule
   → 고정 코드 checkout·main 이력 확인
   → 코드에 고정한 hash의 FES 조석 파생값 검증·재사용
   → 실제 환경 수집·data 관측/환경으로 모델 구성
   → snapshot·receipt·confirmation 저장
   → 패키지 검증·새 release·latest 원자적 저장
-  → 공식 seal 기반 D+1 comparison·revision 갱신
+
+data observations push
+  → 위 trusted 수집·공개 chain
+  → 마지막 성공 체크포인트/현재 data tree 비교 (초기에는 마지막 비교의 source commit, 기존 비교가 없으면 전체 이력 재구축)
+  → 변경 관측의 WITA 날짜와 변경 seal 날짜만 D+1 comparison 갱신
+  → 비교 파일과 run ID 체크포인트를 함께 원자 저장
+
+operation=match 수동 실행
+  → 전체 관측 이력의 D+1 comparison 재검증
 ```
 
 수집 job은 repository 범위에서 직렬화하고 seal은 별도 concurrency group을 사용한다. 새 push가 겹치면 GitHub는 대기 실행을 최신 요청으로 교체할 수 있다. 관측 자체의 Git 저장은 취소하지 않으며 실행 시 최신 data head를 읽는다. branch 경쟁은 엔진의 non-force 저장 조건으로 처리한다. 이 concurrency를 웹 저장 동시성 제어로 설명하지 않는다.
@@ -88,7 +96,7 @@ Actions 자체가 비용·소스 요청 제한·전송 시간을 면제하지 �
 
 ## P7 연결 갱신 (2026-10-09)
 
-현재 trusted pin은 `bf50ec9af2301505886cdd99c71214ad44253721`이다. main 예약과 data entrypoint 모두 이 코드에 고정한다. `operation=match`는 공급 재수집 없이 공식 D+1 대조를 수행한다. collect/seal 뒤에도 같은 chain에서 대조하므로 별도 GITHUB_TOKEN push 실행에 의존하지 않는다. `validation/d1/` 저장은 observation push filter에 포함하지 않아 재귀 실행하지 않는다. 배포·보호 설정과 실제 검수는 [P7 운영 안내](p7-launch.ko.md)를 따른다.
+2026-10-09 당시 main 예약과 data entrypoint는 `bf50ec9af2301505886cdd99c71214ad44253721`에 고정했다. 현재 예약 collect/seal은 D+1 비교를 실행하지 않는다. 관측 push는 `validation/d1/checkpoints/`의 가장 최근 성공 run을 기준으로 변경 관측과 seal의 관련 WITA 날짜만 비교한다. 첫 체크포인트는 마지막 기존 비교의 `source_data_commit`에서 시작해 그동안 누락된 push도 복구한다. 기존 비교가 없으면 전체 이력을 재구축한다. 비교 파일과 체크포인트는 한 commit에 저장하며, `validation/d1/`은 observation push filter에 포함하지 않아 재귀 실행하지 않는다. `operation=match` 수동 실행은 전체 이력을 다시 확인한다. 배포·보호 설정과 실제 검수는 [P7 운영 안내](p7-launch.ko.md)를 따른다.
 
 
 ## 지연 실행의 seal 기본 날짜
