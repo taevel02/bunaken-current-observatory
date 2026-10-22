@@ -2,9 +2,10 @@
 import argparse
 import gzip
 import json
+import re
 from collections import defaultdict
 from statistics import median
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 from bunaken_engine.features import instant, finite
@@ -71,7 +72,6 @@ def observations_from_head(store,head,root=ROOT):
     commit=store.request('GET',f'/git/commits/{head}')
     tree=store.request('GET',f"/git/trees/{commit['tree']['sha']}?recursive=1")
     if tree.get('truncated'): raise SnapshotError('matching_tree_truncated')
-    import re
     result=[]
     for entry in tree['tree']:
         path=entry['path'];match=re.fullmatch(r'observations/([0-9a-f-]{36})/revisions/(\d{6})\.json',path)
@@ -80,6 +80,79 @@ def observations_from_head(store,head,root=ROOT):
         if row['id'] != match[1] or row['revision'] != int(match[2]): raise SnapshotError('matching_revision_identity_mismatch')
         result.append(row)
     return result
+
+
+def changed_inputs(store,head,root=ROOT):
+    """Return changed observation IDs and sealed dates, or None for a full rebuild."""
+    def tree_at(commit_sha):
+        commit=store.request('GET',f'/git/commits/{commit_sha}')
+        if not commit:raise SnapshotError('matching_change_commit_missing')
+        tree_sha=commit.get('tree',{}).get('sha')
+        if not re.fullmatch(r'[0-9a-f]{40}',tree_sha or ''):raise SnapshotError('matching_change_tree_invalid')
+        tree=store.request('GET',f'/git/trees/{tree_sha}?recursive=1')
+        if not tree or tree.get('truncated'):raise SnapshotError('matching_change_tree_truncated')
+        entries={}
+        for entry in tree.get('tree',[]):
+            if entry.get('type')!='blob':continue
+            path,sha=entry.get('path'),entry.get('sha')
+            if not isinstance(path,str) or not re.fullmatch(r'[0-9a-f]{40}',sha or ''):
+                raise SnapshotError('matching_change_tree_invalid')
+            entries[path]=sha
+        return entries
+
+    current=tree_at(head)
+    checkpoint_paths=[path for path in current if re.fullmatch(r'validation/d1/checkpoints/\d{20}-\d{5}\.json',path)]
+    if checkpoint_paths:
+        checkpoint_path=max(checkpoint_paths)
+        raw=store.read(checkpoint_path,head)
+        if raw is None:raise SnapshotError('matching_checkpoint_missing')
+        try:checkpoint=json.loads(raw)
+        except (TypeError,ValueError):raise SnapshotError('matching_checkpoint_invalid') from None
+        validate('d1-checkpoint',checkpoint,root)
+        expected_path=f"validation/d1/checkpoints/{int(checkpoint['workflow_run_id']):020d}-{checkpoint['workflow_run_attempt']:05d}.json"
+        if checkpoint_path!=expected_path:raise SnapshotError('matching_checkpoint_identity_mismatch')
+        before=checkpoint['source_data_commit']
+    else:
+        # Use the last published report to recover changes missed before the first checkpoint.
+        commits=store.request('GET',f'/commits?sha={head}&path=validation/d1&per_page=1')
+        if not commits:return None
+        if not isinstance(commits,list) or not isinstance(commits[0],dict):raise SnapshotError('matching_checkpoint_commit_invalid')
+        match_sha=commits[0].get('sha')
+        if not re.fullmatch(r'[0-9a-f]{40}',match_sha or ''):raise SnapshotError('matching_checkpoint_commit_invalid')
+        details=store.request('GET',f'/commits/{match_sha}')
+        if not details:raise SnapshotError('matching_checkpoint_commit_missing')
+        files=details.get('files')
+        if not isinstance(files,list):raise SnapshotError('matching_checkpoint_commit_invalid')
+        report_paths=[row['filename'] for row in files if isinstance(row,dict) and
+                      re.fullmatch(r'validation/d1/\d{4}-\d{2}-\d{2}/[a-f0-9]{64}\.json',row.get('filename',''))]
+        if not report_paths:return None
+        raw=store.read(report_paths[0],match_sha)
+        if raw is None:raise SnapshotError('matching_checkpoint_report_missing')
+        try:report=json.loads(raw)
+        except (TypeError,ValueError):raise SnapshotError('matching_checkpoint_report_invalid') from None
+        validate('d1-comparison',report,root)
+        before=report['source_data_commit']
+    if not re.fullmatch(r'[0-9a-f]{40}',before or '') or before=='0'*40:return None
+    if before==head:return set(),set()
+    previous=tree_at(before)
+    changed={path for path in previous.keys()|current.keys() if previous.get(path)!=current.get(path)}
+    observation_ids=set();days=set()
+    for path in changed:
+        if path.startswith('observations/'):
+            match=re.fullmatch(r'observations/([0-9a-f-]{36})/(?:current\.json|revisions/\d{6}\.json)',path)
+            if not match:raise SnapshotError('matching_observation_path_invalid')
+            if path in previous and path not in current:raise SnapshotError('matching_observation_history_removed')
+            observation_ids.add(match[1])
+        elif path.startswith('seals/'):
+            match=re.fullmatch(r'seals/target-(\d{4}-\d{2}-\d{2})\.json',path)
+            if not match:raise SnapshotError('matching_seal_path_invalid')
+            if path in previous and path not in current:raise SnapshotError('matching_seal_removed')
+            day=match[1]
+            try:
+                if date.fromisoformat(day).isoformat()!=day:raise ValueError
+            except ValueError:raise SnapshotError('matching_seal_date_invalid') from None
+            days.add(day)
+    return observation_ids,days
 
 
 def official_predictions(store,head,day,root=ROOT):
@@ -113,10 +186,21 @@ def official_predictions(store,head,day,root=ROOT):
     return predictions,evidence,None,scope,baseline_pool
 
 
-def build_reports(store,*,root=ROOT,code_commit):
-    head=store.head();by_day=defaultdict(list);excluded_by_day=defaultdict(list)
+def build_reports(store,*,root=ROOT,code_commit,incremental=False,head=None):
+    head=head or store.head();by_day=defaultdict(list);excluded_by_day=defaultdict(list)
+    changed_ids=None;selected_days=None
+    if incremental:
+        changes=changed_inputs(store,head,root)
+        if changes is not None:
+            changed_ids,changed_seal_days=changes
+            if not changed_ids and not changed_seal_days:return []
+    # shortcut: full revision scan preserves moved-day exclusions; add an index if those reads become the bottleneck.
     history=observations_from_head(store,head,root)
     current=latest_revisions(history,root=root);current_by_id={row['id']:row for row in current}
+    if changed_ids is not None:
+        if not changed_ids.issubset(current_by_id):raise SnapshotError('matching_changed_observation_missing')
+        selected_days=set(changed_seal_days)
+        selected_days.update(wita_date(row['start_at']).isoformat() for row in history if row['id'] in changed_ids)
     for previous in history:
         day=wita_date(previous['start_at']).isoformat();by_day[day]
         now=current_by_id[previous['id']]
@@ -131,6 +215,7 @@ def build_reports(store,*,root=ROOT,code_commit):
         by_day[wita_date(row['start_at']).isoformat()].append(row)
     reports=[]
     for day,observations in sorted(by_day.items()):
+        if selected_days is not None and day not in selected_days:continue
         predictions,evidence,reason,scope,baseline_pool=official_predictions(store,head,day,root)
         rows=match_rows(observations,predictions,unavailable_reason=reason,scope=scope,baseline_pool=baseline_pool)
         # Split observer/rubric: never pool different subjective scales in one MAE.
@@ -150,8 +235,8 @@ def build_reports(store,*,root=ROOT,code_commit):
     return reports
 
 
-def report_files(store,reports,*,publish,root=ROOT):
-    """Concurrent collect/seal retries converge on the first confirmed identical report."""
+def report_files(store,reports,*,publish,checkpoint=None,root=ROOT):
+    """Concurrent matcher retries converge on the first confirmed identical report."""
     from bunaken_engine.git_store import StorageError
     semantic=('input_sha256','rows','excluded_observations','official_snapshot','cohort_metrics','code_commit','rule')
     for attempt in range(3):
@@ -164,6 +249,7 @@ def report_files(store,reports,*,publish,root=ROOT):
                 if any(previous[key]!=report[key] for key in semantic):raise SnapshotError('matching_immutable_conflict')
                 files[path]=existing
             else:files[path]=canonical(report)
+        if checkpoint:files.update(checkpoint)
         if not publish or not files:return files
         try:
             store.insert(files,'record immutable official D+1 observation comparison')
@@ -175,18 +261,28 @@ def report_files(store,reports,*,publish,root=ROOT):
 
 def main(argv=None):
     from bunaken_engine.__main__ import store_from_env,write_files
-    import re
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--code-commit',required=True);parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--incremental',action='store_true')
+    parser.add_argument('--run-id');parser.add_argument('--run-attempt',type=int,default=1)
     parser.add_argument('--publish',action='store_true');args=parser.parse_args(argv)
     if not re.fullmatch('[0-9a-f]{40}',args.code_commit): parser.error('full code SHA required')
-    store=store_from_env();reports=build_reports(store,code_commit=args.code_commit)
+    if args.run_id is not None and not re.fullmatch(r'\d{1,20}',args.run_id):parser.error('workflow run ID must be decimal')
+    if args.run_attempt<1 or args.run_attempt>99999:parser.error('workflow run attempt is out of range')
+    if args.publish and args.run_id is None:parser.error('--run-id is required when publishing')
+    store=store_from_env();head=store.head();reports=build_reports(store,code_commit=args.code_commit,incremental=args.incremental,head=head)
     if args.publish:
         import subprocess
         actual=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         dirty=subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()
         if actual!=args.code_commit or dirty:raise SnapshotError('code_commit_unverified_or_dirty')
-    files=report_files(store,reports,publish=args.publish)
+    checkpoint={}
+    if args.publish and args.run_id is not None:
+        path=f"validation/d1/checkpoints/{int(args.run_id):020d}-{args.run_attempt:05d}.json"
+        checkpoint[path]=canonical(dict(schema_version='1.0',workflow_run_id=args.run_id,
+                                        workflow_run_attempt=args.run_attempt,source_data_commit=head,
+                                        code_commit=args.code_commit))
+    files=report_files(store,reports,publish=args.publish,checkpoint=checkpoint)
     write_files(args.output,files)
     print(json.dumps(dict(days=len(reports),observations=sum(len(r['rows']) for r in reports),
                           compared=sum(row['pci'] is not None for r in reports for row in r['rows']),

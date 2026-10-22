@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bunaken-current-observatory.example/schemas/d1-checkpoint.schema.json",
+  "title": "D+1 matcher checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "workflow_run_id", "workflow_run_attempt", "source_data_commit", "code_commit"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "workflow_run_id": {"type": "string", "pattern": "^[0-9]{1,20}$"},
+    "workflow_run_attempt": {"type": "integer", "minimum": 1, "maximum": 99999},
+    "source_data_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "code_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+  }
+}

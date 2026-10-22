@@ -100,7 +100,7 @@ Weighted Analog는 목표의 환경 feature와 과거 dive 구간을 비교한 �
 
 main의 PR/CI 보호와 data의 non-force 쓰기를 유지한다. 환경 수집은 data의 실행 코드를 사용하지 않는다. Vercel은 main만 배포하고 data 배포를 차단한다. 실제 WAF·옛 세션 철회·모바일 성능은 PLAN의 실증 상태와 구분한다.
 
-예약 수집은 snapshot 저장 → 검증된 웹 release 발행 → Vercel `/api/public/status`의 동일 release 확인 → 공식 D+1 관측 비교 순서로 진행한다. 웹 반영이 24회 확인 안에 완료되지 않으면 CI가 실패한다. 데이터 변경에는 Vercel 재배포가 필요하지 않다. 열린 공개 대시보드는 60초마다 새 release를 확인하며 숨겨진 탭이 다시 열릴 때도 갱신한다. GitHub·Vercel 캐시 때문에 발행과 화면 반영 사이 지연은 남는다.
+예약 수집은 snapshot 저장 → 검증된 웹 release 발행 → Vercel `/api/public/status`의 동일 release 확인까지 수행한다. 예약 seal 뒤에는 새 seal 날짜의 D+1 비교를 증분 갱신하고, 관측 push에서는 마지막 성공 체크포인트 이후 바뀐 WITA 날짜만 처리한다. 성공 지점은 `validation/d1/checkpoints/`에 공개 저장한다. `operation=match` 수동 실행은 전체 이력을 다시 확인한다. 웹 반영이 24회 확인 안에 완료되지 않으면 CI가 실패한다. 데이터 변경에는 Vercel 재배포가 필요하지 않다. 열린 공개 대시보드는 60초마다 새 release를 확인하며 숨겨진 탭이 다시 열릴 때도 갱신한다. GitHub·Vercel 캐시 때문에 발행과 화면 반영 사이 지연은 남는다.
 
 수집 단계 제한은 300분, 전체 job은 360분이다. timeout 발생 시 단계 로그와 data 저장 여부를 먼저 확인한다. 이미 저장된 run은 `resume_run_id`와 원래 `date_wita`로 재개하며 공식 D+1 cutoff를 소급 변경하지 않는다.
 
