@@ -107,7 +107,7 @@ jobs:
           uv run --project engine --locked python -m bunaken_engine.fes_cache fetch --directory "$RUNNER_TEMP/fes-derived"
           echo "FES_DERIVED_ROOT=$RUNNER_TEMP/fes-derived" >> "$GITHUB_ENV"
       - name: Collect or seal in one chain
-        timeout-minutes: 300
+        timeout-minutes: 360
         env:
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
