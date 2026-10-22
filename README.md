@@ -102,7 +102,7 @@ main의 PR/CI 보호와 data의 non-force 쓰기를 유지한다. 환경 수집�
 
 예약 수집은 snapshot 저장 → 검증된 웹 release 발행 → Vercel `/api/public/status`의 동일 release 확인까지 수행한다. 예약 seal 뒤에는 새 seal 날짜의 D+1 비교를 증분 갱신하고, 관측 push에서는 마지막 성공 체크포인트 이후 바뀐 WITA 날짜만 처리한다. 성공 지점은 `validation/d1/checkpoints/`에 공개 저장한다. `operation=match` 수동 실행은 전체 이력을 다시 확인한다. 웹 반영이 24회 확인 안에 완료되지 않으면 CI가 실패한다. 데이터 변경에는 Vercel 재배포가 필요하지 않다. 열린 공개 대시보드는 60초마다 새 release를 확인하며 숨겨진 탭이 다시 열릴 때도 갱신한다. GitHub·Vercel 캐시 때문에 발행과 화면 반영 사이 지연은 남는다.
 
-수집 단계 제한은 300분, 전체 job은 360분이다. timeout 발생 시 단계 로그와 data 저장 여부를 먼저 확인한다. 이미 저장된 run은 `resume_run_id`와 원래 `date_wita`로 재개하며 공식 D+1 cutoff를 소급 변경하지 않는다.
+수집 step과 전체 job 제한은 각각 360분이다. 전체 job 제한도 적용되므로 수집이 길어지면 뒤따르는 발행 단계에 쓸 수 있는 시간이 줄어든다. timeout 발생 시 단계 로그와 data 저장 여부를 먼저 확인한다. 이미 저장된 run은 `resume_run_id`와 원래 `date_wita`로 재개하며 공식 D+1 cutoff를 소급 변경하지 않는다.
 
 엔진은 반복되는 snapshot·model-context 및 bundle 검증의 성공 hash를 프로세스 내 최대 128개 재사용한다. 임시 replay 경로가 달라도 schema 내용이 같으면 재사용하며 문서·schema·설정이 달라지면 다시 검증한다. 검증만 필요한 읽기에서는 큰 bundle을 재직렬화하지 않는다. 검증된 bundle 출력 캐시는 최대 128MiB다. Git 저장 확인과 모델 재현 검증은 생략하지 않는다.
 
