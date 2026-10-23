@@ -1,0 +1,33 @@
+{
+  "id": "ec01a1f4-9283-4811-b2ea-491b52dc4955",
+  "local_start": "2026-10-23T14:05",
+  "local_end": "2026-10-23T15:00",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "muka-kampung",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.25,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": null,
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-10-23T06:05:00.000Z",
+  "end_at": "2026-10-23T07:00:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-10-23T07:26:41.820Z",
+  "updated_at": "2026-10-23T07:26:41.820Z",
+  "train_eligible": false
+}
