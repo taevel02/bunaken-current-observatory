@@ -8,11 +8,25 @@ from unittest.mock import patch
 from pathlib import Path
 
 from bunaken_engine.environment_references import pack
-from bunaken_engine.snapshot_io import decode_manifest, encode_manifest, load_manifest
+from bunaken_engine.snapshot_io import decode_manifest, decode_environment_manifest, encode_manifest, load_manifest
 from bunaken_engine.snapshots import canonical, digest, SnapshotError, allowed_data_path
 
 
 class EnvironmentReferenceTest(unittest.TestCase):
+    def test_environment_projection_omits_unused_inputs_but_checks_reference_structure(self):
+        original=self.fixture()
+        envelope,_=pack(original)
+        raw=encode_manifest(envelope,compressed=True)
+        projected=decode_environment_manifest(raw)
+        self.assertEqual(projected['samples'],original['samples'])
+        self.assertEqual(projected['model_context']['training_bundles'],[])
+        with self.assertRaisesRegex(SnapshotError,'reader_required'):
+            decode_manifest(raw)
+        malformed=copy.deepcopy(envelope)
+        malformed['training_bundle_references'].append(malformed['training_bundle_references'][0])
+        with self.assertRaisesRegex(SnapshotError,'invalid_environment_reference'):
+            decode_environment_manifest(encode_manifest(malformed))
+
     def fixture(self, count=3):
         return dict(model_context=dict(training_bundles=[
             dict(manifest=dict(samples=[dict(value=i) for i in range(1000)], run_id=str(n)),features=[],forecast=[])

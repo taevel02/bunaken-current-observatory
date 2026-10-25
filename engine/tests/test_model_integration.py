@@ -22,6 +22,48 @@ from test_model_data import observation
 
 
 class ModelIntegrationTest(unittest.TestCase):
+    def test_training_receipt_checks_environment_without_replaying_previous_predictions(self):
+        from bunaken_engine.pipeline import publish_bundle, verified_receipt
+        from bunaken_engine.git_store import GitDataStore
+        from bunaken_engine.snapshots import SnapshotError
+        from test_git_store import GitMock
+        context=model_context(self.observations,self.bundles,'synthetic-observer','synthetic-rubric','2026-09-04T02:00:00Z',root=self.root)
+        with patch('bunaken_engine.pipeline.utc_now',return_value='2026-09-04T03:00:00Z'):
+            manifest,files=collect_run('2026-09-05','a'*40,days=1,root=self.root,
+                                      collector=self.collector(2,'2026-09-04T03:00:00Z'),model=context)
+        mock=GitMock();store=GitDataStore('synthetic','synthetic','synthetic',requester=mock.request)
+        with patch('bunaken_engine.model_input.verify_context_storage'):
+            receipt=publish_bundle(store,manifest,files,root=self.root)
+        # Clear successful replay caches so this exercises a cold runner.
+        from bunaken_engine import snapshots
+        snapshots._checked_bundles.clear()
+        with patch('bunaken_engine.model_data.forecast_context',side_effect=AssertionError('old prediction replay')) as replay:
+            with patch('bunaken_engine.environment_references.expand',side_effect=AssertionError('history expansion')):
+                result=verified_receipt(store,receipt,store.head(),root=self.root,environment_only=True)
+            self.assertTrue(result['storage_verified'])
+            replay.assert_not_called()
+            with self.assertRaisesRegex(AssertionError,'old prediction replay'):
+                verified_receipt(store,receipt,store.head(),root=self.root)
+        from jsonschema import ValidationError
+        for change, error in [('unknown_field',ValidationError),('configuration',ValueError)]:
+            forged=copy.deepcopy(manifest)
+            if change == 'unknown_field':
+                forged['private_note']='forbidden'
+            else:
+                forged['model_context']['configuration']['model']['version']='untrusted'
+                forged['model_context_sha256']=digest(canonical(forged['model_context']))
+            with self.subTest(change=change), patch('bunaken_engine.snapshot_io.decode_environment_manifest',return_value=forged):
+                with self.assertRaises(error):
+                    verified_receipt(store,receipt,store.head(),root=self.root,environment_only=True)
+        confirmation=f"snapshot-confirmations/{receipt['run_id']}.json"
+        raw=mock.versions[mock.head].pop(confirmation)
+        self.assertFalse(verified_receipt(store,receipt,store.head(),root=self.root,environment_only=True)['storage_verified'])
+        mock.versions[mock.head][confirmation]=raw
+        prefix=receipt['manifest_path'].rsplit('/',1)[0]
+        mock.versions[receipt['storage_commit']][prefix+'/features.json.gz']=b'tampered'
+        with self.assertRaisesRegex(SnapshotError,'receipt_artifact_mismatch'):
+            verified_receipt(store,receipt,store.head(),root=self.root,environment_only=True)
+
     def setUp(self):
         self.folder=tempfile.TemporaryDirectory(); self.addCleanup(self.folder.cleanup)
         self.root=Path(self.folder.name)

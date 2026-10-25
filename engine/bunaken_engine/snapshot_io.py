@@ -20,7 +20,7 @@ def encode_manifest(manifest, *, compressed=False):
     return raw
 
 
-def decode_manifest(raw, *, input_reader=None):
+def _decode_document(raw):
     if raw.startswith(b'\x1f\x8b'):
         if len(raw) > MAX_COMPRESSED_MANIFEST_BYTES:
             raise SnapshotError('snapshot_manifest_size_exceeded')
@@ -28,10 +28,23 @@ def decode_manifest(raw, *, input_reader=None):
             raw = stream.read(MAX_MANIFEST_BYTES + 1)
     if len(raw) > MAX_MANIFEST_BYTES:
         raise SnapshotError('snapshot_manifest_size_exceeded')
-    document = json.loads(raw)
+    return json.loads(raw)
+
+
+def decode_manifest(raw, *, input_reader=None):
+    document = _decode_document(raw)
     from bunaken_engine.environment_references import ENCODING, expand
     if isinstance(document,dict) and document.get("encoding") == ENCODING:
         return expand(document,input_reader)
+    return document
+
+
+def decode_environment_manifest(raw):
+    """Read only the environment/configuration; prior model inputs are not consumed."""
+    document = _decode_document(raw)
+    from bunaken_engine.environment_references import ENCODING, reference_manifest
+    if isinstance(document,dict) and document.get('encoding') == ENCODING:
+        return reference_manifest(document)
     return document
 
 

@@ -13,7 +13,7 @@
 - `/research`: `audience=guide` 일반용, `audience=technical` 전문가용. 이전 공개 URL은 canonical 페이지로 연결한다.
 - `/admin/login`: 서버 자체 인증. 로그인 설정은 Production 서버 변수이며 preview/development는 관리자 기능을 차단한다.
 - main: 코드·schema·신뢰된 workflow. data: 관측·snapshot·공식 seal·공개 패키지·연구 파일. 서버 DB·OAuth·LLM runtime 의존성은 없다.
-- WITA 07:17/19:17 수집, 20:17 seal. 관측 push도 trusted chain을 실행한다. 고정 pin은 `ops/workflows/data-entrypoint.yml`에서 확인한다.
+- WITA 07:17 일일 수집·PCI 재계산, 20:17 seal·증분 비교. 관측 push는 재수집하지 않으며 다음 일일 실행에 반영한다. 고정 pin과 수동 collect/match는 `.github/workflows/environment.yml`에서 확인한다.
 
 공개 experimental package와 공식 D+1 forecast는 별개다. 공식 forecast는 전날 WITA 20:00 이전 실제 저장된 성공 snapshot으로 확정한다. 늦은 수집·backfill로 과거 예측을 덮어쓰지 않는다. 비교는 `validation/d1/`에 불변 저장한다. 원 atlas·원 NetCDF·자격증명은 공개 저장하지 않는다.
 
@@ -100,7 +100,7 @@ Weighted Analog는 목표의 환경 feature와 과거 dive 구간을 비교한 �
 
 main의 PR/CI 보호와 data의 non-force 쓰기를 유지한다. 환경 수집은 data의 실행 코드를 사용하지 않는다. Vercel은 main만 배포하고 data 배포를 차단한다. 실제 WAF·옛 세션 철회·모바일 성능은 PLAN의 실증 상태와 구분한다.
 
-예약 수집은 snapshot 저장 → 검증된 웹 release 발행 → Vercel `/api/public/status`의 동일 release 확인까지 수행한다. 예약 seal 뒤에는 새 seal 날짜의 D+1 비교를 증분 갱신하고, 관측 push에서는 마지막 성공 체크포인트 이후 바뀐 WITA 날짜만 처리한다. 성공 지점은 `validation/d1/checkpoints/`에 공개 저장한다. `operation=match` 수동 실행은 전체 이력을 다시 확인한다. 웹 반영이 24회 확인 안에 완료되지 않으면 CI가 실패한다. 데이터 변경에는 Vercel 재배포가 필요하지 않다. 열린 공개 대시보드는 60초마다 새 release를 확인하며 숨겨진 탭이 다시 열릴 때도 갱신한다. GitHub·Vercel 캐시 때문에 발행과 화면 반영 사이 지연은 남는다.
+예약 수집은 snapshot 저장 → 검증된 웹 release 발행 → Vercel `/api/public/status`의 동일 release 확인까지 수행한다. 예약 seal 뒤에는 마지막 성공 체크포인트 이후 바뀐 관측과 seal의 WITA 날짜만 D+1 비교를 증분 갱신한다. 성공 지점은 `validation/d1/checkpoints/`에 공개 저장한다. `operation=match` 수동 실행은 전체 이력을 다시 확인한다. 웹 반영이 24회 확인 안에 완료되지 않으면 CI가 실패한다. 데이터 변경에는 Vercel 재배포가 필요하지 않다. 열린 공개 대시보드는 60초마다 새 release를 확인하며 숨겨진 탭이 다시 열릴 때도 갱신한다. GitHub·Vercel 캐시 때문에 발행과 화면 반영 사이 지연은 남는다.
 
 수집 step과 전체 job 제한은 각각 360분이다. 전체 job 제한도 적용되므로 수집이 길어지면 뒤따르는 발행 단계에 쓸 수 있는 시간이 줄어든다. timeout 발생 시 단계 로그와 data 저장 여부를 먼저 확인한다. 이미 저장된 run은 `resume_run_id`와 원래 `date_wita`로 재개하며 공식 D+1 cutoff를 소급 변경하지 않는다.
 

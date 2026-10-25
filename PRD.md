@@ -1,11 +1,13 @@
 # 부나켄 조류 관측과 예측 서비스 제품 요구사항
 
-문서 버전: 1.12\
+문서 버전: 1.13\
 작성일: 2026-10-09
 제품 가칭: Bunaken Current Observatory  
 기본 언어: 한국어 `ko` · 추가 언어: 영어 `en`  
 서비스 기준 시간대: `Asia/Makassar` · WITA · UTC+08:00  
-상태: 구현 기준 문서. 실제 자료의 로컬 수집·재계산·검증과 코드 CI는 수행했다. production 공개 읽기·인증 설정 복구·예약 수집·관측 push 연결을 확인했다. 실제 WAF·세션 철회·운영 성능·공식 D+1 예측력은 별도 검수 대상이다.
+상태: 구현 기준 문서. 실제 자료의 로컬 수집·재계산·검증과 코드 CI는 수행했다. 기존 production 공개 읽기·인증 설정 복구·예약 수집 연결을 확인했다. v1.13의 일일 운영 전환은 원격 적용·실행 검수가 별도로 필요하다. 실제 WAF·세션 철회·운영 성능·공식 D+1 예측력은 별도 검수 대상이다.
+
+1.13 변경: 2026-10-25 사용자 요청에 따라 환경 수집·PCI 재계산은 WITA 07:17 하루 1회와 main 수동 실행으로 통합한다. 관측 저장은 즉시 공개 Git에 보존하되 전체 수집을 트리거하지 않으며 다음 정기 실행이 최신 관측 revision을 읽는다. WITA 20:17 seal·증분 D+1 비교와 20:00 cutoff는 유지한다. 과거 학습 환경은 환경 projection·hash·실제 저장 증거를 검증하고 과거 PCI는 학습에 재사용하지 않는다. 원격 적용 상태는 운영 문서에서 구분한다.
 
 1.12 변경: 공개 페이지 title·description·canonical·ko/en alternates, 연구의 진행 중 상태 안내, GitHub 소스 링크와 코드 MIT/자료별 이용 조건 구분을 추가한다. 기존 모델·frozen 연구 결과·공식 cutoff를 변경하지 않는다. 9/19 Mandolin은 사용자 확인 Overall 0.7·Peak 1.0으로 구분하며 초기 legacy 기록과 미확인 환경은 별도로 보존한다.
 
@@ -352,7 +354,7 @@ Leave-One-Day-Out은 추가 진단으로 유지한다. 나머지 모든 날짜�
 
 모든 수집 실행은 immutable snapshot을 생성한다. snapshot에는 `run_id`, source별 `issued_at / retrieved_at / valid_time`, forecast lead time, 제품 버전, feature/scaler/model 버전, geometry 버전, commit SHA와 content hash를 포함한다. issued_at을 공급자가 제공하지 않으면 null과 이유를 남기며 조회 시각으로 위장하지 않는다.
 
-기본 예측은 오늘부터 D+7까지 가능한 범위에서 생성한다. 하루에 두 번 수집하는 초기 스케줄은 UTC `23:17`과 `11:17`, 즉 WITA `07:17`과 `19:17`이다. 이는 실제 모델 갱신 시각을 확인한 뒤 조정 가능한 설정이다. GitHub Actions 예약은 지연될 수 있으므로 정시 완료를 보장하지 않는다.[R5]
+기본 예측은 오늘부터 D+7까지 가능한 범위에서 생성한다. 하루 한 번 수집하는 스케줄은 UTC `23:17`, 즉 WITA `07:17`이다. 관측 저장마다 재수집하지 않으며 다음 정기 수집이 최신 관측을 반영한다. 이는 실제 모델 갱신 시각을 확인한 뒤 조정 가능한 설정이다. GitHub Actions 예약은 지연될 수 있으므로 정시 완료를 보장하지 않는다.[R5]
 
 기본 대시보드 날짜는 WITA 내일이며 7일 화면은 D+1부터 D+7까지다. 사용자는 오늘을 별도로 선택할 수 있다. 계산 구간의 끝과 Tide 전후 feature까지 공급 자료가 있어야 해당 슬롯을 유효하게 처리한다.
 
@@ -627,7 +629,7 @@ latest.json
 .github/workflows/on-data.yml
 ```
 
-`security/access.json`과 비공개 메모 파일은 없다. 로그인 설정은 환경변수에만 존재한다. data branch의 on-data workflow는 설치 시 운영자가 배치하는 작은 trusted entrypoint이며 공개 main의 고정 commit에 있는 reusable workflow를 호출한다. 일반 저장 토큰은 workflow 변경 권한을 갖지 않는다. 실행 코드는 검토된 고정 commit에서 가져오고 data branch의 파일을 명령이나 스크립트로 실행하지 않는다. code_ref 갱신은 별도 코드 변경으로 검토한다.
+`security/access.json`과 비공개 메모 파일은 없다. 로그인 설정은 환경변수에만 존재한다. data branch의 기존 on-data/observation entrypoint는 제거한다. 정기 및 수동 실행은 main의 workflow가 공개 main의 고정 commit 코드를 사용한다. 일반 저장 토큰은 workflow 변경 권한을 갖지 않는다. 실행 코드는 검토된 고정 commit에서 가져오고 data branch의 파일을 명령이나 스크립트로 실행하지 않는다. code_ref 갱신은 별도 코드 변경으로 검토한다.
 
 ## 11 GitHub Actions와 운영
 
@@ -635,14 +637,14 @@ latest.json
 |---|---|---|
 | CI | main 대상 PR/push | 타입·스키마·엔진·인증 테스트, 번역 누락, 빌드, secret 검사 |
 | Bootstrap history | main의 수동 workflow | 과거 환경·표준화 분포 생성 후 허용된 파생자료를 data에 저장 |
-| Refresh forecast | main의 매일 2회 및 수동 workflow | 수집·feature·Analog·snapshot·웹 release를 한 파이프라인에서 생성 |
+| Refresh forecast | main의 매일 1회 및 수동 workflow | 수집·feature·Analog·snapshot·웹 release를 한 파이프라인에서 생성 |
 | Seal D+1 | main의 WITA 20:17 workflow | 20:00 전 실제 보존 snapshot 중 공식 seal 생성 |
-| Observation enrich | data의 관측 변경 push entrypoint | 당시 snapshot 결합, 품질 검사, 웹 release 갱신 |
+| Observation enrich | 정기/수동 Refresh forecast 내부 | 최신 관측 revision과 저장된 환경 결합, 품질 검사, PCI 재계산 |
 | Publish research | 자체 인증 관리자 서버의 명시적 발행 요청 | 네 원고·metadata·results·검토 상태를 검사하고 공개 release/index를 원자 저장. 자동 모델 job은 연구를 발행하지 않음 |
 | Validate models | main의 주 1회 및 수동 workflow | 날짜 단위 검증·모델 비교·공개 미발행 보고서 생성 |
 | Recovery check | 운영자 수동 | 저장소 bundle 다운로드·복구 점검 |
 
-예약 workflow는 기본 branch main에 둔다. data push의 entrypoint는 검토된 workflow의 고정 commit을 호출하고 입력 데이터만 읽는다. 웹 PAT가 생성한 data push와 GITHUB_TOKEN이 생성한 후속 commit의 event 동작을 구분한다. GITHUB_TOKEN commit이 다음 workflow를 자동 실행할 것에 의존하지 않고 enrich→forecast→release를 필요한 하나의 job chain에서 이어 실행한다.[R5]
+예약 workflow는 기본 branch main에 둔다. 관측 data push는 새 수집을 실행하지 않는다. main workflow가 검토된 코드의 고정 commit과 입력 데이터를 읽는다. 웹 PAT가 생성한 data push와 GITHUB_TOKEN이 생성한 후속 commit의 event 동작을 구분한다. GITHUB_TOKEN commit이 다음 workflow를 자동 실행할 것에 의존하지 않고 enrich→forecast→release를 필요한 하나의 job chain에서 이어 실행한다.[R5]
 
 배치는 해당 저장소의 GITHUB_TOKEN과 필요한 최소 Contents 쓰기 권한을 사용한다. 별도 publisher App은 만들지 않는다. code/main 보호 규칙과 data 직접 쓰기 규칙을 구분한다. 외부 PR은 secret 없이 테스트하고 자동 병합·데이터 반영을 하지 않는다. 외부 PR 코드를 privileged workflow로 checkout하지 않는다. 외부 Actions는 commit SHA로 고정한다.
 
@@ -650,7 +652,7 @@ latest.json
 
 공개 저장소의 예약은 지연되거나 비활성 조건의 영향을 받을 수 있다.[R5] `/status`는 실제 snapshot age로 누락을 표시한다. 수동 재시도는 같은 작업의 중복 실행 방지와 상태 확인을 포함한다. 한 소스가 실패하면 source별 상태를 남기고 필수 gate 실패 시 숫자를 발행하지 않는다. timeout·backoff·상한과 Retry-After를 적용한다.
 
-v1 목표는 오전 데이터 08:00, 저녁 D+1 후보 20:00 WITA 이전 준비다. 운영 목표이며 SLA가 아니다. 저장 목표 p95 10초 이하, 홈페이지 반영 목표 5분 이내를 정상 조건에서 측정한다. source age·quota·job 실패·공개 반영 지연을 표시한다. 표준 공개 Actions와 호스팅 포함량 안에서 시작하되 무료 무제한 저장·트래픽을 보장하지 않는다. 원 NetCDF를 매 실행 내려받거나 원자료를 Git 이력에 누적하지 않는다. FES는 검증된 로컬 atlas에서 기간별 조석 파생값을 생성하고 data에 허용된 값·provenance만 저장한다. 일반 수집은 코드에 고정된 hash·좌표·계산 코드·기간을 검증해 재사용한다. 동적 Copernicus·기상 자료는 새로 수집하며 조석 생성 시각을 새 issued time으로 바꾸지 않는다.
+v1 목표는 일일 자료와 D+1 후보를 20:00 WITA cutoff 전에 준비하는 것이다. 새 관측의 PCI 반영은 다음 정기 수집 완료 시점이며 즉시 재계산을 약속하지 않는다. 운영 목표이며 SLA가 아니다. 저장 목표 p95 10초 이하, 홈페이지 반영 목표 5분 이내를 정상 조건에서 측정한다. source age·quota·job 실패·공개 반영 지연을 표시한다. 표준 공개 Actions와 호스팅 포함량 안에서 시작하되 무료 무제한 저장·트래픽을 보장하지 않는다. 원 NetCDF를 매 실행 내려받거나 원자료를 Git 이력에 누적하지 않는다. FES는 검증된 로컬 atlas에서 기간별 조석 파생값을 생성하고 data에 허용된 값·provenance만 저장한다. 일반 수집은 코드에 고정된 hash·좌표·계산 코드·기간을 검증해 재사용한다. 동적 Copernicus·기상 자료는 새로 수집하며 조석 생성 시각을 새 issued time으로 바꾸지 않는다.
 
 ## 12 전문가용 연구와 일반인용 발행
 

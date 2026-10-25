@@ -28,8 +28,7 @@ def pack(manifest):
     return envelope, files
 
 
-def expand(document, reader):
-    from bunaken_engine.snapshot_io import decode_manifest
+def reference_manifest(document):
     if set(document) != {'encoding','manifest','training_bundle_references','expanded_manifest_sha256'}:
         raise SnapshotError('invalid_environment_reference_envelope')
     manifest = document['manifest']
@@ -39,7 +38,7 @@ def expand(document, reader):
         not isinstance(document['expanded_manifest_sha256'],str) or
         not re.fullmatch('[0-9a-f]{64}',document['expanded_manifest_sha256'])):
         raise SnapshotError('invalid_environment_reference_envelope')
-    bundles, seen = [], set()
+    seen = set()
     for ref in refs:
         if not isinstance(ref,dict) or set(ref) != {'path','sha256'} or not isinstance(ref['path'],str):
             raise SnapshotError('invalid_environment_reference')
@@ -47,6 +46,14 @@ def expand(document, reader):
         if not match or match[1] != ref['sha256'] or ref['path'] in seen:
             raise SnapshotError('invalid_environment_reference')
         seen.add(ref['path'])
+    return manifest
+
+
+def expand(document, reader):
+    from bunaken_engine.snapshot_io import decode_manifest
+    manifest = reference_manifest(document)
+    bundles = []
+    for ref in document['training_bundle_references']:
         if reader is None:
             raise SnapshotError('environment_reference_reader_required')
         raw = reader(ref['path'])

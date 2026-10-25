@@ -5,10 +5,10 @@ import re
 
 from bunaken_engine.pipeline import verified_receipt
 from bunaken_engine.model_data import checked_bundles
-from bunaken_engine.snapshots import validate_bundle, canonical, digest, validate
+from bunaken_engine.snapshots import canonical, digest, validate
 from bunaken_engine.registry import ROOT
 from bunaken_engine.features import instant
-from bunaken_engine.snapshot_io import decode_manifest
+from bunaken_engine.snapshot_io import decode_environment_manifest
 
 
 def data_inputs(store, cutoff, *, root=ROOT):
@@ -30,17 +30,16 @@ def data_inputs(store, cutoff, *, root=ROOT):
             validate('snapshot-receipt', raw_receipt, root)
             # Fail closed on unused future data before downloading/replaying its large bundle.
             if instant(raw_receipt['valid_start']) >= instant(cutoff): continue
-            receipt = verified_receipt(store, raw_receipt, head, root=root)
+            receipt = verified_receipt(store, raw_receipt, head, root=root, environment_only=True)
             if not receipt['storage_verified'] or instant(receipt['persisted_at']) > instant(cutoff): continue
             # Neither completed dive intervals nor scaler windows can use a future-only horizon.
             if instant(receipt['valid_start']) >= instant(cutoff): continue
             manifest_raw = store.read(receipt['manifest_path'], receipt['storage_commit'])
-            manifest = decode_manifest(manifest_raw,input_reader=lambda path: store.read(path,receipt["storage_commit"]))
+            manifest = decode_environment_manifest(manifest_raw)
             if manifest['status'] != 'succeeded': continue
             prefix = receipt['manifest_path'].rsplit('/', 1)[0]
             features = json.loads(gzip.decompress(store.read(prefix+'/features.json.gz', receipt['storage_commit'])))
             forecast = json.loads(gzip.decompress(store.read(prefix+'/forecast.json.gz', receipt['storage_commit'])))
-            validate_bundle(manifest, features, forecast, root=root, kind=manifest['kind'])
             origin = digest(manifest_raw)
             configuration=None
             if manifest.get('model_context') is not None:
@@ -85,13 +84,13 @@ def verify_context_storage(store, context, head, *, root=ROOT):
         path=f"snapshot-receipts/{bundle['manifest']['run_id']}.json"
         raw=store.read(path,head)
         if raw is None: raise SnapshotError('model_environment_storage_unverified')
-        receipt=verified_receipt(store,json.loads(raw),head,root=root)
+        receipt=verified_receipt(store,json.loads(raw),head,root=root,environment_only=True)
         origin=bundle.get('origin_manifest_sha256') or digest(canonical(bundle['manifest']))
         if not receipt['storage_verified'] or receipt['manifest_sha256'] != origin:
             raise SnapshotError('model_environment_storage_unverified')
         if instant(receipt['persisted_at']) > instant(context['cutoff']):
             raise SnapshotError('model_environment_stored_after_cutoff')
-        original=decode_manifest(store.read(receipt['manifest_path'],receipt['storage_commit']),input_reader=lambda path: store.read(path,receipt['storage_commit']))
+        original=decode_environment_manifest(store.read(receipt['manifest_path'],receipt['storage_commit']))
         prefix=receipt['manifest_path'].rsplit('/', 1)[0]
         features=json.loads(gzip.decompress(store.read(prefix+'/features.json.gz',receipt['storage_commit'])))
         forecast=json.loads(gzip.decompress(store.read(prefix+'/forecast.json.gz',receipt['storage_commit'])))

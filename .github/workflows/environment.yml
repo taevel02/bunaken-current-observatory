@@ -1,7 +1,7 @@
 name: Trusted environmental pipeline
 on:
   schedule:
-    - cron: "17 23,11 * * *"
+    - cron: "17 23 * * *"
     - cron: "17 12 * * *"
   workflow_dispatch:
     inputs:
@@ -16,7 +16,7 @@ on:
       code_commit:
         description: Trusted full code commit SHA
         required: false
-        default: 5653fe2ec05a06f1ef2d3f45e22ef05dfc5978ca
+        default: 22cce073f7ee74b8fce8477f247fd84b2b4af60b
         type: string
       resume_run_id:
         description: Existing immutable run UUID to resume without recollection (requires date_wita)
@@ -51,13 +51,13 @@ permissions:
   contents: read
 jobs:
   environment:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: environmental-data
     concurrency:
       group: bunaken-environment-${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
       cancel-in-progress: false
     env:
-      CODE_COMMIT: ${{ inputs.code_commit || '5653fe2ec05a06f1ef2d3f45e22ef05dfc5978ca' }}
+      CODE_COMMIT: ${{ inputs.code_commit || '22cce073f7ee74b8fce8477f247fd84b2b4af60b' }}
       TARGET_DATE: ${{ inputs.date_wita }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id }}
       OPERATION: ${{ github.event.schedule == '17 12 * * *' && 'seal' || inputs.operation || 'collect' }}
@@ -72,8 +72,8 @@ jobs:
           [[ -z "$RESUME_RUN_ID" || ( "$OPERATION" == collect && -n "$TARGET_DATE" && "$RESUME_RUN_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ) ]] || exit 1
           [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ || ( -z "$TARGET_DATE" && ( "$OPERATION" == collect || "$EVENT" == schedule || "$OPERATION" == match ) ) ]] || exit 1
           [[ "$OPERATION" == collect || "$OPERATION" == seal || "$OPERATION" == match ]] || exit 1
-          [[ "$EVENT" == workflow_dispatch || "$EVENT" == push || "$EVENT" == schedule ]] || exit 1
-          [[ "$EVENT_REF" == refs/heads/main || ( "$EVENT" == push && "$EVENT_REF" == refs/heads/data ) ]] || exit 1
+          [[ "$EVENT" == workflow_dispatch || "$EVENT" == schedule ]] || exit 1
+          [[ "$EVENT_REF" == refs/heads/main ]] || exit 1
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ env.CODE_COMMIT }}
@@ -191,19 +191,18 @@ jobs:
               raise SystemExit('vercel_release_not_visible')
           PY
       - name: Match official D+1 observations
-        if: github.event_name == 'push' || env.OPERATION == 'seal' || env.OPERATION == 'match'
+        if: env.OPERATION == 'seal' || env.OPERATION == 'match'
         timeout-minutes: 45
         env:
           GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.event.repository.name }}
           GITHUB_WRITE_TOKEN: ${{ secrets.DATA_WRITE_TOKEN }}
-          EVENT_NAME: ${{ github.event_name }}
           OPERATION: ${{ env.OPERATION }}
           MATCH_RUN_ID: ${{ github.run_id }}
           MATCH_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           MATCH_ARGS=()
-          if [[ "$EVENT_NAME" == push || "$OPERATION" == seal ]]; then
+          if [[ "$OPERATION" == seal ]]; then
             MATCH_ARGS+=(--incremental)
           fi
           uv run --project engine --locked python -m bunaken_engine.d1_matching --code-commit "$CODE_COMMIT" --output "$RUNNER_TEMP/bunaken-d1" --run-id "$MATCH_RUN_ID" --run-attempt "$MATCH_RUN_ATTEMPT" --publish "${MATCH_ARGS[@]}"
