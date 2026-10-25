@@ -29,32 +29,21 @@ class EnvironmentWorkflowTest(unittest.TestCase):
                 else:
                     self.assertNotIn('cache',step['uses'])
                 self.assertNotIn('upload-artifact',step['uses'])
-        entry = yaml.load((root/'ops/workflows/data-entrypoint.yml').read_text(),Loader=yaml.BaseLoader)
-        invocation = entry['jobs']['environment']
-        self.assertRegex(invocation['with']['code_commit'],r'^[0-9a-f]{40}$')
-        self.assertEqual(invocation['uses'].rsplit('@',1)[1],invocation['with']['code_commit'])
         declared = data['on']['workflow_call']['secrets']
-        self.assertTrue(set(invocation['secrets']).issubset(declared))
         self.assertTrue(all(not name.startswith('GITHUB_') for name in declared))
-        self.assertEqual(invocation['secrets']['DATA_WRITE_TOKEN'], '${{ secrets.DATA_WRITE_TOKEN }}')
-        self.assertEqual(invocation['secrets']['COPERNICUSMARINE_SERVICE_PASSWORD'],
-                         '${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD || secrets.COPERNICUSMARINE__SERVICE_PASSWORD }}')
-        for name, specification in declared.items():
-            if specification['required'] == 'true':
-                self.assertIn(name, invocation['secrets'])
+        self.assertFalse((root/'ops/workflows/data-entrypoint.yml').exists())
 
     def test_schedule_serializes_collection_without_delaying_seal(self):
         root = Path(__file__).resolve().parents[2]
         data = yaml.load((root/'.github/workflows/environment.yml').read_text(),Loader=yaml.BaseLoader)
-        self.assertEqual([entry['cron'] for entry in data['on']['schedule']],['17 23,11 * * *','17 12 * * *'])
+        self.assertEqual([entry['cron'] for entry in data['on']['schedule']],['17 23 * * *','17 12 * * *'])
         job = data['jobs']['environment']
         self.assertEqual(job['concurrency']['cancel-in-progress'],'false')
         self.assertIn("'seal'",job['concurrency']['group'])
-        template = yaml.load((root/'ops/workflows/data-entrypoint.yml').read_text(),Loader=yaml.BaseLoader)
-        pin = template['jobs']['environment']['with']['code_commit']
+        pin = data['on']['workflow_dispatch']['inputs']['code_commit']['default']
         self.assertRegex(pin, r'^[0-9a-f]{40}$')
+        self.assertEqual(job['runs-on'], 'ubuntu-24.04')
         self.assertEqual(job['env']['CODE_COMMIT'], "${{ inputs.code_commit || '" + pin + "' }}")
-        self.assertTrue(template['jobs']['environment']['uses'].endswith('@' + pin))
         self.assertIn("github.event.schedule == '17 12 * * *'",job['env']['OPERATION'])
         prepare = next(step for step in job['steps'] if step.get('name') == 'Fetch verified tidal ephemeris')
         self.assertNotIn('fes_atlas', prepare['run'])
@@ -107,12 +96,12 @@ class EnvironmentWorkflowTest(unittest.TestCase):
                     exec(compile(script,'vercel-visibility','exec'),{})
             self.assertEqual(fetch.call_count,24)
 
-    def test_matching_runs_for_observation_pushes_and_explicit_match_only(self):
+    def test_matching_runs_for_seal_and_explicit_match_only(self):
         root = Path(__file__).resolve().parents[2]
         data = yaml.load((root/'.github/workflows/environment.yml').read_text(),Loader=yaml.BaseLoader)
         steps = data['jobs']['environment']['steps']
         match = next(step for step in steps if step.get('name') == 'Match official D+1 observations')
-        self.assertEqual(match['if'], "github.event_name == 'push' || env.OPERATION == 'seal' || env.OPERATION == 'match'")
+        self.assertEqual(match['if'], "env.OPERATION == 'seal' || env.OPERATION == 'match'")
         self.assertIn('MATCH_RUN_ID', match['env'])
         self.assertIn('MATCH_RUN_ATTEMPT', match['env'])
         self.assertIn('--incremental', match['run'])
@@ -129,7 +118,9 @@ class EnvironmentWorkflowTest(unittest.TestCase):
             env.update(updates)
             return subprocess.run(['bash','-e','-c',script],env=env,capture_output=True).returncode == 0
         self.assertTrue(accepted())
-        self.assertTrue(accepted(EVENT='push',EVENT_REF='refs/heads/data'))
+        self.assertFalse(accepted(EVENT='push',EVENT_REF='refs/heads/data'))
+        self.assertFalse(accepted(EVENT_REF='refs/heads/data',OPERATION='match'))
+        self.assertFalse(accepted(EVENT_REF='refs/heads/data'))
         self.assertTrue(accepted(EVENT='schedule',OPERATION='seal'))
         run_id = '11111111-1111-4111-8111-111111111111'
         self.assertTrue(accepted(RESUME_RUN_ID=run_id,TARGET_DATE='2026-10-08'))

@@ -15,7 +15,7 @@
 2. `main`에는 검토된 애플리케이션 코드, schema, 문서, 신뢰된 workflow만 둔다. 현재 저장소의 실제 구조·schema·allowlist를 따른다.
 3. `data` branch를 `main`에서 생성한다. 운영 데이터가 아직 없다면 branch만 만들고 예시 관측을 실제 기록으로 취급하지 않는다.
 4. `data`에는 확인된 운영 파일만 둔다. 경로 계약은 저장 adapter와 packages/contracts의 현재 schema를 따른다. observations/revisions, current pointer, idempotency/audit, snapshots, receipts/confirmations, environment-inputs, seals, validation/d1, web/releases/latest, research가 구현되어 있다. 앱에서 해당 형식을 구현하기 전 빈 구조를 임의 데이터로 채우지 않는다.
-5. `data/.github/workflows/data-entrypoint.yml`은 설치 운영자가 두는 최소 entrypoint로 제한한다. 공개 `main`의 검토된 고정 commit에 있는 reusable workflow만 호출하고, `data`의 파일을 실행 코드로 checkout·실행하지 않는다. 설치 template은 ops/workflows/data-entrypoint.yml이며 검토된 main full SHA와 CODE_COMMIT을 함께 고정한다.
+5. 기존 `data/.github/workflows/data-entrypoint.yml`은 제거한다. 수집과 수동 복구는 main의 `.github/workflows/environment.yml`에서 검토된 full SHA의 코드를 실행한다. data 파일은 실행하지 않으며 관측 push마다 수집하지 않는다.
 
 ## 접근·보호 규칙
 

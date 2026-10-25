@@ -177,14 +177,16 @@ def confirm_receipt(store,receipt,*,root=ROOT):
     return confirmation
 
 
-def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
+def verified_receipt(store, receipt: dict, head: str, *, root=ROOT, environment_only=False) -> dict:
     validate("snapshot-receipt",receipt,root)
     raw=store.read(receipt["manifest_path"],receipt["storage_commit"])
     if raw is None or digest(raw)!=receipt["manifest_sha256"] or store.read(receipt["manifest_path"],head)!=raw:
         raise SnapshotError("receipt_manifest_mismatch")
-    from bunaken_engine.snapshot_io import decode_manifest
-    manifest=decode_manifest(raw,input_reader=lambda path: store.read(path,receipt["storage_commit"]))
-    validate("snapshot",manifest,root)
+    from bunaken_engine.snapshot_io import decode_manifest, decode_environment_manifest
+    manifest=(decode_environment_manifest(raw) if environment_only else
+              decode_manifest(raw,input_reader=lambda path: store.read(path,receipt["storage_commit"])))
+    if not environment_only or manifest.get('model_context') is None:
+        validate("snapshot",manifest,root)
     prefix=bundle_path(manifest["date_wita"],manifest["run_id"],manifest["kind"])
     if receipt["manifest_path"] not in {prefix+"/manifest.json", prefix+"/manifest.json.gz"} or receipt["run_id"]!=manifest["run_id"] or receipt["kind"]!=manifest["kind"] or receipt["status"]!=manifest["status"]:
         raise SnapshotError("receipt_identity_mismatch")
@@ -194,7 +196,19 @@ def verified_receipt(store, receipt: dict, head: str, *, root=ROOT) -> dict:
         if content is None or digest(content)!=expected:
             raise SnapshotError("receipt_artifact_mismatch")
         artifacts[name]=json.loads(gzip.decompress(content))
-    validate_bundle(manifest,artifacts["features.json.gz"],artifacts["forecast.json.gz"],root=root,kind=manifest["kind"])
+    if environment_only and manifest.get('model_context') is not None:
+        # Training consumes measured/modelled environments, never previous PCI predictions.
+        from bunaken_engine.model_data import checked_bundles
+        context=manifest['model_context']
+        if manifest.get('schema_version') != '1.2':
+            raise SnapshotError('invalid_model_snapshot_version')
+        projected={key:value for key,value in manifest.items() if key not in {'model_context','model_context_sha256'}}
+        projected.update(schema_version='1.1',artifact_hashes={**manifest['artifact_hashes'],
+            'forecast.json.gz':digest(gzip.compress(canonical([]),mtime=0))})
+        checked_bundles([dict(manifest=projected,features=artifacts['features.json.gz'],forecast=[],
+            origin_manifest_sha256=receipt['manifest_sha256'],environment_configuration=context['configuration'])],root=root)
+    else:
+        validate_bundle(manifest,artifacts["features.json.gz"],artifacts["forecast.json.gz"],root=root,kind=manifest["kind"])
     raw_confirmation=store.read(f"snapshot-confirmations/{receipt['run_id']}.json",head)
     if raw_confirmation is None:
         return {**receipt,"storage_verified":False,"reason_codes":["receipt_confirmation_missing"]}

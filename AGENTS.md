@@ -1,6 +1,6 @@
 # Bunaken Current Observatory 개발 지침
 
-이 파일은 저장소 루트에 두는 개발 에이전트와 기여자의 작업 지침이다. 제품 요구사항의 정본은 같은 디렉터리의 `PRD.md` v1.12이다. 2026-09-27 결정에 따라 외부 OAuth와 비공개 저장소를 사용하지 않는다. 기본 작업·보고 언어는 한국어다. 제품은 한국어 우선이며 영어를 함께 지원한다.
+이 파일은 저장소 루트에 두는 개발 에이전트와 기여자의 작업 지침이다. 제품 요구사항의 정본은 같은 디렉터리의 `PRD.md` v1.13이다. 2026-09-27 결정에 따라 외부 OAuth와 비공개 저장소를 사용하지 않는다. 기본 작업·보고 언어는 한국어다. 제품은 한국어 우선이며 영어를 함께 지원한다.
 
 이 문서와 PRD는 구현 계획이다. 존재하지 않는 코드·명령·배포·테스트 결과를 있다고 보고하지 않는다. 첫 구현에서 실제 구조와 실행 명령을 만든 후 README와 이 문서의 명령 안내를 함께 갱신한다.
 
@@ -126,7 +126,7 @@ UI 문자열을 translation key로 관리하고 ko/en 누락 검사를 둔다. `
 
 기본안은 Next.js/TypeScript 웹, Python 엔진, JSON Schema 계약, Vercel 서버 함수, GitHub Actions다. 구체 버전은 구현 시 지원 상태를 확인한 뒤 lockfile로 고정한다. 실제 코드를 읽기 전 특정 패키지가 설치되어 있다고 가정하지 않는다.
 
-주요 경로는 `apps/web`, `packages/contracts`, `engine`, `config`, `docs`, `tests`, `ops/workflows`다. 공개 code의 고정 commit/tag에서 신뢰된 운영 코드를 가져온다. data branch의 데이터·연구 원고가 실행 코드를 주입하게 하지 않는다. 외부 Actions는 immutable commit SHA로 고정한다. 예약 workflow는 main에 두고 data push는 설치 시 둔 trusted entrypoint에서 고정 commit의 reusable workflow를 호출한다. GITHUB_TOKEN commit이 다음 workflow를 자동으로 실행할 것에 의존하지 않고 필요한 단계를 한 chain에서 이어 실행한다. data 변경에 Vercel preview build를 만들지 않는다.
+주요 경로는 `apps/web`, `packages/contracts`, `engine`, `config`, `docs`, `tests`, `ops/workflows`다. 공개 code의 고정 commit/tag에서 신뢰된 운영 코드를 가져온다. data branch의 데이터·연구 원고가 실행 코드를 주입하게 하지 않는다. 외부 Actions는 immutable commit SHA로 고정한다. 예약·수동 workflow는 main에 두고 고정 commit의 코드를 사용한다. 수집은 WITA 07:17 하루 1회이며 관측 data push로 전체 수집을 실행하지 않는다. 기존 data entrypoint는 제거하고 seal·증분 비교는 WITA 20:17에 유지한다. GITHUB_TOKEN commit이 다음 workflow를 자동으로 실행할 것에 의존하지 않고 필요한 단계를 한 chain에서 이어 실행한다. data 변경에 Vercel preview build를 만들지 않는다.
 
 소스 adapter, 순수 feature 함수, Analog core, storage adapter, auth, public exporter의 책임을 분리한다. 단위는 field 이름과 schema에 명시한다. 변경된 model/rubric/schema는 버전을 올리고 compatibility·migration을 함께 작성한다. 실험적 모델을 production 기본값으로 조용히 교체하지 않는다.
 

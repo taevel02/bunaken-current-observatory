@@ -2,7 +2,7 @@
 
 ## 구현과 실제 운영의 구분
 
-예약은 WITA 07:17/19:17 수집, 20:17 seal이다. 모든 수집·seal 후 동일 trusted chain에서 공식 D+1 대조를 실행한다. 관측 push entrypoint는 검증한 full commit SHA의 workflow와 코드를 함께 고정한다. GITHUB_TOKEN의 후속 push 이벤트에 의존하지 않는다. 관측 이외 snapshot·seal·validation 경로는 entrypoint를 재호출하지 않는다.
+예약은 WITA 07:17 일일 수집·PCI 재계산, 20:17 seal·증분 D+1 비교다. main workflow가 검증한 full commit SHA의 코드를 실행한다. 관측 push entrypoint는 제거하고 새 관측은 다음 일일 수집에 반영한다. 즉시 갱신은 main 수동 collect, 전체 D+1 재검증은 수동 match를 사용한다. GITHUB_TOKEN의 후속 push 이벤트에 의존하지 않는다.
 
 공식 비교 JSON은 `validation/d1/<WITA 날짜>/<input hash>.json`에 불변 저장한다. 당시 seal·receipt·confirmation·원 artifact hash·실제 저장 시각·모델 cutoff를 확인한다. 다른 observer/rubric의 PCI와 baseline을 섞지 않는다. Overall만 평가하며 Peak는 사용하지 않는다. 기록 수정은 새 comparison을 만들고 철회·날짜 이동은 이전 날짜의 현재 평가를 비운다. 과거 Git 이력은 남는다.
 
@@ -30,7 +30,7 @@ python3 ops/configure_github.py --apply
 | Environment Variables | MODEL_OBSERVER_ID=`bunaken-observer-01`, MODEL_RUBRIC_VERSION=`pci-overall-v1`, OPEN_METEO_USAGE_MODE=`noncommercial` |
 | 불필요 | Open-Meteo API key, hosted runner용 AVISO 계정·원 atlas |
 
-현재 pin은 `5653fe2ec05a06f1ef2d3f45e22ef05dfc5978ca`이다. main 예약과 data entrypoint는 이 full SHA를 함께 사용한다. 고정 pin 설치·예약 활성화 상태를 원격에서 확인한다. required reviewer를 설정한 경우 운영 수집을 검수한 후 자동 예약 승인 정책을 결정한다. API가 401/403이면 이름만 기록하고 인증/권한을 운영자가 처리한다. 등록한 Secret 값을 조회·출력하지 않는다.
+현재 코드 pin은 `.github/workflows/environment.yml`의 `code_commit` 기본값과 `CODE_COMMIT`에서 확인한다. data observation entrypoint는 제거하고 main 예약·수동 실행만 사용한다. 고정 pin 설치·예약 활성화 상태를 원격에서 확인한다. required reviewer를 설정한 경우 운영 수집을 검수한 후 자동 예약 승인 정책을 결정한다. API가 401/403이면 이름만 기록하고 인증/권한을 운영자가 처리한다. 등록한 Secret 값을 조회·출력하지 않는다.
 
 ## Vercel 최초 등록
 
