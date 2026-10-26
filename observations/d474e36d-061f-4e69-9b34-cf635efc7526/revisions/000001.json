@@ -1,0 +1,33 @@
+{
+  "id": "d474e36d-061f-4e69-9b34-cf635efc7526",
+  "local_start": "2026-10-26T13:29",
+  "local_end": "2026-10-26T14:14",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "bunaken-timur-2",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.36,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": null,
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-10-26T05:29:00.000Z",
+  "end_at": "2026-10-26T06:14:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-10-26T07:04:45.149Z",
+  "updated_at": "2026-10-26T07:04:45.149Z",
+  "train_eligible": false
+}
