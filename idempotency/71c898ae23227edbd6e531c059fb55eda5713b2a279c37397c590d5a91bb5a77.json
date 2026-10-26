@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "request_digest": "71c898ae23227edbd6e531c059fb55eda5713b2a279c37397c590d5a91bb5a77",
+  "request_hash": "f53487819656a5d379779fd0e6019031a662170831b41331f16f1fb59c61b14e",
+  "request_type": "create",
+  "result": {
+    "id": "37e852f0-2612-4a26-b042-4da68e8508d5",
+    "revision": 1,
+    "record_status": "active",
+    "revision_path": "observations/37e852f0-2612-4a26-b042-4da68e8508d5/revisions/000001.json"
+  },
+  "created_at": "2026-10-26T04:39:03.763Z"
+}
