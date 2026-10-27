@@ -20,3 +20,13 @@ test('missing, stale, duplicate and invalid rows never become numeric values',()
  data.environment_samples=data.environment_samples.filter(r=>r.variable!=='wave_height');assert.equal(comparisonTime(data,'2026-10-08',sites),null);
  assert.equal(comparisonTime(data,'2026-10-09',sites),null);assert.equal(sampleAt(data,'2026-10-08',null,'a',18,...columns[0]),null);
 });
+test('wind with verified source age remains visible when other sites have unknown age',()=>{
+ const data=fixture(),at=comparisonTime(data,'2026-10-08',sites);
+ const provider=data.sources.find(s=>s.id==='open-meteo-wind');provider.reason_codes=['source_age_unknown'];
+ const rows=data.environment_samples.filter(r=>r.variable==='wind_direction_10m'&&r.valid_time.includes('T06:'));
+ rows[0].source_updated_at='2026-10-08T00:00:00Z';rows[0].quality_flags=['provider_update_metadata_verified'];
+ rows[1].source_updated_at=null;rows[1].quality_flags=['source_age_unknown'];
+ assert.equal(sampleAt(data,'2026-10-08',at,'a',18,...columns[2]).value,.1);
+ assert.equal(sampleAt(data,'2026-10-08',at,'b',18,...columns[2]),null);
+ provider.reason_codes.push('stale_required_source');assert.equal(sampleAt(data,'2026-10-08',at,'a',18,...columns[2]),null);
+});
