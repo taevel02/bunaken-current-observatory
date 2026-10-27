@@ -13,7 +13,9 @@ export function environmentSamples(data: Dashboard, day: string, siteId: string,
     return at >= start && at < end;
   }).sort((a, b) => Date.parse(a.valid_time) - Date.parse(b.valid_time));
   const provider = data.sources.find(item => item.id === source);
-  const values = provider?.public_export_allowed && !provider.reason_codes.length ? rows.filter(row => row.value !== null && Number.isFinite(row.value) && !row.quality_flags.some(flag => rejected.has(flag))) : [];
+  const values = provider?.public_export_allowed ? rows.filter(row =>
+    (!provider.reason_codes.length || (source === "open-meteo-wind" && provider.reason_codes.every(reason => reason === "source_age_unknown") && row.source_updated_at && row.quality_flags.includes("provider_update_metadata_verified"))) &&
+    row.value !== null && Number.isFinite(row.value) && !row.quality_flags.some(flag => rejected.has(flag))) : [];
   return { rows, values, provider };
 }
 
