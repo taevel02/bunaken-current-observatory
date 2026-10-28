@@ -1,0 +1,33 @@
+{
+  "id": "25614cac-4bcc-47ca-a3fe-4510e9fa3cbf",
+  "local_start": "2026-10-28T09:03",
+  "local_end": "2026-10-28T09:46",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "lekuan-2",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.33,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": null,
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-10-28T01:03:00.000Z",
+  "end_at": "2026-10-28T01:46:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-10-28T02:20:32.014Z",
+  "updated_at": "2026-10-28T02:20:32.014Z",
+  "train_eligible": false
+}
