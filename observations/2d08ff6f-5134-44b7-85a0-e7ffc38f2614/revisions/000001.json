@@ -1,0 +1,33 @@
+{
+  "id": "2d08ff6f-5134-44b7-85a0-e7ffc38f2614",
+  "local_start": "2026-11-18T11:59",
+  "local_end": "2026-11-18T12:37",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "alung-banua",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.37,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": null,
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-11-18T03:59:00.000Z",
+  "end_at": "2026-11-18T04:37:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-11-18T05:44:35.624Z",
+  "updated_at": "2026-11-18T05:44:35.624Z",
+  "train_eligible": false
+}
