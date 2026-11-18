@@ -1,0 +1,33 @@
+{
+  "id": "b010f8d8-9557-4ec9-a007-1dfffda545e6",
+  "local_start": "2026-11-18T10:03",
+  "local_end": "2026-11-18T10:45",
+  "timezone": "Asia/Makassar",
+  "time_precision": "reported_minute",
+  "site_id": "raymonds-point",
+  "zone_id": null,
+  "route_description": "",
+  "representative_depth_m": 18,
+  "overall_pci": 0.39,
+  "vertical": {
+    "direction": "unknown",
+    "intensity": null
+  },
+  "vertical_onset": null,
+  "confidence": "normal",
+  "peak_events": [],
+  "observed_temperature": null,
+  "notes_public": "",
+  "use_for_model": true,
+  "schema_version": "1.5",
+  "observer_id": "bunaken-observer-01",
+  "rubric_version": "pci-overall-v1",
+  "revision": 1,
+  "start_at": "2026-11-18T02:03:00.000Z",
+  "end_at": "2026-11-18T02:45:00.000Z",
+  "label_scope": "dive_overall",
+  "record_status": "active",
+  "created_at": "2026-11-18T03:05:26.342Z",
+  "updated_at": "2026-11-18T03:05:26.342Z",
+  "train_eligible": false
+}
